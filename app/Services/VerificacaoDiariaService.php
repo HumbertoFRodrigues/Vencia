@@ -149,7 +149,9 @@ class VerificacaoDiariaService
         try {
             DB::transaction(function () use ($servico, $intervalo): void {
                 if ($servico->cliente?->email) {
-                    Mail::to($servico->cliente->email)->send(new LembreteVencimentoMail($servico, $intervalo));
+                    Mail::to($servico->cliente->email)
+                        ->bcc(Configuracao::emailBccAdmin($servico->cliente->email))
+                        ->send(new LembreteVencimentoMail($servico, $intervalo));
                 }
 
                 Historico::create([
@@ -206,4 +208,5 @@ class VerificacaoDiariaService
             IntervaloLembrete::AposVencimento => 'após vencimento',
         };
     }
+
 }

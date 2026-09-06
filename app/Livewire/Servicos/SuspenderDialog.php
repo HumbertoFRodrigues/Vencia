@@ -5,6 +5,7 @@ namespace App\Livewire\Servicos;
 use App\Enums\HistoricoKind;
 use App\Enums\SuspensaoMotivo;
 use App\Mail\ServicoTerminadoMail;
+use App\Models\Configuracao;
 use App\Models\Historico;
 use App\Models\Servico;
 use App\Services\ServicoStatusService;
@@ -119,7 +120,9 @@ class SuspenderDialog extends Component
         }
 
         try {
-            Mail::to($servico->cliente->email)->send(new ServicoTerminadoMail($servico, $suspensao));
+            Mail::to($servico->cliente->email)
+                ->bcc(Configuracao::emailBccAdmin($servico->cliente->email))
+                ->send(new ServicoTerminadoMail($servico, $suspensao));
 
             Historico::create([
                 'cliente_id' => $servico->cliente_id,
