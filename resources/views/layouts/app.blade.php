@@ -39,6 +39,8 @@
 
     @livewireScripts
 
+    <livewire:shared.toast-host />
+
     <script>
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('[data-theme-toggle]');

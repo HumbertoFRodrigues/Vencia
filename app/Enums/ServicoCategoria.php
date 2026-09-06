@@ -30,6 +30,20 @@ enum ServicoCategoria: string
         };
     }
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::Dominio => 'Domínio',
+            self::Hospedagem => 'Hospedagem',
+            self::Email => 'Email',
+            self::Ia => 'IA',
+            self::Software => 'Software',
+            self::Manutencao => 'Manutenção',
+            self::Desenvolvimento => 'Desenvolvimento',
+            self::Outro => 'Outro',
+        };
+    }
+
     /**
      * @return array{bg: string, fg: string}
      */

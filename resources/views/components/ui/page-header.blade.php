@@ -14,7 +14,10 @@
         @elseif($eyebrow)
             <span class="page-header__eyebrow">{{ $eyebrow }}</span>
         @endif
-        <h1 class="page-header__title">{{ $title }}</h1>
+        {{-- titleHtml is an escape hatch for pages whose h1 needs to embed a
+             component (e.g. Serviço detalhe's logo + nome) instead of plain
+             text — every other caller keeps passing the plain `title` prop. --}}
+        <h1 class="page-header__title">{{ isset($titleHtml) ? $titleHtml : $title }}</h1>
         @if($meta)<div class="page-header__meta">{{ $meta }}</div>@endif
     </div>
     @if(isset($actions) && trim($actions))

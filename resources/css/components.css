@@ -306,7 +306,52 @@
 .empty-state__desc { margin: 0; max-width: 320px; font-size: var(--text-sm); color: var(--text-muted); }
 .empty-state__action { margin-top: 6px; }
 
-/* ---------- Toast (components/feedback/Toast.jsx) — not ported this phase (ToastHost is Fase 4) ---------- */
+/* ---------- Toast (components/feedback/Toast.jsx) ---------- */
+.toast-host { position: fixed; right: 20px; bottom: 20px; z-index: 80; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
+.toast {
+  pointer-events: auto;
+  display: flex; align-items: flex-start; gap: 10px;
+  width: 320px; padding: 12px 13px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-overlay);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-standard);
+}
+.toast--visible { opacity: 1; transform: translateY(0); }
+.toast__icon {
+  width: 17px; height: 17px; flex: 0 0 auto; margin-top: 1px;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: contain; mask-size: contain;
+  background: currentColor;
+}
+.toast--success .toast__icon { color: var(--green-600); -webkit-mask-image: url('/icons/circle-check.svg'); mask-image: url('/icons/circle-check.svg'); }
+.toast--danger .toast__icon { color: var(--red-600); -webkit-mask-image: url('/icons/circle-alert.svg'); mask-image: url('/icons/circle-alert.svg'); }
+.toast--info .toast__icon { color: var(--accent); -webkit-mask-image: url('/icons/info.svg'); mask-image: url('/icons/info.svg'); }
+.toast__body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.toast__title { font-size: var(--text-sm); color: var(--text-strong); }
+.toast__desc { font-size: var(--text-xs); color: var(--text-muted); }
+.toast__close { cursor: pointer; color: var(--text-faint); line-height: 1; font-size: 16px; }
+
+/* ---------- Pill picker (biblioteca strip, método picker — Fase 4) ---------- */
+.pill-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill-picker__item {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 10px 5px 6px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--text-body);
+  font: inherit; font-size: var(--text-sm); font-weight: var(--weight-regular);
+  cursor: pointer; white-space: nowrap;
+  transition: var(--transition-control);
+}
+.pill-picker__item:hover { background: var(--surface-hover); }
+.pill-picker__item--active { background: var(--accent-soft); border-color: var(--accent-soft-border); color: var(--text-accent); font-weight: var(--weight-medium); }
+.pill-picker__item--static { cursor: default; background: var(--surface-sunken); border-color: transparent; }
+.pill-picker__item--static:hover { background: var(--surface-sunken); }
 
 /* ---------- Dialog (components/feedback/Dialog.jsx) ---------- */
 .dialog-scrim {

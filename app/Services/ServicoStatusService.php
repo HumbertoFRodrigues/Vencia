@@ -56,6 +56,20 @@ class ServicoStatusService
      */
     private function maiorIntervaloActivo(Servico $servico): ?int
     {
+        return $this->proximoIntervaloAtivo($servico);
+    }
+
+    /**
+     * Public generalisation of the above: largest enabled offset that is at
+     * or below $antesDeDias (or the overall largest enabled offset when
+     * $antesDeDias is null, which is what avaliar()'s a_vencer threshold
+     * needs). Given the current "dias" countdown, this is the offset of the
+     * *next* reminder still ahead — used by Serviço detalhe's a_vencer
+     * banner ("próximo aviso automático: N dias antes") so that screen
+     * doesn't reimplement the two-tier config resolution itself.
+     */
+    public function proximoIntervaloAtivo(Servico $servico, ?int $antesDeDias = null): ?int
+    {
         $config = $servico->lembreteConfig;
         $globais = Configuracao::obter('lembretes', []);
 
@@ -65,7 +79,11 @@ class ServicoStatusService
             $offset = $intervalo->diasOffset();
 
             if ($offset === null) {
-                continue; // apos_vencimento has no fixed offset, irrelevant to the a_vencer threshold
+                continue; // apos_vencimento has no fixed offset, irrelevant here
+            }
+
+            if ($antesDeDias !== null && $offset > $antesDeDias) {
+                continue;
             }
 
             $ligado = $config?->{$intervalo->value} ?? (bool) ($globais[$intervalo->value] ?? false);
@@ -84,7 +102,7 @@ class ServicoStatusService
      * activo and logs a Historico entry. Not applicable to periodicidade
      * "unica", which has no renewal cycle.
      *
-     * @param array{data?: string, valor?: float|string, metodo: string, periodo?: string, user_id?: int|null} $dadosPagamento
+     * @param array{data?: string, valor?: float|string, metodo: string, periodo?: string, observacoes?: string|null, user_id?: int|null} $dadosPagamento
      */
     public function renovar(Servico $servico, array $dadosPagamento): void
     {
@@ -93,7 +111,7 @@ class ServicoStatusService
         }
 
         DB::transaction(function () use ($servico, $dadosPagamento): void {
-            $novoVencimento = $this->calcularNovoVencimento($servico);
+            $novoVencimento = $this->calcularProximoVencimento($servico);
 
             $servico->vencimento = $novoVencimento;
             $servico->status = ServicoStatus::Activo;
@@ -110,28 +128,67 @@ class ServicoStatusService
                 'user_id' => $dadosPagamento['user_id'] ?? null,
             ]);
 
+            $observacoes = trim((string) ($dadosPagamento['observacoes'] ?? ''));
+            $descricao = sprintf('%s — %s', $valor, $servico->nome);
+
+            if ($observacoes !== '') {
+                $descricao .= ' — '.$observacoes;
+            }
+
             Historico::create([
                 'cliente_id' => $servico->cliente_id,
                 'servico_id' => $servico->id,
                 'occurred_at' => Carbon::now(),
                 'title' => 'Pagamento recebido',
-                'description' => sprintf('%s — %s', $valor, $servico->nome),
+                'description' => $descricao,
                 'kind' => HistoricoKind::Pagamento,
             ]);
         });
     }
 
-    private function calcularNovoVencimento(Servico $servico): Carbon
+    /**
+     * Public preview of the exact date math renovar() applies, so
+     * RenovarDialog's "novo vencimento calculado" line and the real
+     * confirmation never drift apart. Not applicable to "unica" (no
+     * renewal cycle — callers should hide the Renovar action entirely for
+     * those, per the brief).
+     */
+    public function calcularProximoVencimento(Servico $servico): Carbon
     {
+        if ($servico->periodicidade === Periodicidade::Unica) {
+            throw new RuntimeException('Serviços com periodicidade "única" não têm ciclo de renovação.');
+        }
+
         /** @var Carbon $base */
         $base = $servico->vencimento ?? Carbon::today();
 
-        return match ($servico->periodicidade) {
+        return $this->somarPeriodicidade($base, $servico->periodicidade, $servico->duracao_dias);
+    }
+
+    /**
+     * Same "add one periodicidade interval" math as calcularProximoVencimento(),
+     * applied to an arbitrary início instead of an existing vencimento — used
+     * by NewSubscriptionDialog to preview/derive the initial vencimento for a
+     * brand-new servico before it exists as a persisted model. Returns null
+     * for "unica" (no vencimento at all, per the brief).
+     */
+    public function calcularVencimentoInicial(Carbon $inicio, Periodicidade $periodicidade, ?int $duracaoDias = null): ?Carbon
+    {
+        if ($periodicidade === Periodicidade::Unica) {
+            return null;
+        }
+
+        return $this->somarPeriodicidade($inicio, $periodicidade, $duracaoDias);
+    }
+
+    private function somarPeriodicidade(Carbon $base, Periodicidade $periodicidade, ?int $duracaoDias): Carbon
+    {
+        return match ($periodicidade) {
             Periodicidade::Mensal => $base->copy()->addMonthNoOverflow(),
             Periodicidade::Trimestral => $base->copy()->addMonthsNoOverflow(3),
             Periodicidade::Semestral => $base->copy()->addMonthsNoOverflow(6),
             Periodicidade::Anual => $base->copy()->addYearNoOverflow(),
-            Periodicidade::Personalizada => $base->copy()->addDays((int) ($servico->duracao_dias ?? 0)),
+            Periodicidade::Personalizada => $base->copy()->addDays((int) ($duracaoDias ?? 0)),
             Periodicidade::Unica => throw new RuntimeException('Serviços com periodicidade "única" não têm ciclo de renovação.'),
         };
     }
