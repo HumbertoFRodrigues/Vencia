@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Admin dashboard" description="Vencia admin dashboard: metric tiles, próximos vencimentos table, alerts rail." -->
+<helmet><script src="./ds-base.js"></script><style>body{margin:0}</style></helmet>
+<div style="display:flex;min-height:100vh;background:var(--surface-app);font-family:var(--font-sans)">
+<x-import component-from-global-scope="SubscriptionManagerDesignSystem_6a702b.SidebarNav" active="dashboard" hint-size="236px,100vh"></x-import>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+<x-import component-from-global-scope="SubscriptionManagerDesignSystem_6a702b.TopBar" alert-count="4" hint-size="100%,60px"></x-import>
+<main style="flex:1;padding:22px 24px 40px">
+<div style="max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+<div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:4px">
+<span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted)">Agosto 2026</span>
+<h1 style="margin:0;font-size:28px;line-height:1.15;letter-spacing:-.022em;font-weight:600;color:var(--text-strong)">Dashboard</h1>
+</div>
+<x-import component-from-global-scope="SubscriptionManagerDesignSystem_6a702b.Button" variant="primary" icon="plus" hint-size="160px,36px">Nova assinatura</x-import>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px">
+<div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;box-shadow:var(--shadow-card)">
+<span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted)">Receita deste mês</span>
+<span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:30px;line-height:1.1;letter-spacing:-.03em;font-weight:600;color:var(--text-strong)">12.500 <span style="font-size:.5em;color:var(--text-muted)">MZN</span></span>
+<span style="font-size:12px;color:var(--money-in);font-weight:500">+8% vs Julho</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;box-shadow:var(--shadow-card)">
+<span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted)">Receita esperada</span>
+<span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:30px;line-height:1.1;letter-spacing:-.03em;font-weight:600;color:var(--text-strong)">15.000 <span style="font-size:.5em;color:var(--text-muted)">MZN</span></span>
+<span style="font-size:12px;color:var(--text-muted)">2.500 em falta</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;box-shadow:var(--shadow-card)">
+<span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted)">Em atraso</span>
+<span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:30px;line-height:1.1;letter-spacing:-.03em;font-weight:600;color:var(--money-out)">2.500 <span style="font-size:.5em;color:var(--text-muted)">MZN</span></span>
+<span style="font-size:12px;color:var(--text-muted)">1 serviço</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;box-shadow:var(--shadow-card)">
+<span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted)">Clientes activos</span>
+<span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:30px;line-height:1.1;letter-spacing:-.03em;font-weight:600;color:var(--text-strong)">18</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;box-shadow:var(--shadow-card)">
+<span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted)">Serviços activos</span>
+<span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:30px;line-height:1.1;letter-spacing:-.03em;font-weight:600;color:var(--text-strong)">31</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;box-shadow:var(--shadow-card)">
+<span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted)">Vencendo em breve</span>
+<span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:30px;line-height:1.1;letter-spacing:-.03em;font-weight:600;color:var(--status-due-fg)">5</span>
+<span style="font-size:12px;color:var(--text-muted)">próximos 7 dias</span>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:minmax(0,1.85fr) minmax(280px,1fr);gap:12px;align-items:start">
+<section style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;box-shadow:var(--shadow-card);overflow:hidden">
+<header style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border-subtle)">
+<div style="flex:1;display:flex;flex-direction:column;gap:2px">
+<h3 style="margin:0;font-size:17px;letter-spacing:-.011em;font-weight:600;color:var(--text-strong)">Próximos vencimentos</h3>
+<span style="font-size:12px;color:var(--text-muted)">Ordenado pela data mais próxima</span>
+</div>
+</header>
+<table style="width:100%;border-collapse:collapse;font-size:13px">
+<thead><tr>
+<th style="padding:11px 14px;text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted);background:var(--ink-25);border-bottom:1px solid var(--border-subtle)">Serviço</th>
+<th style="padding:11px 14px;text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted);background:var(--ink-25);border-bottom:1px solid var(--border-subtle)">Cliente</th>
+<th style="padding:11px 14px;text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted);background:var(--ink-25);border-bottom:1px solid var(--border-subtle)">Vencimento</th>
+<th style="padding:11px 14px;text-align:right;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted);background:var(--ink-25);border-bottom:1px solid var(--border-subtle)">Valor</th>
+<th style="padding:11px 14px;text-align:left;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted);background:var(--ink-25);border-bottom:1px solid var(--border-subtle)">Estado</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle);color:var(--text-strong);font-weight:500">Hospedagem</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle)">João Silva</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle);font-family:var(--font-mono);font-size:12px">02/09/2026</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle);text-align:right;font-family:var(--font-mono);font-weight:500;color:var(--text-strong)">1.500 MZN</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle)"><x-import component-from-global-scope="SubscriptionManagerDesignSystem_6a702b.StatusBadge" status="a_vencer" size="sm" hint-size="92px,20px"></x-import></td>
+</tr>
+<tr>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle);color:var(--text-strong);font-weight:500">ChatGPT</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle)">Maria Costa</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle);font-family:var(--font-mono);font-size:12px">05/09/2026</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle);text-align:right;font-family:var(--font-mono);font-weight:500;color:var(--text-strong)">500 MZN</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle)"><x-import component-from-global-scope="SubscriptionManagerDesignSystem_6a702b.StatusBadge" status="a_vencer" size="sm" hint-size="92px,20px"></x-import></td>
+</tr>
+<tr>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle);color:var(--text-strong);font-weight:500">Domínio cmdigital.co.mz</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle)">Carlos Manuel</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle);font-family:var(--font-mono);font-size:12px">08/09/2026</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle);text-align:right;font-family:var(--font-mono);font-weight:500;color:var(--text-strong)">800 MZN</td>
+<td style="padding:11px 14px;border-bottom:1px solid var(--border-subtle)"><x-import component-from-global-scope="SubscriptionManagerDesignSystem_6a702b.StatusBadge" status="activo" size="sm" hint-size="80px,20px"></x-import></td>
+</tr>
+<tr>
+<td style="padding:11px 14px;color:var(--text-strong);font-weight:500">Manutenção do site</td>
+<td style="padding:11px 14px">Carlos Manuel</td>
+<td style="padding:11px 14px;font-family:var(--font-mono);font-size:12px">01/09/2026</td>
+<td style="padding:11px 14px;text-align:right;font-family:var(--font-mono);font-weight:500;color:var(--text-strong)">2.500 MZN</td>
+<td style="padding:11px 14px"><x-import component-from-global-scope="SubscriptionManagerDesignSystem_6a702b.StatusBadge" status="vencido" size="sm" hint-size="86px,20px"></x-import></td>
+</tr>
+</tbody>
+</table>
+</section>
+<div style="display:flex;flex-direction:column;gap:12px">
+<x-import component-from-global-scope="SubscriptionManagerDesignSystem_6a702b.AlertBanner" tone="warning" title="Requer atenção" hint-size="100%,70px">Manutenção do site — Carlos Manuel está vencida há 1 dia.</x-import>
+<section style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;box-shadow:var(--shadow-card);overflow:hidden">
+<header style="padding:14px 16px;border-bottom:1px solid var(--border-subtle)"><h3 style="margin:0;font-size:17px;letter-spacing:-.011em;font-weight:600;color:var(--text-strong)">Receita recorrente</h3></header>
+<div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-direction:column;gap:2px">
+<span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted)">MRR</span>
+<span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:21px;font-weight:600;color:var(--text-strong)">25.000 <span style="font-size:.65em;color:var(--text-muted)">MZN</span></span>
+</div>
+<div style="display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--border-subtle)">
+<span style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--text-muted)">ARR</span>
+<span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:21px;font-weight:600;color:var(--text-strong)">300.000 <span style="font-size:.65em;color:var(--text-muted)">MZN</span></span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+</x-dc>
+</body>
+</html>

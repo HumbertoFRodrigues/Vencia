@@ -1,0 +1,25 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Data display" subtitle="Service logos, payment methods, cards, metric tiles, money, table, timeline" -->
+<!DOCTYPE html><html lang="pt"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--surface-card);padding:16px}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}</style></head><body><div id="root"></div>
+<script type="text/babel">
+const { ServiceLogo, ServiceCard, StatCard, MoneyValue, DataTable, Timeline, StatusBadge, PaymentMethod } = window.SubscriptionManagerDesignSystem_6a702b;
+const rows=[{id:1,cliente:"João Silva",servico:"Hospedagem",venc:"02/09/2026",valor:1500,estado:"a_vencer"},{id:2,cliente:"Maria Costa",servico:"ChatGPT",venc:"05/09/2026",valor:500,estado:"a_vencer"},{id:3,cliente:"Carlos Manuel",servico:"Domínio",venc:"08/09/2026",valor:800,estado:"activo"}];
+ReactDOM.createRoot(document.getElementById('root')).render(
+<div className="col">
+  <div className="row" style={{gap:14}}><ServiceLogo name="ChatGPT" category="ia" assetsBase="../../assets/logos/"/><ServiceLogo name="Canva" category="software"/><ServiceLogo name="exemplo.co.mz" category="dominio"/><ServiceLogo name="Plano Business" category="hospedagem"/><ServiceLogo name="Email 5 contas" category="email" size={32}/><ServiceLogo name="Manutenção" category="manutencao" size={24}/>
+    <div className="col" style={{gap:4,marginLeft:8}}><MoneyValue amount={12500} size="metric"/><MoneyValue amount={500} period="mês"/><MoneyValue amount={2500} tone="out" size="sm"/></div></div>
+  <div className="row" style={{alignItems:'stretch',gap:12}}>
+    <ServiceCard style={{width:250}} name="ChatGPT" client="João da Silva" category="ia" amount={500} period="mês" dueLabel="Vence em 5 dias" status="a_vencer"/>
+    <div className="col" style={{gap:12,width:200}}><StatCard label="Receita deste mês" value={12500} currency="MZN" icon="wallet" delta="+8% vs Julho" deltaTone="in"/><StatCard label="Em atraso" value={2500} currency="MZN" tone="out" icon="circle-alert"/></div>
+    <div style={{flex:1,minWidth:0,border:'1px solid var(--border-subtle)',borderRadius:'var(--radius-lg)',overflow:'hidden'}}>
+      <DataTable dense rows={rows} onRowClick={()=>{}} columns={[{key:"cliente",header:"Cliente"},{key:"servico",header:"Serviço"},{key:"venc",header:"Vencimento"},{key:"valor",header:"Valor",align:"right",render:r=><MoneyValue amount={r.valor} size="sm"/>},{key:"estado",header:"Estado",render:r=><StatusBadge status={r.estado} size="sm"/>}]}/>
+    </div>
+  </div>
+  <div className="row" style={{gap:16}}>{["mpesa","emola","transferencia","dinheiro","outro"].map(m=><PaymentMethod key={m} method={m} size={24} assetsBase="../../assets/logos/"/>)}</div>
+  <Timeline items={[{date:"01/09/2026",title:"Pagamento recebido",description:"500 MZN — M-Pesa",kind:"pagamento"},{date:"25/09/2026",title:"Lembrete enviado",description:"7 dias antes do vencimento",kind:"lembrete"},{date:"01/10/2026",title:"Serviço vencido",kind:"vencido"}]}/>
+</div>);
+</script></body></html>

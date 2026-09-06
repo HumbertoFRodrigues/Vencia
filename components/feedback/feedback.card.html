@@ -1,0 +1,18 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Status & feedback" subtitle="Status pills, tags, alert banners, toast, empty state" -->
+<!DOCTYPE html><html lang="pt"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--surface-card);padding:16px}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}</style></head><body><div id="root"></div>
+<script type="text/babel">
+const { StatusBadge, Tag, AlertBanner, Toast, EmptyState, Button } = window.SubscriptionManagerDesignSystem_6a702b;
+ReactDOM.createRoot(document.getElementById('root')).render(
+<div className="col">
+  <div className="row"><StatusBadge status="activo"/><StatusBadge status="a_vencer"/><StatusBadge status="vencido"/><StatusBadge status="suspenso"/><StatusBadge status="cancelado"/><StatusBadge status="vencido" size="sm" label="Vencido há 2 dias"/></div>
+  <div className="row"><Tag>Domínio</Tag><Tag>Hospedagem</Tag><Tag tone="accent">Anual</Tag><Tag tone="outline">M-Pesa</Tag></div>
+  <AlertBanner tone="danger" title="Este acesso terminou" action={<Button size="sm" variant="danger">Suspender</Button>}>É necessário renovar ou suspender o serviço.</AlertBanner>
+  <AlertBanner tone="warning" title="Requer atenção">3 serviços vencem hoje · 4 serviços estão vencidos</AlertBanner>
+  <div className="row" style={{alignItems:'flex-start'}}><Toast title="Pagamento registrado">1.500 MZN — Hospedagem, João Silva</Toast><EmptyState icon="users" title="Sem clientes" description="Adicione o primeiro cliente." style={{padding:'8px 16px'}}/></div>
+</div>);
+</script></body></html>

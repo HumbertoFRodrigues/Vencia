@@ -1,0 +1,19 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Core controls" subtitle="Buttons, icon buttons, inputs, textarea, logo slot, select, checkbox, switch, theme toggle" -->
+<!DOCTYPE html><html lang="pt"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--surface-card);padding:16px}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}</style></head><body><div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Input, Select, Checkbox, Switch, SearchInput, Card, Textarea, LogoSlot, ThemeToggle } = window.SubscriptionManagerDesignSystem_6a702b;
+function Demo(){const [c,setC]=React.useState(true);const [s,setS]=React.useState(true);return (
+<div className="col">
+  <div className="row"><Button variant="primary" icon="refresh-cw">Renovar</Button><Button>Registrar pagamento</Button><Button variant="ghost" iconEnd="arrow-right">Ver serviço</Button><Button variant="danger" icon="pause">Suspender</Button><Button variant="quiet">Cancelar</Button><Button variant="primary" disabled>Desactivado</Button></div>
+  <div className="row"><Button size="sm" variant="primary">sm</Button><Button size="md">md</Button><Button size="lg" variant="primary" icon="plus">lg — Nova assinatura</Button><IconButton icon="pencil" label="Editar" variant="secondary"/><IconButton icon="ellipsis" label="Mais"/><IconButton icon="trash-2" label="Apagar"/></div>
+  <div className="row" style={{alignItems:'flex-start'}}><Input label="Valor" defaultValue="1500" suffix="MZN" style={{width:180}}/><Input label="Email" icon="mail" defaultValue="joao@email.com" style={{width:230}}/><Select label="Periodicidade" options={["Mensal","Trimestral","Anual"]} style={{width:170}}/></div>
+  <div className="row" style={{gap:20}}><SearchInput width={300}/><Checkbox label="7 dias antes" checked={c} onChange={setC}/><Switch checked={s} onChange={setS} label="Lembretes automáticos"/><ThemeToggle/></div>
+  <div className="row" style={{alignItems:'flex-start',gap:24}}><Textarea label="Breve descrição" rows={2} defaultValue="Alojamento SSD com backups semanais." style={{width:300}}/><LogoSlot size={56}/></div>
+</div>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

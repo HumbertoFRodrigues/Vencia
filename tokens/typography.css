@@ -1,0 +1,13 @@
+:root{
+--text-display:2.25rem;--text-display-lh:1.08;--text-display-ls:-0.028em;
+--text-h1:1.75rem;--text-h1-lh:1.15;--text-h1-ls:-0.022em;
+--text-h2:1.3125rem;--text-h2-lh:1.25;--text-h2-ls:-0.016em;
+--text-h3:1.0625rem;--text-h3-lh:1.35;--text-h3-ls:-0.011em;
+--text-body-size:0.9375rem;--text-body-lh:1.55;
+--text-sm:0.8125rem;--text-sm-lh:1.45;
+--text-xs:0.75rem;--text-xs-lh:1.35;
+--text-label:0.6875rem;--text-label-ls:0.07em;
+--text-metric:1.875rem;--text-metric-lh:1.1;--text-metric-ls:-0.03em;
+--weight-light:300;--weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;
+--numeric:"tnum" 1,"cv01" 1; /* @kind other */
+}
