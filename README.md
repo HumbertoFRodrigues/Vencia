@@ -120,9 +120,13 @@ Abrir `http://127.0.0.1:8000/login` e entrar com o `ADMIN_EMAIL`/`ADMIN_PASSWORD
 
 Por omissão `MAIL_MAILER=log` — os emails ficam registados em `storage/logs/laravel.log`, não saem de verdade. Para activar o envio real, preencher `MAIL_HOST`/`MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_PORT` no `.env` com credenciais SMTP verdadeiras; não é preciso mudar nenhum código.
 
-## Verificação diária e publicação online
+## Publicar online
 
-Ver [`OPERACOES.md`](OPERACOES.md) — tem o comando exacto para agendar o job diário (Task Scheduler no Windows, Cron Jobs num cPanel) e os passos para publicar num alojamento partilhado normal.
+Ver [`DEPLOY.md`](DEPLOY.md) — guia passo-a-passo para publicar num cPanel (requisitos, `.env` de produção, comandos, cron job, o que verificar se algo correr mal).
+
+## Verificação diária de vencimentos
+
+Ver [`OPERACOES.md`](OPERACOES.md) — como e onde agendar `php artisan vencia:verificar-vencimentos` (Task Scheduler no Windows, Cron Jobs num cPanel).
 
 ## O que ainda não existe
 

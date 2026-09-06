@@ -31,8 +31,8 @@
             icon="hourglass"
             :footnote="$totais['nAReceber'].' serviços'"
         />
-        <x-ui.stat-card label="MRR" :value="$totais['mrr']" currency="MZN" icon="repeat" />
-        <x-ui.stat-card label="ARR" :value="$totais['arr']" currency="MZN" icon="chart-line" />
+        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" currency="MZN" icon="repeat" />
+        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" currency="MZN" icon="chart-line" />
     </div>
 
     <div class="pill-picker">

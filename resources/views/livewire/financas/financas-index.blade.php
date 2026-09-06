@@ -33,8 +33,8 @@
             icon="hourglass"
             :footnote="$totais['nAReceber'].' serviços'"
         />
-        <x-ui.stat-card label="MRR" :value="$totais['mrr']" currency="MZN" icon="repeat" footnote="receita mensal recorrente" />
-        <x-ui.stat-card label="ARR" :value="$totais['arr']" currency="MZN" icon="chart-line" footnote="receita anual recorrente" />
+        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" currency="MZN" icon="repeat" />
+        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" currency="MZN" icon="chart-line" />
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">
