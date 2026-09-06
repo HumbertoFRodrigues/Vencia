@@ -18,7 +18,7 @@
     @foreach($items as $i => $it)
         @php
             $kind = is_object($it) ? ($it->kind ?? 'alterado') : ($it['kind'] ?? 'alterado');
-            $kind = is_object($kind) && method_exists($kind, 'value') ? $kind->value : $kind;
+            $kind = $kind instanceof \BackedEnum ? $kind->value : $kind;
             [$icon, $color] = $kindMap[$kind] ?? $kindMap['alterado'];
             $last = $i === $count - 1;
             $date = is_object($it) ? ($it->date ?? null) : ($it['date'] ?? null);
