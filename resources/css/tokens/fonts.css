@@ -1,0 +1,4 @@
+/* Webfonts: no binaries were provided with the brief, so the system loads its
+   two families from Google Fonts. Substitution flagged in readme.md. */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap");
+:root{--font-sans:"Geist","Helvetica Neue",Arial,sans-serif;--font-mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace}

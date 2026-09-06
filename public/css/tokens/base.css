@@ -1,0 +1,8 @@
+*,*::before,*::after{box-sizing:border-box}
+html{color-scheme:light}html[data-theme="dark"]{color-scheme:dark}body{margin:0;transition:background-color var(--dur-base) var(--ease-standard);background:var(--surface-app);color:var(--text-body);font-family:var(--font-sans);font-size:var(--text-body-size);line-height:var(--text-body-lh);-webkit-font-smoothing:antialiased;text-wrap:pretty}
+h1,h2,h3,h4{color:var(--text-strong);margin:0;font-weight:var(--weight-semibold)}
+a{color:var(--text-link);text-decoration:none}
+a:hover{color:var(--text-link-hover);text-decoration:underline;text-underline-offset:2px}
+:focus-visible{outline:none;box-shadow:var(--ring)}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-feature-settings:var(--numeric)}
+.eyebrow{font-size:var(--text-label);letter-spacing:var(--text-label-ls);text-transform:uppercase;color:var(--text-muted);font-weight:var(--weight-semibold)}

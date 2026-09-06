@@ -1,0 +1,56 @@
+:root{
+/* --- Neutral ramp (cool ink) --- */
+--ink-0:#ffffff;--ink-25:#fcfcfd;--ink-50:#f8f9fb;--ink-100:#f1f3f7;--ink-200:#e5e8ef;--ink-300:#d2d7e2;--ink-400:#9aa2b4;--ink-500:#6c7484;--ink-600:#4d5464;--ink-700:#343a47;--ink-800:#22262f;--ink-900:#14171d;
+/* --- Brand: Cobalt --- */
+--cobalt-50:#eef1fe;--cobalt-100:#dde3fd;--cobalt-200:#bcc7fb;--cobalt-300:#8f9ff6;--cobalt-500:#3348d8;--cobalt-600:#2839b4;--cobalt-700:#1f2c8c;
+/* --- Status hues (state colours of the spec) --- */
+--green-50:#e8f6f0;--green-100:#cdeade;--green-600:#12805c;--green-700:#0c6146;
+--amber-50:#fdf3e3;--amber-100:#f9e4bd;--amber-600:#a76308;--amber-700:#824d06;
+--red-50:#fdeceb;--red-100:#f9d3d0;--red-600:#c4342b;--red-700:#9c2921;
+--slate-50:#f1f3f7;--slate-600:#4d5464;
+/* --- Semantic surfaces --- */
+--surface-app:var(--ink-50);--surface-card:var(--ink-0);--surface-raised:var(--ink-0);--surface-sunken:var(--ink-100);--surface-inverse:var(--ink-900);--surface-hover:var(--ink-100);--surface-active:var(--ink-200);--surface-accent-soft:var(--cobalt-50);
+/* --- Semantic text --- */
+--text-strong:var(--ink-900);--text-body:var(--ink-700);--text-muted:var(--ink-500);--text-faint:var(--ink-400);--text-inverse:var(--ink-0);--text-accent:var(--cobalt-600);--text-link:var(--cobalt-600);--text-link-hover:var(--cobalt-700);
+/* --- Semantic borders --- */
+--border-subtle:var(--ink-200);--border-default:var(--ink-300);--border-strong:var(--ink-400);--border-accent:var(--cobalt-500);--border-focus:var(--cobalt-500);
+/* --- Semantic accents --- */
+--accent:var(--cobalt-500);--accent-hover:var(--cobalt-600);--accent-press:var(--cobalt-700);--accent-soft:var(--cobalt-50);--accent-soft-border:var(--cobalt-200);
+/* --- Service status: activo / a vencer / vencido / suspenso / cancelado --- */
+--status-active-fg:var(--green-700);--status-active-bg:var(--green-50);--status-active-dot:var(--green-600);
+--status-due-fg:var(--amber-700);--status-due-bg:var(--amber-50);--status-due-dot:var(--amber-600);
+--status-overdue-fg:var(--red-700);--status-overdue-bg:var(--red-50);--status-overdue-dot:var(--red-600);
+--status-suspended-fg:var(--ink-800);--status-suspended-bg:var(--ink-100);--status-suspended-dot:var(--ink-800);
+--status-cancelled-fg:var(--ink-500);--status-cancelled-bg:var(--ink-50);--status-cancelled-dot:var(--ink-400);
+/* --- Money --- */
+--money-in:var(--green-700);--money-out:var(--red-600);--money-neutral:var(--ink-900);
+/* --- Chrome & scrims (theme-aware) --- */
+--topbar-bg:rgba(255,255,255,.82);--nav-hover:rgba(20,23,29,.045);--scrim:rgba(20,23,29,.38);--table-head-bg:var(--ink-25);--inset-highlight:rgba(255,255,255,.10);
+/* --- Service category tints --- */
+--cat-dominio-bg:#e8f0fb;--cat-dominio-fg:#1f4f8f;--cat-hospedagem-bg:#eef1fe;--cat-hospedagem-fg:#2839b4;--cat-email-bg:#f0ecfb;--cat-email-fg:#5636a8;--cat-ia-bg:#e8f6f0;--cat-ia-fg:#0c6146;--cat-software-bg:#f1f3f7;--cat-software-fg:#343a47;--cat-manutencao-bg:#fdf3e3;--cat-manutencao-fg:#824d06;--cat-desenvolvimento-bg:#f1f3f7;--cat-desenvolvimento-fg:#22262f;--cat-outro-bg:#f1f3f7;--cat-outro-fg:#4d5464;
+/* --- Text on filled controls (same in both themes) --- */
+--on-accent:#ffffff;--on-danger:#ffffff;
+/* --- Focus ring --- */
+--ring:0 0 0 3px rgba(51,72,216,.22);
+}
+
+/* ============ DARK THEME ============
+   Set data-theme="dark" on <html> or any subtree. Only semantic aliases are
+   re-pointed — components never reference the raw ramps, so nothing else changes. */
+[data-theme="dark"]{
+--surface-app:#0d1014;--surface-card:#15191f;--surface-raised:#1b2028;--surface-sunken:#1f242c;--surface-inverse:var(--ink-0);--surface-hover:#1f242c;--surface-active:#262c36;--surface-accent-soft:#1b2340;
+--text-strong:#f2f4f8;--text-body:#c8cdd8;--text-muted:#8f98a8;--text-faint:#6b7484;--text-inverse:#0d1014;--text-accent:#9fb0ff;--text-link:#9fb0ff;--text-link-hover:#c3cdff;
+--border-subtle:#252b34;--border-default:#333a45;--border-strong:#4a525f;--border-accent:#5c6ff0;--border-focus:#5c6ff0;
+--accent:#4a5cf0;--accent-hover:#5c6ff0;--accent-press:#3348d8;--accent-soft:#1b2340;--accent-soft-border:#2c3766;
+--status-active-fg:#5fd0a4;--status-active-bg:#122a22;--status-active-dot:#3cb583;
+--status-due-fg:#f0c073;--status-due-bg:#2c2313;--status-due-dot:#e0a445;
+--status-overdue-fg:#f28b83;--status-overdue-bg:#2e1715;--status-overdue-dot:#e05c52;
+--status-suspended-fg:#dfe3ea;--status-suspended-bg:#242a33;--status-suspended-dot:#9aa2b4;
+--status-cancelled-fg:#8f98a8;--status-cancelled-bg:#1a1f26;--status-cancelled-dot:#5b6472;
+--money-in:#5fd0a4;--money-out:#f28b83;--money-neutral:#f2f4f8;
+--ring:0 0 0 3px rgba(92,111,240,.34);
+--topbar-bg:rgba(21,25,31,.84);--nav-hover:rgba(255,255,255,.05);--scrim:rgba(4,6,9,.62);--table-head-bg:#11151a;--inset-highlight:rgba(255,255,255,.07);
+--green-100:#1c3d31;--amber-100:#3d3018;--red-100:#3d201c;
+--cat-dominio-bg:#152230;--cat-dominio-fg:#8fb6e8;--cat-hospedagem-bg:#181d33;--cat-hospedagem-fg:#a3aef5;--cat-email-bg:#221a33;--cat-email-fg:#c3aef0;--cat-ia-bg:#122a22;--cat-ia-fg:#7fd7b0;--cat-software-bg:#1f242c;--cat-software-fg:#c8cdd8;--cat-manutencao-bg:#2c2313;--cat-manutencao-fg:#e8c489;--cat-desenvolvimento-bg:#1f242c;--cat-desenvolvimento-fg:#e0e4ea;--cat-outro-bg:#1f242c;--cat-outro-fg:#9fa8b6;
+}
+[data-theme="dark"] img[data-logo]{background:#ffffff}
