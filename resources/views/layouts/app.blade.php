@@ -21,6 +21,19 @@
         })();
     </script>
 
+    {{-- Same idea for the sidebar collapse state: set on <html> before paint,
+         and (unlike a class on the sidebar itself) untouched by wire:navigate's
+         body-morphing, so it survives every navigation with no re-init. --}}
+    <script>
+        (function () {
+            try {
+                if (window.localStorage.getItem('sm-sidebar-collapsed') === '1') {
+                    document.documentElement.setAttribute('data-sidebar-collapsed', '');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     @livewireStyles
 </head>
 <body>
@@ -61,6 +74,22 @@
             var next = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
             try { window.localStorage.setItem('sm-theme', next); } catch (e) {}
+        });
+    </script>
+
+    {{-- Sidebar collapse toggle: same click-toggle-and-persist pattern as the
+         theme toggle. The attribute lives on <html>, not on .sidebar-nav
+         itself, precisely so it survives wire:navigate's body morphing. --}}
+    <script>
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('[data-sidebar-toggle]')) return;
+            var collapsed = document.documentElement.hasAttribute('data-sidebar-collapsed');
+            if (collapsed) {
+                document.documentElement.removeAttribute('data-sidebar-collapsed');
+            } else {
+                document.documentElement.setAttribute('data-sidebar-collapsed', '');
+            }
+            try { window.localStorage.setItem('sm-sidebar-collapsed', collapsed ? '0' : '1'); } catch (e) {}
         });
     </script>
 

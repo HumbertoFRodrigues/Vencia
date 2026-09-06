@@ -61,6 +61,15 @@
 .btn--quiet { background: var(--surface-sunken); color: var(--text-strong); border: 1px solid transparent; }
 .btn--quiet:not(:disabled):hover { background: var(--surface-active); }
 
+/* Utility for a ghost button/icon-button carrying a destructive meaning that
+   is rarer/more final than a plain .btn--danger action next to it (e.g.
+   "Cancelar serviço" next to "Suspender", or a row's delete-confirm check
+   next to its edit/delete icon-buttons) — quiet red text at rest so it
+   doesn't compete visually with a solid danger button, but unmistakably red
+   on hover/focus so it still reads as consequential, not a neutral action. */
+.action-danger-quiet { color: var(--red-600); }
+.action-danger-quiet:not(:disabled):hover { background: var(--status-overdue-bg); color: var(--red-700); }
+
 .btn__icon { flex: 0 0 auto; }
 
 /* ---------- IconButton (components/core/IconButton.jsx) ---------- */
@@ -532,8 +541,33 @@
 .sidebar-nav__item--active { background: var(--surface-card); box-shadow: var(--shadow-sm); color: var(--text-strong); font-weight: var(--weight-medium); }
 .sidebar-nav__label { flex: 1; }
 .sidebar-nav__badge { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--status-due-fg); background: var(--status-due-bg); border-radius: var(--radius-pill); padding: 1px 6px; }
-.sidebar-nav__footer { margin-top: auto; display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted); }
+.sidebar-nav__bottom { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.sidebar-nav__footer { display: flex; align-items: center; gap: 8px; padding: 10px 8px; border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted); }
 .sidebar-nav__footer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green-600); flex: 0 0 auto; }
+.sidebar-nav__toggle {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; height: 30px; padding: 0 10px;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+  background: var(--surface-card); color: var(--text-muted);
+  font: inherit; font-size: var(--text-xs); cursor: pointer;
+  transition: var(--transition-control);
+}
+.sidebar-nav__toggle:hover { background: var(--surface-hover); color: var(--text-strong); }
+.sidebar-nav__toggle-icon--collapsed { display: none; }
+
+/* Collapsed state: the attribute lives on <html> (see sidebar-nav.blade.php's
+   comment) so it survives wire:navigate morphs without a per-page init script. */
+[data-sidebar-collapsed] .sidebar-nav { width: var(--sidebar-w-collapsed, 60px); padding: 14px 8px; }
+[data-sidebar-collapsed] .sidebar-nav__brand { justify-content: center; padding: 4px 0; }
+[data-sidebar-collapsed] .sidebar-nav__brand-name,
+[data-sidebar-collapsed] .sidebar-nav__label,
+[data-sidebar-collapsed] .sidebar-nav__badge,
+[data-sidebar-collapsed] .sidebar-nav__footer,
+[data-sidebar-collapsed] .sidebar-nav__toggle-label { display: none; }
+[data-sidebar-collapsed] .sidebar-nav__item { justify-content: center; padding: 0; }
+[data-sidebar-collapsed] .sidebar-nav__toggle { justify-content: center; padding: 0; }
+[data-sidebar-collapsed] .sidebar-nav__toggle-icon--expanded { display: none; }
+[data-sidebar-collapsed] .sidebar-nav__toggle-icon--collapsed { display: inline-block; }
 
 /* ---------- TopBar (components/navigation/TopBar.jsx) ---------- */
 .top-bar { display: flex; align-items: center; gap: 12px; height: var(--topbar-h); flex: 0 0 auto; padding: 0 var(--gutter); background: var(--topbar-bg); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 40; }
