@@ -7,18 +7,24 @@ use App\Enums\Periodicidade;
 use App\Enums\ServicoStatus;
 use App\Models\Cliente;
 use App\Models\Servico;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
 #[Title('Clientes')]
 class ClientesIndex extends Component
 {
+    use WithPagination;
+
+    /** Dense table rows — 20 keeps the page short while still beating a "load everything" query at any realistic scale. */
+    private const POR_PAGINA = 20;
+
     #[Url]
     public string $tab = 'todos';
 
@@ -28,6 +34,13 @@ class ClientesIndex extends Component
     public function setTab(string $tab): void
     {
         $this->tab = $tab;
+        $this->resetPage();
+    }
+
+    /** Search box drives the query directly (wire:model.live.debounce) — every keystroke that changes it must land back on page 1. */
+    public function updatedQ(): void
+    {
+        $this->resetPage();
     }
 
     /**
@@ -37,10 +50,10 @@ class ClientesIndex extends Component
      * relation is pre-filtered to non-suspenso/cancelado for the MRR sum
      * in mrrDe(), mirroring Totais::calcular()'s normalisation.
      *
-     * @return Collection<int, Cliente>
+     * @return LengthAwarePaginator<int, Cliente>
      */
     #[Computed]
-    public function clientes(): Collection
+    public function clientes(): LengthAwarePaginator
     {
         return Cliente::query()
             ->withCount('servicos')
@@ -58,7 +71,7 @@ class ClientesIndex extends Component
                 });
             })
             ->orderBy('nome')
-            ->get();
+            ->paginate(self::POR_PAGINA);
     }
 
     /**

@@ -67,6 +67,10 @@
                 />
             @endforeach
         </div>
+
+        <x-ui.card :padding="0">
+            <x-ui.pagination :paginator="$servicos" />
+        </x-ui.card>
     @endif
 
     <x-ui.card title="Biblioteca de serviços" subtitle="Serviços conhecidos com logo pronto — selecione um ao criar a assinatura">

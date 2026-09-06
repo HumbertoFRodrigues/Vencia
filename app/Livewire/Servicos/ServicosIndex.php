@@ -6,6 +6,7 @@ use App\Enums\ServicoCategoria;
 use App\Enums\ServicoStatus;
 use App\Models\BibliotecaServico;
 use App\Models\Servico;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -13,6 +14,7 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 /**
  * Grid of every serviço across all clients — status tabs + categoria select
@@ -30,6 +32,11 @@ use Livewire\Component;
 #[Title('Serviços')]
 class ServicosIndex extends Component
 {
+    use WithPagination;
+
+    /** Card grid at minmax(268px,1fr) — 12 fills a tidy 3-4 column x 3-4 row block on typical widths. */
+    private const POR_PAGINA = 12;
+
     /** @var array<string, string> */
     private const CATEGORIA_LABELS = [
         'dominio' => 'Domínio',
@@ -64,11 +71,24 @@ class ServicosIndex extends Component
     public function setTab(string $tab): void
     {
         $this->tab = $tab;
+        $this->resetPage();
     }
 
-    /** @return Collection<int, Servico> */
+    /** Categoria <select> (wire:model.live) — changing it must land back on page 1. */
+    public function updatedCategoria(): void
+    {
+        $this->resetPage();
+    }
+
+    /** Search box (wire:model.live.debounce) — same, every change resets to page 1. */
+    public function updatedQ(): void
+    {
+        $this->resetPage();
+    }
+
+    /** @return LengthAwarePaginator<int, Servico> */
     #[Computed]
-    public function servicos(): Collection
+    public function servicos(): LengthAwarePaginator
     {
         return Servico::query()
             ->with('cliente')
@@ -84,7 +104,7 @@ class ServicosIndex extends Component
                 });
             })
             ->orderByRaw('vencimento IS NULL, vencimento ASC')
-            ->get();
+            ->paginate(self::POR_PAGINA);
     }
 
     /** @return array{todos: int, activo: int, a_vencer: int, vencido: int, suspenso: int} */

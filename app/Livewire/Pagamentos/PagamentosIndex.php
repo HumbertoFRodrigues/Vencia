@@ -8,7 +8,8 @@ use App\Models\Historico;
 use App\Models\Pagamento;
 use App\Services\Totais;
 use App\View\Components\Ui\PaymentMethod;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -17,6 +18,7 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -34,6 +36,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 #[Title('Pagamentos')]
 class PagamentosIndex extends Component
 {
+    use WithPagination;
+
+    /** Dense ledger rows — 25/page. */
+    private const POR_PAGINA = 25;
+
     /** @var list<string> */
     public array $metodos = [];
 
@@ -56,6 +63,26 @@ class PagamentosIndex extends Component
         } else {
             $this->metodos[] = $metodo;
         }
+
+        $this->resetPage();
+    }
+
+    /** Mês <select> (wire:model.live) — changing it must land back on page 1. */
+    public function updatedMes(): void
+    {
+        $this->resetPage();
+    }
+
+    /** Cliente <select> (wire:model.live) — same. */
+    public function updatedCliente(): void
+    {
+        $this->resetPage();
+    }
+
+    /** Search box (wire:model.live.debounce) — same. */
+    public function updatedQ(): void
+    {
+        $this->resetPage();
     }
 
     /**
@@ -74,12 +101,15 @@ class PagamentosIndex extends Component
         return app(Totais::class)->calcular();
     }
 
-    /** @return Collection<int, Pagamento> */
-    #[Computed]
-    public function pagamentos(): Collection
+    /**
+     * Every método/mês/cliente/search `->when()` clause, shared by the
+     * paginated list, the period total, and the CSV export — those last two
+     * must reflect *every* filtered row, not just whichever page is on
+     * screen, so they build straight off this instead of off `pagamentos()`.
+     */
+    private function pagamentosQuery(): Builder
     {
         return Pagamento::query()
-            ->with(['cliente', 'servico'])
             ->when($this->metodos !== [], fn ($query) => $query->whereIn('metodo', $this->metodos))
             ->when($this->mes !== 'todos', function ($query): void {
                 [$ano, $mesNumero] = explode('-', $this->mes);
@@ -92,16 +122,25 @@ class PagamentosIndex extends Component
                     $inner->whereHas('cliente', fn ($c) => $c->where('nome', 'like', $term))
                         ->orWhereHas('servico', fn ($s) => $s->where('nome', 'like', $term));
                 });
-            })
-            ->orderByDesc('data')
-            ->orderByDesc('id')
-            ->get();
+            });
     }
 
+    /** @return LengthAwarePaginator<int, Pagamento> */
+    #[Computed]
+    public function pagamentos(): LengthAwarePaginator
+    {
+        return $this->pagamentosQuery()
+            ->with(['cliente', 'servico'])
+            ->orderByDesc('data')
+            ->orderByDesc('id')
+            ->paginate(self::POR_PAGINA);
+    }
+
+    /** Sum across every filtered pagamento, not just the current page. */
     #[Computed]
     public function totalFiltrado(): float
     {
-        return (float) $this->pagamentos->sum(fn (Pagamento $p) => (float) $p->valor);
+        return (float) $this->pagamentosQuery()->sum('valor');
     }
 
     /**
@@ -203,10 +242,14 @@ class PagamentosIndex extends Component
         $this->dispatch('toast', title: 'Pagamento apagado', body: 'O registo foi removido do livro de pagamentos.', tone: 'danger');
     }
 
-    /** Streams the pagamentos currently visible under the applied filters as a pt-PT-formatted CSV. */
+    /** Streams every pagamento matching the applied filters (not just the visible page) as a pt-PT-formatted CSV. */
     public function exportarCsv(): StreamedResponse
     {
-        $pagamentos = $this->pagamentos;
+        $pagamentos = $this->pagamentosQuery()
+            ->with(['cliente', 'servico'])
+            ->orderByDesc('data')
+            ->orderByDesc('id')
+            ->get();
 
         return response()->streamDownload(function () use ($pagamentos): void {
             $handle = fopen('php://output', 'w');

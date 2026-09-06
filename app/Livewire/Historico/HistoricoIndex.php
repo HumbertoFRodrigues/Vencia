@@ -5,12 +5,14 @@ namespace App\Livewire\Historico;
 use App\Enums\HistoricoKind;
 use App\Models\Historico;
 use App\Models\Pagamento;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 /**
  * Global, append-only audit log. Type tabs group HistoricoKind's finer enum
@@ -28,6 +30,8 @@ use Livewire\Component;
 #[Title('Histórico')]
 class HistoricoIndex extends Component
 {
+    use WithPagination;
+
     /** @var array<string, list<HistoricoKind>> */
     private const GRUPOS = [
         'pagamentos' => [HistoricoKind::Pagamento],
@@ -38,8 +42,8 @@ class HistoricoIndex extends Component
         ],
     ];
 
-    /** This table only grows (append-only) — cap the feed to a sane recent window rather than paginate everything. */
-    private const LIMITE = 60;
+    /** This table only grows (append-only) — 25 events/page keeps the timeline scannable. */
+    private const POR_PAGINA = 25;
 
     #[Url]
     public string $tab = 'todos';
@@ -50,11 +54,18 @@ class HistoricoIndex extends Component
     public function setTab(string $tab): void
     {
         $this->tab = $tab;
+        $this->resetPage();
     }
 
-    /** @return Collection<int, Historico> */
+    /** Search box (wire:model.live.debounce) — every change resets to page 1. */
+    public function updatedQ(): void
+    {
+        $this->resetPage();
+    }
+
+    /** @return LengthAwarePaginator<int, Historico> */
     #[Computed]
-    public function eventos(): Collection
+    public function eventos(): LengthAwarePaginator
     {
         return Historico::query()
             ->with(['cliente', 'servico'])
@@ -70,8 +81,7 @@ class HistoricoIndex extends Component
             })
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
-            ->limit(self::LIMITE)
-            ->get();
+            ->paginate(self::POR_PAGINA);
     }
 
     /** @return array{todos: int, pagamentos: int, emails: int, alteracoes: int} */

@@ -59,7 +59,7 @@
         :padding="0"
     >
         <x-slot:action>
-            <x-ui.tag tone="accent">{{ $pagamentos->count() }} {{ $pagamentos->count() === 1 ? 'registo' : 'registos' }}</x-ui.tag>
+            <x-ui.tag tone="accent">{{ $pagamentos->total() }} {{ $pagamentos->total() === 1 ? 'registo' : 'registos' }}</x-ui.tag>
         </x-slot:action>
 
         <x-ui.data-table
@@ -106,6 +106,8 @@
                 <x-ui.empty-state icon="search-x" title="Sem pagamentos" description="Nenhum pagamento corresponde aos filtros aplicados." />
             </x-slot:emptyState>
         </x-ui.data-table>
+
+        <x-ui.pagination :paginator="$pagamentos" />
     </x-ui.card>
 
     <livewire:pagamentos.registrar-pagamento-dialog />

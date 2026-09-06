@@ -32,6 +32,8 @@
                     'title' => $h->title,
                     'description' => $h->description,
                 ])" />
+
+                <x-ui.pagination :paginator="$eventos" :flush="false" style="margin-top:16px" />
             @endif
         </x-ui.card>
 

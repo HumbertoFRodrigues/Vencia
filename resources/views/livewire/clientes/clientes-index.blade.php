@@ -83,6 +83,8 @@
                 @endif
             </x-slot:emptyState>
         </x-ui.data-table>
+
+        <x-ui.pagination :paginator="$clientes" />
     </x-ui.card>
 
     <livewire:clientes.cliente-form />
