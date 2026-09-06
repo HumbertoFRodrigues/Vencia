@@ -137,10 +137,12 @@
                 <div style="display:flex;flex-direction:column;gap:2px">
                     <span class="eyebrow">MRR</span>
                     <x-ui.money-value :amount="$totais['mrr']" size="lg" />
+                    <span style="font-size:var(--text-xs);color:var(--text-muted)">receita mensal recorrente</span>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--border-subtle)">
                     <span class="eyebrow">ARR</span>
                     <x-ui.money-value :amount="$totais['arr']" size="lg" />
+                    <span style="font-size:var(--text-xs);color:var(--text-muted)">receita anual recorrente</span>
                 </div>
             </div>
         </x-ui.card>
