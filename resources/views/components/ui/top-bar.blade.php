@@ -6,7 +6,11 @@
 ])
 <header {{ $attributes->class(['top-bar']) }}>
     @if($title)<strong class="top-bar__title">{{ $title }}</strong>@endif
-    @if($search)<x-ui.search-input style="{{ $title ? 'margin-left:8px' : '' }}" />@endif
+    @if($search)
+        <div style="{{ $title ? 'margin-left:8px' : '' }}flex:0 0 auto">
+            <livewire:shared.global-search />
+        </div>
+    @endif
     <div class="top-bar__actions">
         {{ $actions ?? '' }}
         @if($themeToggle)<x-ui.theme-toggle />@endif
