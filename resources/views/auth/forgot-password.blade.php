@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Iniciar sessão · Vencia</title>
+    <title>Repor password · Vencia</title>
 
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
@@ -26,8 +26,8 @@
             </div>
 
             <div>
-                <h1 class="auth-card__title">Iniciar sessão</h1>
-                <p class="auth-card__subtitle">Entre com as suas credenciais de administrador.</p>
+                <h1 class="auth-card__title">Esqueceu-se da password?</h1>
+                <p class="auth-card__subtitle">Indique o seu email e enviamos uma ligação para repor a password.</p>
             </div>
 
             @if (session('status'))
@@ -38,15 +38,14 @@
                 <div class="auth-card__error">{{ $errors->first() }}</div>
             @endif
 
-            <form method="POST" action="{{ route('login.store') }}" class="auth-card__form">
+            <form method="POST" action="{{ route('password.email') }}" class="auth-card__form">
                 @csrf
                 <x-ui.input type="email" name="email" label="Email" value="{{ old('email') }}" required autofocus />
-                <x-ui.input type="password" name="password" label="Palavra-passe" required />
-                <x-ui.button type="submit" variant="primary" :full-width="true">Entrar</x-ui.button>
+                <x-ui.button type="submit" variant="primary" :full-width="true">Enviar ligação de reposição</x-ui.button>
             </form>
 
             <p class="auth-card__footnote">
-                <a href="{{ route('password.request') }}">Esqueceu-se da password?</a>
+                <a href="{{ route('login') }}">Voltar a iniciar sessão</a>
             </p>
         </div>
     </div>

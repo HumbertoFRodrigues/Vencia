@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Iniciar sessão · Vencia</title>
+    <title>Repor password · Vencia</title>
 
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
@@ -26,28 +26,22 @@
             </div>
 
             <div>
-                <h1 class="auth-card__title">Iniciar sessão</h1>
-                <p class="auth-card__subtitle">Entre com as suas credenciais de administrador.</p>
+                <h1 class="auth-card__title">Repor password</h1>
+                <p class="auth-card__subtitle">Defina uma nova password para a sua conta.</p>
             </div>
-
-            @if (session('status'))
-                <x-ui.alert-banner tone="success">{{ session('status') }}</x-ui.alert-banner>
-            @endif
 
             @if ($errors->any())
                 <div class="auth-card__error">{{ $errors->first() }}</div>
             @endif
 
-            <form method="POST" action="{{ route('login.store') }}" class="auth-card__form">
+            <form method="POST" action="{{ route('password.update') }}" class="auth-card__form">
                 @csrf
-                <x-ui.input type="email" name="email" label="Email" value="{{ old('email') }}" required autofocus />
-                <x-ui.input type="password" name="password" label="Palavra-passe" required />
-                <x-ui.button type="submit" variant="primary" :full-width="true">Entrar</x-ui.button>
+                <input type="hidden" name="token" value="{{ $token }}">
+                <x-ui.input type="email" name="email" label="Email" value="{{ old('email', $email) }}" required autofocus />
+                <x-ui.input type="password" name="password" label="Nova password" required />
+                <x-ui.input type="password" name="password_confirmation" label="Confirmar nova password" required />
+                <x-ui.button type="submit" variant="primary" :full-width="true">Repor password</x-ui.button>
             </form>
-
-            <p class="auth-card__footnote">
-                <a href="{{ route('password.request') }}">Esqueceu-se da password?</a>
-            </p>
         </div>
     </div>
 </body>

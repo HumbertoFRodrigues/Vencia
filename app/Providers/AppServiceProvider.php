@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Services\Totais;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +25,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Coarse per-IP backstop for the login/forgot-password/reset-password
+        // forms (see routes/web.php's `throttle:login` middleware). The
+        // precise per-email+IP throttle that actually produces the friendly
+        // pt-PT message lives in LoginController — this is just a wider net
+        // against raw request flooding from a single IP across many emails.
+        RateLimiter::for('login', function (Request $request) {
+            return Limit::perMinute(20)->by($request->ip());
+        });
+
         // Sidebar nav items + "a vencer"/"a receber" badges, shared with every
         // page rendered through layouts.app. Kept as a lightweight composer
         // (not a Livewire component) so the shell never re-renders on inner
