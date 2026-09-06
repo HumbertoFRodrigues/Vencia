@@ -4,6 +4,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Livewire\Clientes\ClienteDetail;
 use App\Livewire\Clientes\ClientesIndex;
 use App\Livewire\Dashboard;
+use App\Livewire\Financas\FinancasIndex;
+use App\Livewire\Pagamentos\PagamentosIndex;
 use App\Livewire\Servicos\ServicoDetail;
 use App\Livewire\Servicos\ServicosIndex;
 use Illuminate\Support\Facades\Route;
@@ -23,4 +25,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/servicos', ServicosIndex::class)->name('servicos.index');
     Route::get('/servicos/{servico}', ServicoDetail::class)->name('servicos.show');
+
+    Route::get('/pagamentos', PagamentosIndex::class)->name('pagamentos.index');
+    Route::get('/financas', FinancasIndex::class)->name('financas.index');
 });

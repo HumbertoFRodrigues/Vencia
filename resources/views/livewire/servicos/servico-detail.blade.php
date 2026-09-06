@@ -28,7 +28,7 @@
             @if($s->periodicidade !== Periodicidade::Unica)
                 <x-ui.button variant="primary" icon="refresh-cw" wire:click="$dispatch('renovar:abrir', { servicoId: {{ $s->id }} })">Renovar</x-ui.button>
             @endif
-            <x-ui.button icon="banknote" disabled title="Disponível em breve.">Registrar pagamento</x-ui.button>
+            <x-ui.button icon="banknote" wire:click="$dispatch('pagamento:abrir')">Registrar pagamento</x-ui.button>
             <x-ui.button icon="pencil" disabled title="Disponível em breve.">Editar</x-ui.button>
             @if(! in_array($s->status, [ServicoStatus::Suspenso, ServicoStatus::Cancelado], true))
                 <x-ui.button variant="danger" icon="pause" wire:click="$dispatch('suspender:abrir', { servicoId: {{ $s->id }} })">Suspender</x-ui.button>
@@ -128,4 +128,5 @@
 
     <livewire:servicos.renovar-dialog />
     <livewire:servicos.suspender-dialog />
+    <livewire:pagamentos.registrar-pagamento-dialog :servico-id="$s->id" />
 </div>
