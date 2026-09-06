@@ -14,6 +14,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[Layout('layouts.app')]
 #[Title('Finanças')]
@@ -104,6 +105,32 @@ class FinancasIndex extends Component
     public function actualizar(): void
     {
         unset($this->totais, $this->porMetodo, $this->entradasPorMes, $this->aReceber);
+    }
+
+    /** Streams the "A receber" table currently shown (vencido/a_vencer serviços) as a pt-PT-formatted CSV. */
+    public function exportarCsv(): StreamedResponse
+    {
+        $servicos = $this->aReceber;
+
+        return response()->streamDownload(function () use ($servicos): void {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['Serviço', 'Cliente', 'Vencimento', 'Período', 'Valor'], ';');
+
+            foreach ($servicos as $s) {
+                fputcsv($handle, [
+                    $s->nome,
+                    $s->cliente?->nome ?? '',
+                    $s->vencimento?->format('d/m/Y') ?? '',
+                    $s->periodicidade->label(),
+                    number_format((float) $s->valor, 0, ',', '.').' MZN',
+                ], ';');
+            }
+
+            fclose($handle);
+        }, 'financas_'.now()->format('Y-m-d_His').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function render()

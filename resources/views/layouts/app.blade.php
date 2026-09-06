@@ -51,5 +51,32 @@
             try { window.localStorage.setItem('sm-theme', next); } catch (e) {}
         });
     </script>
+
+    {{-- Profile dropdown in the top bar: same plain click-toggle pattern as
+         the theme toggle above, no Alpine/Livewire involved. --}}
+    <script>
+        document.addEventListener('click', function (e) {
+            var panel = document.querySelector('[data-profile-panel]');
+            var toggle = document.querySelector('[data-profile-toggle]');
+            if (!panel || !toggle) return;
+
+            if (e.target.closest('[data-profile-toggle]')) {
+                var isHidden = panel.hasAttribute('hidden');
+                if (isHidden) {
+                    panel.removeAttribute('hidden');
+                    toggle.setAttribute('aria-expanded', 'true');
+                } else {
+                    panel.setAttribute('hidden', '');
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+                return;
+            }
+
+            if (!panel.hasAttribute('hidden') && !e.target.closest('[data-profile-panel]')) {
+                panel.setAttribute('hidden', '');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    </script>
 </body>
 </html>

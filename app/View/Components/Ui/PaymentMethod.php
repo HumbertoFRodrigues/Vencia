@@ -49,4 +49,10 @@ class PaymentMethod extends Component
     {
         return view('components.ui.payment-method');
     }
+
+    /** Human-readable label for a método value (e.g. for CSV exports), without instantiating the component. */
+    public static function labelFor(string $method): string
+    {
+        return self::METHODS[$method]['label'] ?? self::METHODS['outro']['label'];
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Livewire\Pagamentos;
 use App\Models\Cliente;
 use App\Models\Pagamento;
 use App\Services\Totais;
+use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
@@ -13,6 +14,7 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Full payments ledger — 4 headline tiles (from Totais::calcular(), same
@@ -143,6 +145,33 @@ class PagamentosIndex extends Component
     public function actualizar(): void
     {
         unset($this->pagamentos, $this->totalFiltrado, $this->totais, $this->mesesDisponiveis);
+    }
+
+    /** Streams the pagamentos currently visible under the applied filters as a pt-PT-formatted CSV. */
+    public function exportarCsv(): StreamedResponse
+    {
+        $pagamentos = $this->pagamentos;
+
+        return response()->streamDownload(function () use ($pagamentos): void {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['Data', 'Cliente', 'Serviço', 'Período', 'Método', 'Valor'], ';');
+
+            foreach ($pagamentos as $p) {
+                fputcsv($handle, [
+                    $p->data->format('d/m/Y'),
+                    $p->cliente?->nome ?? '',
+                    $p->servico?->nome ?? '',
+                    $p->periodo,
+                    PaymentMethod::labelFor($p->metodo->value),
+                    number_format((float) $p->valor, 0, ',', '.').' MZN',
+                ], ';');
+            }
+
+            fclose($handle);
+        }, 'pagamentos_'.now()->format('Y-m-d_His').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function render()

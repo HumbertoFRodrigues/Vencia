@@ -9,7 +9,7 @@
 <div style="display:flex;flex-direction:column;gap:16px">
     <x-ui.page-header :eyebrow="$mesLabel" title="Pagamentos">
         <x-slot:actions>
-            <x-ui.button icon="download" disabled title="Disponível em breve.">Exportar CSV</x-ui.button>
+            <x-ui.button icon="download" wire:click="exportarCsv">Exportar CSV</x-ui.button>
             <x-ui.button variant="primary" icon="plus" wire:click="$dispatch('pagamento:abrir')">Registrar pagamento</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
