@@ -237,4 +237,41 @@ class ServicoStatusService
             ]);
         });
     }
+
+    /**
+     * Cancels a servico: the *other* terminal branch of the status machine
+     * (activo → a_vencer → vencido → suspenso | cancelado). Unlike
+     * suspender(), this is deliberately not reversible from within the app —
+     * there is no "Renovar"/"Reactivar" arrow back to cancelado in the
+     * brief's own diagram, so callers (CancelarDialog) must present it as
+     * permanent. Sets status = Cancelado and logs a Historico entry; never
+     * deletes the servico, its pagamentos or its historicos.
+     *
+     * Deliberately does NOT touch ServicoLembreteConfig. A cancelado servico
+     * already cannot receive an automatic reminder without that: avaliar()
+     * (above) treats suspenso/cancelado as terminal and never recomputes a
+     * status for them, and VerificacaoDiariaService's daily pass excludes
+     * both statuses from its Servico query (`whereNotIn('status', [...])`)
+     * and, redundantly, from enviarLembretesDevidos()'s own guard. So there's
+     * no per-servico reminder override left to clear — clearing one would be
+     * a no-op that only adds a schema-touching illusion of "extra safety".
+     *
+     * @param array{motivo: string} $dados
+     */
+    public function cancelar(Servico $servico, array $dados): void
+    {
+        DB::transaction(function () use ($servico, $dados): void {
+            $servico->status = ServicoStatus::Cancelado;
+            $servico->save();
+
+            Historico::create([
+                'cliente_id' => $servico->cliente_id,
+                'servico_id' => $servico->id,
+                'occurred_at' => Carbon::now(),
+                'title' => 'Serviço cancelado',
+                'description' => trim($dados['motivo']) !== '' ? trim($dados['motivo']) : null,
+                'kind' => HistoricoKind::Cancelado,
+            ]);
+        });
+    }
 }

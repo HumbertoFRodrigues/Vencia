@@ -2,10 +2,13 @@
 
 namespace App\Livewire\Pagamentos;
 
+use App\Enums\HistoricoKind;
+use App\Enums\MetodoPagamento;
 use App\Models\Cliente;
 use App\Models\Historico;
 use App\Models\Pagamento;
 use App\Models\Servico;
+use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -14,19 +17,26 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
- * Nested dialog for recording a plain ledger payment — opened via the
- * browser event 'pagamento:abrir' (no payload), same trigger used from two
- * different pages, each holding its own instance of this component:
+ * Nested dialog for recording — or correcting — a plain ledger payment.
+ * Opened via the browser event 'pagamento:abrir' (no payload for "create",
+ * an int pagamentoId payload for "edit" — same "one component, optional id
+ * switches it into edit mode" idiom ClienteForm/EditarServicoDialog use), on
+ * two different pages, each holding its own instance of this component:
  *
  * - ServicoDetail mounts it with `:servico-id="$s->id"` fixed at mount time,
  *   so the cliente/serviço pickers are hidden and every field is scoped to
- *   that one servico.
+ *   that one servico. It only ever opens this in "create" mode (there is no
+ *   payments table on that page to edit from).
  * - PagamentosIndex mounts it bare (no servicoId), so the pickers are shown
- *   and any cliente/servico combination can be recorded.
+ *   for "create" and any cliente/servico combination can be recorded; its
+ *   ledger table's "Editar" row action opens this in "edit" mode instead.
  *
  * Unlike RenovarDialog, this intentionally never touches Servico.status or
  * Servico.vencimento and never calls ServicoStatusService — it is a plain
- * ledger entry (e.g. a partial/advance/off-cycle payment), not a renewal.
+ * ledger entry (e.g. a partial/advance/off-cycle payment or a correction to
+ * one), not a renewal. Editing deliberately never reassigns cliente/serviço
+ * (same "out of scope" boundary as reassigning a servico to another
+ * cliente elsewhere in this app) — those fields stay hidden in edit mode.
  */
 class RegistrarPagamentoDialog extends Component
 {
@@ -39,10 +49,25 @@ class RegistrarPagamentoDialog extends Component
         ['value' => 'avulso', 'label' => 'Avulso'],
     ];
 
+    /** Field => human label, used both for change-detection and the Histórico description (edit mode only). */
+    private const ROTULOS = [
+        'data' => 'Data',
+        'valor' => 'Valor',
+        'metodo' => 'Método',
+        'periodo' => 'Período',
+    ];
+
     public bool $show = false;
 
-    /** Fixed at mount time when this instance is scoped to one servico. */
+    /** Fixed at mount time when this instance is scoped to one servico (ServicoDetail's usage). */
     public ?int $servicoId = null;
+
+    /** The servicoId this instance was mounted with — restored at the top of every abrir(), so a
+     *  previous edit's temporary override of $servicoId (below) never leaks into the next "create" open. */
+    public ?int $servicoIdFixo = null;
+
+    /** Non-null while editing an existing pagamento instead of creating a new one. */
+    public ?int $pagamentoId = null;
 
     public string $clienteSelecionado = '';
 
@@ -59,16 +84,31 @@ class RegistrarPagamentoDialog extends Component
     public function mount(?int $servicoId = null): void
     {
         $this->servicoId = $servicoId;
+        $this->servicoIdFixo = $servicoId;
     }
 
     #[On('pagamento:abrir')]
-    public function abrir(): void
+    public function abrir(?int $pagamentoId = null): void
     {
         $this->resetValidation();
+        $this->pagamentoId = $pagamentoId;
+        $this->servicoId = $this->servicoIdFixo;
         $this->data = Carbon::today()->toDateString();
         $this->periodo = '1 mês';
 
-        if ($this->servicoId !== null) {
+        if ($pagamentoId !== null) {
+            $pagamento = Pagamento::findOrFail($pagamentoId);
+            // Fixes the servico the same way ServicoDetail's mount-time scoping
+            // does, which is exactly what edit mode needs: cliente/serviço
+            // pickers hidden, every other field pre-filled from the record.
+            $this->servicoId = $pagamento->servico_id;
+            $this->clienteSelecionado = (string) $pagamento->cliente_id;
+            $this->servicoSelecionado = (string) $pagamento->servico_id;
+            $this->valor = (string) $pagamento->valor;
+            $this->data = $pagamento->data->toDateString();
+            $this->periodo = $pagamento->periodo;
+            $this->metodo = $pagamento->metodo->value;
+        } elseif ($this->servicoId !== null) {
             $servico = Servico::find($this->servicoId);
             $this->valor = $servico ? (string) $servico->valor : '';
             $this->metodo = $servico?->metodo_habitual?->value ?? 'mpesa';
@@ -113,11 +153,18 @@ class RegistrarPagamentoDialog extends Component
         }
     }
 
-    /** True when the servico is fixed by the caller (ServicoDetail) and the pickers must stay hidden. */
+    /** True when the servico is fixed (mount-time scoping or edit mode) and the pickers must stay hidden. */
     #[Computed]
     public function bloqueado(): bool
     {
         return $this->servicoId !== null;
+    }
+
+    /** True while editing an existing pagamento rather than creating a new one — drives the dialog's copy. */
+    #[Computed]
+    public function editando(): bool
+    {
+        return $this->pagamentoId !== null;
     }
 
     #[Computed]
@@ -187,6 +234,18 @@ class RegistrarPagamentoDialog extends Component
             return;
         }
 
+        if ($this->pagamentoId !== null) {
+            $this->guardarEdicao($servico, $data);
+        } else {
+            $this->criar($servico, $data);
+        }
+
+        $this->show = false;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function criar(Servico $servico, array $data): void
+    {
         DB::transaction(function () use ($servico, $data): void {
             Pagamento::create([
                 'data' => $data['data'],
@@ -214,8 +273,101 @@ class RegistrarPagamentoDialog extends Component
         // ServicoDetail's and PagamentosIndex's own listeners for it pick up
         // the new ledger row without a dedicated event just for this dialog.
         $this->dispatch('servico-actualizado', servicoId: $servico->id);
+    }
 
-        $this->show = false;
+    /**
+     * Corrects an existing pagamento in place: data/valor/método/período only
+     * — cliente_id/servico_id are never touched (see class docblock). Logs a
+     * Historico "Campo: antigo → novo" line per field that actually changed,
+     * same pattern as EditarServicoDialog::descreverAlteracoes() — never one
+     * entry per field, only the ones that moved. Deliberately does not call
+     * ServicoStatusService or touch Servico.vencimento/status: if this
+     * payment happened to originate from a Renovar action, that already
+     * advanced vencimento independently at the time, and correcting the
+     * ledger row afterwards must not retroactively re-run that.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function guardarEdicao(Servico $servico, array $data): void
+    {
+        $pagamento = Pagamento::findOrFail($this->pagamentoId);
+
+        $novosValores = [
+            'data' => $data['data'],
+            'valor' => $data['valor'],
+            'metodo' => $data['metodo'],
+            'periodo' => $data['periodo'],
+        ];
+
+        DB::transaction(function () use ($pagamento, $novosValores, $servico): void {
+            $alteracoes = $this->descreverAlteracoes($pagamento, $novosValores);
+
+            $pagamento->update($novosValores);
+
+            if ($alteracoes !== []) {
+                Historico::create([
+                    'cliente_id' => $servico->cliente_id,
+                    'servico_id' => $servico->id,
+                    'occurred_at' => Carbon::now(),
+                    'title' => 'Pagamento corrigido',
+                    'description' => implode('; ', $alteracoes),
+                    'kind' => HistoricoKind::Pagamento,
+                ]);
+            }
+        });
+
+        $this->dispatch('toast', title: 'Pagamento actualizado', body: $servico->nome, tone: 'success');
+        $this->dispatch('servico-actualizado', servicoId: $servico->id);
+    }
+
+    /**
+     * @param  array<string, mixed>  $novosValores
+     * @return list<string>
+     */
+    private function descreverAlteracoes(Pagamento $pagamento, array $novosValores): array
+    {
+        $alteracoes = [];
+
+        foreach (self::ROTULOS as $campo => $rotulo) {
+            $antigo = $this->valorExibicao($campo, $pagamento->getAttribute($campo));
+            $novo = $this->valorExibicao($campo, $novosValores[$campo] ?? null);
+
+            if ($antigo === $novo) {
+                continue;
+            }
+
+            $alteracoes[] = sprintf('%s: %s → %s', $rotulo, $antigo, $novo);
+        }
+
+        return $alteracoes;
+    }
+
+    private function valorExibicao(string $campo, mixed $valor): string
+    {
+        if ($campo === 'metodo') {
+            $metodoValue = $valor instanceof MetodoPagamento ? $valor->value : (string) $valor;
+
+            return PaymentMethod::labelFor($metodoValue);
+        }
+
+        return match ($campo) {
+            'valor' => number_format((float) $valor, 2, ',', '.').' MZN',
+            'data' => $this->paraData($valor)?->format('d/m/Y') ?? '—',
+            default => (string) $valor,
+        };
+    }
+
+    private function paraData(mixed $valor): ?Carbon
+    {
+        if ($valor instanceof Carbon) {
+            return $valor;
+        }
+
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        return Carbon::parse($valor);
     }
 
     public function render()

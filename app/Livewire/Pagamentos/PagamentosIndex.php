@@ -2,12 +2,15 @@
 
 namespace App\Livewire\Pagamentos;
 
+use App\Enums\HistoricoKind;
 use App\Models\Cliente;
+use App\Models\Historico;
 use App\Models\Pagamento;
 use App\Services\Totais;
 use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -42,6 +45,9 @@ class PagamentosIndex extends Component
 
     #[Url]
     public string $q = '';
+
+    /** Non-null while a row's "Apagar" action is showing its inline "tens a certeza?" confirm step. */
+    public ?int $confirmandoRemocaoId = null;
 
     public function alternarMetodo(string $metodo): void
     {
@@ -145,6 +151,56 @@ class PagamentosIndex extends Component
     public function actualizar(): void
     {
         unset($this->pagamentos, $this->totalFiltrado, $this->totais, $this->mesesDisponiveis);
+    }
+
+    /** Shows the inline "tens a certeza?" confirm step for one row instead of deleting on a single click. */
+    public function pedirConfirmacaoRemocao(int $id): void
+    {
+        $this->confirmandoRemocaoId = $id;
+    }
+
+    public function cancelarRemocao(): void
+    {
+        $this->confirmandoRemocaoId = null;
+    }
+
+    /**
+     * Hard-deletes a pagamento (it has no deleted_at column — this is a
+     * plain correctable ledger row, not the append-only Historico) after the
+     * inline confirm step above. Logs a Historico entry recording what was
+     * deleted — amount/date/método, since the row itself won't exist any
+     * more to look those up from — *before* deleting, in the same
+     * transaction. Deliberately never touches the associated Servico:
+     * vencimento/status are governed by ServicoStatusService from whichever
+     * action (e.g. Renovar) produced this payment, not by the ledger, and
+     * removing the ledger row later must not retroactively undo that.
+     */
+    public function apagar(int $id): void
+    {
+        $pagamento = Pagamento::findOrFail($id);
+
+        DB::transaction(function () use ($pagamento): void {
+            Historico::create([
+                'cliente_id' => $pagamento->cliente_id,
+                'servico_id' => $pagamento->servico_id,
+                'occurred_at' => Carbon::now(),
+                'title' => 'Pagamento apagado',
+                'description' => sprintf(
+                    '%s — %s — %s',
+                    number_format((float) $pagamento->valor, 2, ',', '.').' MZN',
+                    $pagamento->data->format('d/m/Y'),
+                    PaymentMethod::labelFor($pagamento->metodo->value),
+                ),
+                'kind' => HistoricoKind::Pagamento,
+            ]);
+
+            $pagamento->delete();
+        });
+
+        $this->confirmandoRemocaoId = null;
+        unset($this->pagamentos, $this->totalFiltrado, $this->totais, $this->mesesDisponiveis);
+
+        $this->dispatch('toast', title: 'Pagamento apagado', body: 'O registo foi removido do livro de pagamentos.', tone: 'danger');
     }
 
     /** Streams the pagamentos currently visible under the applied filters as a pt-PT-formatted CSV. */

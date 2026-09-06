@@ -25,13 +25,35 @@
             <span>{{ $c->email }}</span>
         </x-slot:meta>
         <x-slot:actions>
-            @if($s->periodicidade !== Periodicidade::Unica)
+            @if($s->periodicidade !== Periodicidade::Unica && $s->status !== ServicoStatus::Cancelado)
                 <x-ui.button variant="primary" icon="refresh-cw" wire:click="$dispatch('renovar:abrir', { servicoId: {{ $s->id }} })">Renovar</x-ui.button>
             @endif
-            <x-ui.button icon="banknote" wire:click="$dispatch('pagamento:abrir')">Registrar pagamento</x-ui.button>
+            @if($s->status !== ServicoStatus::Cancelado)
+                <x-ui.button icon="banknote" wire:click="$dispatch('pagamento:abrir')">Registrar pagamento</x-ui.button>
+            @endif
             <x-ui.button icon="pencil" wire:click="$dispatch('servico-editar:abrir', { servicoId: {{ $s->id }} })">Editar</x-ui.button>
             @if(! in_array($s->status, [ServicoStatus::Suspenso, ServicoStatus::Cancelado], true))
                 <x-ui.button variant="danger" icon="pause" wire:click="$dispatch('suspender:abrir', { servicoId: {{ $s->id }} })">Suspender</x-ui.button>
+            @endif
+            {{--
+                Cancelar is offered from suspenso too (not just from the
+                active-side states): the brief's own status diagram is
+                activo → a_vencer → vencido → suspenso | cancelado, i.e.
+                cancelado is reachable independently of suspenso, so an admin
+                who has given up on ever reactivating a suspended servico
+                needs a way to close it out for good. Only excluded once the
+                servico is already cancelado.
+
+                Visually distinguished from Suspender on purpose, so the two
+                can't be misclicked for each other: Suspender is a solid
+                danger button (a routine, reversible-by-Renovar action this
+                app already performs often); Cancelar is a ghost button with
+                a different icon and a longer, more explicit label — quieter
+                by default, but still red-on-hover to signal it's not a
+                neutral action, matching how much rarer and more final it is.
+            --}}
+            @if($s->status !== ServicoStatus::Cancelado)
+                <x-ui.button variant="ghost" icon="circle-slash" class="action-danger-quiet" wire:click="$dispatch('servico-cancelar:abrir', { servicoId: {{ $s->id }} })">Cancelar serviço</x-ui.button>
             @endif
         </x-slot:actions>
     </x-ui.page-header>
@@ -39,6 +61,10 @@
     @if($s->status === ServicoStatus::Vencido)
         <x-ui.alert-banner tone="danger" title="Este acesso terminou">
             Terminou em {{ $s->vencimento?->format('d/m/Y') ?? '—' }}. É necessário renovar ou suspender.
+        </x-ui.alert-banner>
+    @elseif($s->status === ServicoStatus::Cancelado)
+        <x-ui.alert-banner tone="danger" title="Serviço cancelado">
+            Este serviço foi cancelado e não pode ser reactivado nesta aplicação.
         </x-ui.alert-banner>
     @elseif($s->status === ServicoStatus::Suspenso)
         @php($susp = $this->ultimaSuspensao)
@@ -128,6 +154,7 @@
 
     <livewire:servicos.renovar-dialog />
     <livewire:servicos.suspender-dialog />
+    <livewire:servicos.cancelar-dialog />
     <livewire:servicos.editar-servico-dialog />
     <livewire:pagamentos.registrar-pagamento-dialog :servico-id="$s->id" />
 </div>

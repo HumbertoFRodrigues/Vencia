@@ -70,6 +70,7 @@
                 ['key' => 'periodo', 'header' => 'Período'],
                 ['key' => 'metodo', 'header' => 'Método'],
                 ['key' => 'valor', 'header' => 'Valor', 'align' => 'right'],
+                ['key' => 'acoes', 'header' => '', 'align' => 'right'],
             ]"
             :empty="$pagamentos->isEmpty()"
         >
@@ -86,6 +87,18 @@
                     <td><x-ui.tag tone="outline">{{ $p->periodo }}</x-ui.tag></td>
                     <td><x-ui.payment-method :method="$p->metodo" size="22" /></td>
                     <td class="u-text-right"><x-ui.money-value :amount="$p->valor" tone="in" size="sm" /></td>
+                    <td class="u-text-right">
+                        <span style="display:inline-flex;align-items:center;gap:6px">
+                            @if($confirmandoRemocaoId === $p->id)
+                                <span style="font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap">Apagar este pagamento?</span>
+                                <x-ui.icon-button icon="check" label="Confirmar remoção" size="sm" class="action-danger-quiet" wire:click="apagar({{ $p->id }})" />
+                                <x-ui.icon-button icon="x" label="Cancelar remoção" size="sm" wire:click="cancelarRemocao" />
+                            @else
+                                <x-ui.icon-button icon="pencil" label="Editar" size="sm" wire:click="$dispatch('pagamento:abrir', { pagamentoId: {{ $p->id }} })" />
+                                <x-ui.icon-button icon="trash-2" label="Apagar" size="sm" wire:click="pedirConfirmacaoRemocao({{ $p->id }})" />
+                            @endif
+                        </span>
+                    </td>
                 </tr>
             @endforeach
 
