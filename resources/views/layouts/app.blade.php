@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+{{-- data-no-progress-bar switches off Livewire's own default top progress
+     bar for wire:navigate transitions — the branded #nav-loading pill below
+     is the one loading indicator we want, not two competing signals. --}}
+<html lang="pt-PT" data-no-progress-bar>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -39,6 +42,15 @@
 
     @livewireScripts
 
+    {{-- Branded wire:navigate loading indicator (replaces Livewire's default
+         progress bar, disabled above via data-no-progress-bar). A small pill
+         with the pulsing logo mark — not a blocking overlay — shown only
+         while a page-to-page navigation request is in flight. --}}
+    <div id="nav-loading" class="nav-loading" aria-hidden="true">
+        <img src="{{ asset('assets/logo-mark.png') }}" alt="" class="nav-loading__logo" />
+        <span class="nav-loading__label">A carregar…</span>
+    </div>
+
     <livewire:shared.toast-host />
 
     <script>
@@ -77,6 +89,42 @@
                 toggle.setAttribute('aria-expanded', 'false');
             }
         });
+    </script>
+
+    {{-- Branded wire:navigate loading indicator: no Alpine, just the two
+         events Livewire fires around every wire:navigate transition. Shown
+         after a short delay so a fast local navigation barely flashes it —
+         only slower transitions (or the artificially-throttled ones we test
+         with) actually reveal the pill. --}}
+    <script>
+        (function () {
+            var el = document.getElementById('nav-loading');
+            if (!el) return;
+
+            var showTimer = null;
+            var visible = false;
+
+            function show() {
+                showTimer = window.setTimeout(function () {
+                    el.classList.add('nav-loading--visible');
+                    visible = true;
+                }, 150);
+            }
+
+            function hide() {
+                if (showTimer) {
+                    window.clearTimeout(showTimer);
+                    showTimer = null;
+                }
+                if (visible) {
+                    el.classList.remove('nav-loading--visible');
+                    visible = false;
+                }
+            }
+
+            document.addEventListener('livewire:navigate', show);
+            document.addEventListener('livewire:navigated', hide);
+        })();
     </script>
 </body>
 </html>

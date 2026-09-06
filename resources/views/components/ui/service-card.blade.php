@@ -34,7 +34,7 @@
     <div class="service-card__foot">
         <x-ui.status-badge :status="$status" :label="$statusLabel" size="sm" />
         @if($href)
-            <a href="{{ $href }}" class="btn btn--sm btn--ghost">
+            <a href="{{ $href }}" wire:navigate class="btn btn--sm btn--ghost">
                 {{ $action }}<x-ui.icon name="arrow-right" size="15" class="btn__icon" />
             </a>
         @else

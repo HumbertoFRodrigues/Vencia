@@ -28,7 +28,7 @@
             @if($servicosHref)
                 {{-- Serviços (Fase 4) not built yet: links straight to the future
                      "novo serviço" flow pre-filled with this client via ?cliente=. --}}
-                <a href="{{ $servicosHref }}" class="btn btn--primary btn--md">
+                <a href="{{ $servicosHref }}" wire:navigate class="btn btn--primary btn--md">
                     <x-ui.icon name="plus" size="15" class="btn__icon" />Novo serviço
                 </a>
             @else

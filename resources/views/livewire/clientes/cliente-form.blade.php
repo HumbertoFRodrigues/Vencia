@@ -29,7 +29,10 @@
 
             <x-slot:footer>
                 <x-ui.button wire:click="fechar">Cancelar</x-ui.button>
-                <x-ui.button variant="primary" wire:click="guardar">Guardar</x-ui.button>
+                <x-ui.button variant="primary" wire:click="guardar" wire:loading.attr="disabled" wire:target="guardar">
+                    <span wire:loading.remove wire:target="guardar">Guardar</span>
+                    <span wire:loading wire:target="guardar">A processar…</span>
+                </x-ui.button>
             </x-slot:footer>
         </x-ui.dialog>
     @endif

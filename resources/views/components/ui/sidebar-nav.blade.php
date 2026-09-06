@@ -15,7 +15,7 @@
                 $isActive = ($it['id'] ?? null) === $active;
                 $href = $it['href'] ?? '#';
             @endphp
-            <a href="{{ $href }}" class="sidebar-nav__item {{ $isActive ? 'sidebar-nav__item--active' : '' }}">
+            <a href="{{ $href }}" wire:navigate class="sidebar-nav__item {{ $isActive ? 'sidebar-nav__item--active' : '' }}">
                 <x-ui.icon :name="$it['icon']" size="16" :color="$isActive ? 'var(--accent)' : 'var(--text-muted)'" />
                 <span class="sidebar-nav__label">{{ $it['label'] }}</span>
                 @if(!empty($it['badge']))<span class="sidebar-nav__badge">{{ $it['badge'] }}</span>@endif

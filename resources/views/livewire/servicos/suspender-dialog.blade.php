@@ -24,7 +24,10 @@
 
             <x-slot:footer>
                 <x-ui.button wire:click="fechar">Cancelar</x-ui.button>
-                <x-ui.button variant="danger" icon="pause" wire:click="confirmar">Suspender acesso</x-ui.button>
+                <x-ui.button variant="danger" icon="pause" wire:click="confirmar" wire:loading.attr="disabled" wire:target="confirmar">
+                    <span wire:loading.remove wire:target="confirmar">Suspender acesso</span>
+                    <span wire:loading wire:target="confirmar">A processar…</span>
+                </x-ui.button>
             </x-slot:footer>
         </x-ui.dialog>
     @endif

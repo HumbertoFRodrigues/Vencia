@@ -35,7 +35,7 @@
                                 default => ['--status-active-bg', '--status-active-fg'],
                             };
                         @endphp
-                        <a href="{{ route('servicos.show', $s) }}" style="display:flex;align-items:center;gap:5px;text-decoration:none;background:var({{ $bgVar }});color:var({{ $fgVar }});border-radius:var(--radius-xs);padding:3px 5px;font-size:11px;overflow:hidden">
+                        <a href="{{ route('servicos.show', $s) }}" wire:navigate style="display:flex;align-items:center;gap:5px;text-decoration:none;background:var({{ $bgVar }});color:var({{ $fgVar }});border-radius:var(--radius-xs);padding:3px 5px;font-size:11px;overflow:hidden">
                             <x-ui.service-logo :name="$s->nome" :category="$s->categoria" size="14" />
                             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ explode(' ', $s->cliente?->nome ?? '—')[0] }} — {{ $s->nome }}</span>
                         </a>

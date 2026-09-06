@@ -8,7 +8,7 @@
 <div {{ $attributes->class(['page-header']) }}>
     <div class="page-header__main">
         @if($back)
-            <a href="{{ $backHref }}" class="page-header__back">
+            <a href="{{ $backHref }}" wire:navigate class="page-header__back">
                 <x-ui.icon name="arrow-left" size="14" />{{ $back }}
             </a>
         @elseif($eyebrow)

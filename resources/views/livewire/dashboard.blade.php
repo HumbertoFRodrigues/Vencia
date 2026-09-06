@@ -71,7 +71,7 @@
                     $href = Route::has('servicos.show') ? route('servicos.show', $s) : null;
                     $dias = $s->dias;
                 @endphp
-                <tr @if($href) data-clickable onclick="window.location='{{ $href }}'" @endif>
+                <tr @if($href) data-clickable onclick="Livewire.navigate('{{ $href }}')" @endif>
                     <td>
                         <span style="display:flex;align-items:center;gap:9px">
                             <x-ui.service-logo :name="$s->nome" :category="$s->categoria" size="26" />
@@ -122,7 +122,7 @@
                                 ? $s->nome.' está vencido'.($dias !== null ? ' há '.abs($dias).' '.(abs($dias) === 1 ? 'dia' : 'dias') : '')
                                 : $s->nome.' vence em '.$dias.' '.($dias === 1 ? 'dia' : 'dias');
                         @endphp
-                        <a href="{{ $href }}" style="display:flex;align-items:center;gap:9px;padding:10px 16px;text-decoration:none;{{ $i ? 'border-top:1px solid var(--border-subtle);' : '' }}font-size:var(--text-sm);color:var(--text-body)">
+                        <a href="{{ $href }}" wire:navigate style="display:flex;align-items:center;gap:9px;padding:10px 16px;text-decoration:none;{{ $i ? 'border-top:1px solid var(--border-subtle);' : '' }}font-size:var(--text-sm);color:var(--text-body)">
                             <x-ui.icon :name="$vencido ? 'circle-alert' : 'calendar-clock'" size="15" :color="$vencido ? 'var(--status-overdue-fg)' : 'var(--status-due-fg)'" />
                             <span style="flex:1">{{ $texto }}</span>
                             <x-ui.icon name="chevron-right" size="14" color="var(--text-faint)" />

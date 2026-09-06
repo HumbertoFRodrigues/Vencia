@@ -94,7 +94,10 @@
 
             <x-slot:footer>
                 <x-ui.button wire:click="fechar">Cancelar</x-ui.button>
-                <x-ui.button variant="primary" icon="check" wire:click="guardar">Criar assinatura</x-ui.button>
+                <x-ui.button variant="primary" icon="check" wire:click="guardar" wire:loading.attr="disabled" wire:target="guardar">
+                    <span wire:loading.remove wire:target="guardar">Criar assinatura</span>
+                    <span wire:loading wire:target="guardar">A processar…</span>
+                </x-ui.button>
             </x-slot:footer>
         </x-ui.dialog>
     @endif

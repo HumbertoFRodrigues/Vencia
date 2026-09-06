@@ -83,7 +83,7 @@
             :empty="$aReceber->isEmpty()"
         >
             @foreach($aReceber as $s)
-                <tr data-clickable onclick="window.location='{{ route('servicos.show', $s) }}'">
+                <tr data-clickable onclick="Livewire.navigate('{{ route('servicos.show', $s) }}')">
                     <td>
                         <span style="display:flex;align-items:center;gap:8px">
                             <x-ui.service-logo :name="$s->nome" :category="$s->categoria" size="24" />

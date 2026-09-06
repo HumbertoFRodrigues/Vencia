@@ -45,7 +45,7 @@
                     $palavras = array_values(array_filter(explode(' ', trim($cliente->nome))));
                     $iniciais = mb_strtoupper(implode('', array_map(fn ($w) => mb_substr($w, 0, 1), array_slice($palavras, 0, 2))));
                 @endphp
-                <tr data-clickable onclick="window.location='{{ route('clientes.show', $cliente) }}'">
+                <tr data-clickable onclick="Livewire.navigate('{{ route('clientes.show', $cliente) }}')">
                     <td>
                         <span style="display:flex;align-items:center;gap:10px">
                             <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--surface-sunken);color:var(--text-body);font-size:var(--text-xs);font-weight:var(--weight-semibold);flex-shrink:0">{{ $iniciais }}</span>
