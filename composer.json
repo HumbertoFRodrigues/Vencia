@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "comusanas/vencia",
+    "name": "vencia/vencia",
     "type": "project",
-    "description": "Vencia — gestao de clientes, servicos recorrentes, pagamentos e vencimentos para a Comusanas.",
-    "keywords": ["laravel", "livewire", "vencia", "comusanas"],
+    "description": "Vencia — gestao de clientes, servicos recorrentes, pagamentos e vencimentos.",
+    "keywords": ["laravel", "livewire", "vencia"],
     "license": "MIT",
     "require": {
         "php": "^8.3",

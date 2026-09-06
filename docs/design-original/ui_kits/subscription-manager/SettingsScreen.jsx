@@ -74,8 +74,8 @@ function SettingsScreen() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 12, alignItems: "start" }}>
           <Card title="Empresa">
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Input label="Nome da empresa" defaultValue="Comusanas" />
-              <Input label="Email remetente" icon="mail" defaultValue="cobrancas@comusanas.org.mz" />
+              <Input label="Nome da empresa" defaultValue="Exemplo Serviços, Lda" />
+              <Input label="Email remetente" icon="mail" defaultValue="cobrancas@example.com" />
               <Select label="Moeda padrão" options={["MZN — Metical", "USD — Dólar", "ZAR — Rand"]} />
               <Select label="Fuso horário" options={["Africa/Maputo (CAT)", "UTC"]} />
               <LogoSlot size={56} label="Logo da empresa" hint="Usado nos emails enviados ao cliente" />
@@ -83,9 +83,9 @@ function SettingsScreen() {
           </Card>
           <Card title="Envio de email (SMTP)">
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Input label="Servidor" defaultValue="smtp.comusanas.org.mz" />
+              <Input label="Servidor" defaultValue="smtp.example.com" />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}><Input label="Porta" defaultValue="587" /><Select label="Segurança" options={["STARTTLS", "SSL", "Nenhuma"]} /></div>
-              <Input label="Utilizador" defaultValue="cobrancas@comusanas.org.mz" />
+              <Input label="Utilizador" defaultValue="cobrancas@example.com" />
               <Button variant="secondary" icon="send">Enviar email de teste</Button>
             </div>
           </Card>

@@ -69,8 +69,8 @@ class DatabaseSeeder extends Seeder
     {
         Configuracao::query()->updateOrCreate(['chave' => 'empresa'], [
             'valor' => [
-                'nome' => 'Comusanas',
-                'email' => 'cobrancas@comusanas.org.mz',
+                'nome' => 'Exemplo Serviços, Lda',
+                'email' => 'cobrancas@example.com',
                 'moeda' => 'MZN',
                 'fuso_horario' => 'Africa/Maputo',
                 'logo_path' => null,

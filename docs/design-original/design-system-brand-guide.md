@@ -112,7 +112,7 @@ Two omissions worth confirming: no Tooltip (titles carry the job today) and no P
 ### Open questions / substitutions to confirm
 
 1. **Fonts** — Geist + Geist Mono are loaded from Google Fonts because no binaries were supplied. Send real files (or name the licensed family) and `tokens/fonts.css` is the only file that changes.
-2. **Colour** — Cobalt is an authored accent, not a brand colour. If Comusanas has a brand palette, `tokens/colors.css` semantic aliases absorb it without touching components.
+2. **Colour** — Cobalt is an authored accent, not a brand colour. If the business has a brand palette, `tokens/colors.css` semantic aliases absorb it without touching components.
 3. **Logo** — needed as SVG; the SM monogram is a placeholder.
 4. **Service logo library** — `ServiceLogo` already resolves famous services by name (`LOGO_LIBRARY` in `components/data/ServiceLogo.jsx`: chatgpt.svg, claude.svg, canva.svg, google-workspace.svg, microsoft-365.svg, github.svg, adobe.svg, dropbox.svg, zoom.svg, notion.svg, figma.svg, wordpress.svg, cpanel.svg). **Drop those files into `assets/logos/` and every screen picks them up with no code change**; until then the monogram tile is shown. I did not draw them — third-party marks must come from the vendors' own brand assets.
 5. **Payment logos** — M-Pesa and e-Mola use the two files you supplied (`assets/logos/mpesa.png`, `emola.png`). Bank transfer and cash have no supplied mark; send a bank logo (or per-bank logos: BCI, BIM/Millennium, Standard Bank, Absa) and I will wire them into `PAYMENT_METHODS`.

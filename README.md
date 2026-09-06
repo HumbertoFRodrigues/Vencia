@@ -4,7 +4,7 @@
 
 **Gestão de clientes, serviços recorrentes, pagamentos e vencimentos — para quem vende assinaturas e não quer perder o fio à meada.**
 
-Construído para a **Comusanas** (Moçambique) · Laravel 13 + Livewire 4 · MZN · Português europeu
+Projecto pessoal, Moçambique · Laravel 13 + Livewire 4 · MZN · Português europeu
 
 </div>
 
