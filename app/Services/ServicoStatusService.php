@@ -70,9 +70,6 @@ class ServicoStatusService
      */
     public function proximoIntervaloAtivo(Servico $servico, ?int $antesDeDias = null): ?int
     {
-        $config = $servico->lembreteConfig;
-        $globais = Configuracao::obter('lembretes', []);
-
         $maior = null;
 
         foreach (IntervaloLembrete::ordenadas() as $intervalo) {
@@ -86,14 +83,29 @@ class ServicoStatusService
                 continue;
             }
 
-            $ligado = $config?->{$intervalo->value} ?? (bool) ($globais[$intervalo->value] ?? false);
-
-            if ($ligado && ($maior === null || $offset > $maior)) {
+            if ($this->intervaloActivo($servico, $intervalo) && ($maior === null || $offset > $maior)) {
                 $maior = $offset;
             }
         }
 
         return $maior;
+    }
+
+    /**
+     * Whether a given reminder interval is effectively enabled for this
+     * servico: per-servico override (servico_lembrete_config) if it's set,
+     * otherwise the global default from Configuracao's "lembretes" key. This
+     * is the single place the two-tier reminder config is resolved — reused
+     * by proximoIntervaloAtivo() above (for the a_vencer threshold) and by
+     * VerificacaoDiariaService (for deciding whether to actually send a
+     * given interval's reminder today).
+     */
+    public function intervaloActivo(Servico $servico, IntervaloLembrete $intervalo): bool
+    {
+        $config = $servico->lembreteConfig;
+        $globais = Configuracao::obter('lembretes', []);
+
+        return $config?->{$intervalo->value} ?? (bool) ($globais[$intervalo->value] ?? false);
     }
 
     /**

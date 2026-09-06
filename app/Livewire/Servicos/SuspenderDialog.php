@@ -2,10 +2,15 @@
 
 namespace App\Livewire\Servicos;
 
+use App\Enums\HistoricoKind;
 use App\Enums\SuspensaoMotivo;
+use App\Mail\ServicoTerminadoMail;
+use App\Models\Historico;
 use App\Models\Servico;
 use App\Services\ServicoStatusService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -83,6 +88,10 @@ class SuspenderDialog extends Component
             'enviou_email' => $dados['enviarEmail'],
         ]);
 
+        if ($dados['enviarEmail']) {
+            $this->enviarEmailTerminado($servico);
+        }
+
         $this->dispatch(
             'toast',
             title: 'Serviço suspenso',
@@ -92,6 +101,42 @@ class SuspenderDialog extends Component
         $this->dispatch('servico-actualizado', servicoId: $servico->id);
 
         $this->show = false;
+    }
+
+    /**
+     * Sends the "Serviço terminado" email synchronously — this is a direct
+     * admin action taken right now, not part of the daily job, so there's
+     * no need for the transactional dedup machinery VerificacaoDiariaService
+     * uses for its own reminders. A mail-send failure is logged and does not
+     * block the suspension itself, which already happened.
+     */
+    private function enviarEmailTerminado(Servico $servico): void
+    {
+        $suspensao = $servico->suspensoes()->latest('id')->first();
+
+        if (! $suspensao || ! $servico->cliente?->email) {
+            return;
+        }
+
+        try {
+            Mail::to($servico->cliente->email)->send(new ServicoTerminadoMail($servico, $suspensao));
+
+            Historico::create([
+                'cliente_id' => $servico->cliente_id,
+                'servico_id' => $servico->id,
+                'occurred_at' => Carbon::now(),
+                'title' => 'Email de serviço terminado enviado',
+                'description' => null,
+                'kind' => HistoricoKind::Email,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error(sprintf(
+                'Falha ao enviar email de serviço terminado do serviço #%d (%s): %s',
+                $servico->id,
+                $servico->nome,
+                $e->getMessage(),
+            ));
+        }
     }
 
     public function render()
