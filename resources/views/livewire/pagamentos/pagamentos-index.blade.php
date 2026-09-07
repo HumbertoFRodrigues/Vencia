@@ -94,6 +94,9 @@
                                 <x-ui.icon-button icon="check" label="Confirmar remoção" size="sm" class="action-danger-quiet" wire:click="apagar({{ $p->id }})" />
                                 <x-ui.icon-button icon="x" label="Cancelar remoção" size="sm" wire:click="cancelarRemocao" />
                             @else
+                                <a href="{{ route('pagamentos.recibo', $p) }}" aria-label="Gerar recibo" title="Gerar recibo" class="icon-btn icon-btn--ghost icon-btn--sm">
+                                    <x-ui.icon name="receipt" size="15" />
+                                </a>
                                 <x-ui.icon-button icon="pencil" label="Editar" size="sm" wire:click="$dispatch('pagamento:abrir', { pagamentoId: {{ $p->id }} })" />
                                 <x-ui.icon-button icon="trash-2" label="Apagar" size="sm" wire:click="pedirConfirmacaoRemocao({{ $p->id }})" />
                             @endif

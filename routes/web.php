@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\ReciboController;
 use App\Livewire\Clientes\ClienteDetail;
 use App\Livewire\Clientes\ClientesIndex;
 use App\Livewire\Configuracoes\ConfiguracoesIndex;
@@ -38,6 +39,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/servicos/{servico}', ServicoDetail::class)->name('servicos.show');
 
     Route::get('/pagamentos', PagamentosIndex::class)->name('pagamentos.index');
+    Route::get('/pagamentos/{pagamento}/recibo', [ReciboController::class, 'pagamento'])->name('pagamentos.recibo');
     Route::get('/financas', FinancasIndex::class)->name('financas.index');
 
     Route::get('/vencimentos', VencimentosIndex::class)->name('vencimentos.index');
