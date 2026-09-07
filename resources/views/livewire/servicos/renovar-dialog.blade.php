@@ -12,13 +12,13 @@
             </x-slot:close>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                <x-ui.input label="Valor pago" wire:model="valorPago" suffix="MZN" :error="$errors->first('valorPago')" />
+                <x-ui.input label="Valor pago" wire:model="valorPago" :suffix="\App\Models\Configuracao::moeda()" :error="$errors->first('valorPago')" />
                 <x-ui.input label="Data do pagamento" type="date" wire:model="dataPagamento" :error="$errors->first('dataPagamento')" />
                 <x-ui.select label="Período" wire:model.live="periodoPagamento" :options="$this->periodoOptions" />
                 <div style="display:flex;flex-direction:column;gap:6px">
                     <span class="field__label">Método</span>
                     <div class="pill-picker">
-                        @foreach(['mpesa', 'emola', 'transferencia', 'dinheiro'] as $m)
+                        @foreach($this->metodos as $m)
                             <button type="button" wire:click="$set('metodo', '{{ $m }}')" class="pill-picker__item {{ $metodo === $m ? 'pill-picker__item--active' : '' }}">
                                 <x-ui.payment-method :method="$m" size="22" :show-label="false" />
                             </button>

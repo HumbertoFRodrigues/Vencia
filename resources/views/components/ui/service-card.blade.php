@@ -5,7 +5,7 @@
     'logoSrc' => null,
     'description' => null,
     'amount' => 0,
-    'currency' => 'MZN',
+    'currency' => null,
     'period' => null,
     'dueLabel' => null,
     'status' => 'activo',

@@ -37,18 +37,6 @@ class ServicosIndex extends Component
     /** Card grid at minmax(268px,1fr) — 12 fills a tidy 3-4 column x 3-4 row block on typical widths. */
     private const POR_PAGINA = 12;
 
-    /** @var array<string, string> */
-    private const CATEGORIA_LABELS = [
-        'dominio' => 'Domínio',
-        'hospedagem' => 'Hospedagem',
-        'email' => 'Email',
-        'ia' => 'IA',
-        'software' => 'Software',
-        'manutencao' => 'Manutenção',
-        'desenvolvimento' => 'Desenvolvimento',
-        'outro' => 'Outro',
-    ];
-
     #[Url]
     public string $tab = 'todos';
 
@@ -129,7 +117,7 @@ class ServicosIndex extends Component
         $options = [['value' => 'todas', 'label' => 'Todas as categorias']];
 
         foreach (ServicoCategoria::cases() as $case) {
-            $options[] = ['value' => $case->value, 'label' => self::CATEGORIA_LABELS[$case->value]];
+            $options[] = ['value' => $case->value, 'label' => $case->label()];
         }
 
         return $options;

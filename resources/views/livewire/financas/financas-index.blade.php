@@ -20,7 +20,6 @@
         <x-ui.stat-card
             label="Entradas"
             :value="$totais['entradas']"
-            currency="MZN"
             tone="in"
             icon="arrow-down-to-line"
             :footnote="$totais['nPagamentos'].' pagamentos em '.$mesLabel"
@@ -28,13 +27,12 @@
         <x-ui.stat-card
             label="A receber"
             :value="$totais['aReceber']"
-            currency="MZN"
             tone="out"
             icon="hourglass"
             :footnote="$totais['nAReceber'].' serviços'"
         />
-        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" currency="MZN" icon="repeat" />
-        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" currency="MZN" icon="chart-line" />
+        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" icon="repeat" />
+        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" icon="chart-line" />
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">

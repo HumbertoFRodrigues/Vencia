@@ -3,7 +3,6 @@
     $pagamentos = $this->pagamentos;
     $total = $this->totalFiltrado;
     $mesLabel = ucfirst(now()->locale('pt_PT')->translatedFormat('F')).' de '.now()->year;
-    $metodosPill = ['mpesa', 'emola', 'transferencia', 'dinheiro', 'outro'];
 @endphp
 
 <div style="display:flex;flex-direction:column;gap:16px">
@@ -18,7 +17,6 @@
         <x-ui.stat-card
             label="Entradas do período"
             :value="$totais['entradas']"
-            currency="MZN"
             tone="in"
             icon="arrow-down-to-line"
             :footnote="$totais['nPagamentos'].' pagamentos'"
@@ -26,17 +24,16 @@
         <x-ui.stat-card
             label="A receber"
             :value="$totais['aReceber']"
-            currency="MZN"
             tone="out"
             icon="hourglass"
             :footnote="$totais['nAReceber'].' serviços'"
         />
-        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" currency="MZN" icon="repeat" />
-        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" currency="MZN" icon="chart-line" />
+        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" icon="repeat" />
+        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" icon="chart-line" />
     </div>
 
     <div class="pill-picker">
-        @foreach($metodosPill as $m)
+        @foreach($this->metodosDisponiveis as $m)
             <button type="button" wire:click="alternarMetodo('{{ $m }}')" class="pill-picker__item {{ in_array($m, $metodos, true) ? 'pill-picker__item--active' : '' }}">
                 <x-ui.payment-method :method="$m" size="22" />
             </button>
@@ -55,7 +52,7 @@
 
     <x-ui.card
         title="Total recebido no período"
-        :subtitle="number_format($total, 0, ',', '.').' MZN'"
+        :subtitle="number_format($total, 0, ',', '.').' '.\App\Models\Configuracao::moeda()"
         :padding="0"
     >
         <x-slot:action>

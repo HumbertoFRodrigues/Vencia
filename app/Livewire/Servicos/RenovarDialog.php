@@ -3,6 +3,8 @@
 namespace App\Livewire\Servicos;
 
 use App\Enums\Periodicidade;
+use App\Models\Configuracao;
+use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
 use App\Services\ServicoStatusService;
 use Illuminate\Support\Carbon;
@@ -49,7 +51,7 @@ class RenovarDialog extends Component
         $this->servicoId = $servicoId;
         $this->valorPago = (string) $servico->valor;
         $this->dataPagamento = Carbon::today()->toDateString();
-        $this->metodo = $servico->metodo_habitual?->value ?? 'mpesa';
+        $this->metodo = $servico->metodo_habitual ?? 'mpesa';
         $this->periodoPagamento = $this->periodoPadrao($servico);
         $this->observacoes = null;
         $this->show = true;
@@ -82,6 +84,13 @@ class RenovarDialog extends Component
     public function periodoOptions(): array
     {
         return self::PERIODO_PAGAMENTO_OPTIONS;
+    }
+
+    /** Every active (non-arquivado) método, well-known plus any custom one the admin has added. @return list<string> */
+    #[Computed]
+    public function metodos(): array
+    {
+        return MetodoPagamentoOpcao::nomesActivos();
     }
 
     /**
@@ -139,7 +148,7 @@ class RenovarDialog extends Component
         $this->dispatch(
             'toast',
             title: 'Renovação registrada',
-            body: $valorFormatado.' MZN — '.$servico->nome,
+            body: $valorFormatado.' '.Configuracao::moeda().' — '.$servico->nome,
             tone: 'success',
         );
         $this->dispatch('servico-actualizado', servicoId: $servico->id);

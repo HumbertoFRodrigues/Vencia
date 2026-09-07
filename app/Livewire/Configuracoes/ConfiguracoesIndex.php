@@ -3,9 +3,11 @@
 namespace App\Livewire\Configuracoes;
 
 use App\Enums\IntervaloLembrete;
+use App\Enums\MetodoPagamento;
 use App\Enums\ServicoCategoria;
 use App\Models\BibliotecaServico;
 use App\Models\Configuracao;
+use App\Models\MetodoPagamentoOpcao;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -38,18 +40,6 @@ class ConfiguracoesIndex extends Component
     use WithFileUploads;
 
     /** @var array<string, string> */
-    private const CATEGORIA_LABELS = [
-        'dominio' => 'Domínio',
-        'hospedagem' => 'Hospedagem',
-        'email' => 'Email',
-        'ia' => 'IA',
-        'software' => 'Software',
-        'manutencao' => 'Manutenção',
-        'desenvolvimento' => 'Desenvolvimento',
-        'outro' => 'Outro',
-    ];
-
-    /** @var array<string, string> */
     private const INTERVALO_LABELS = [
         'd30' => '30 dias antes',
         'd15' => '15 dias antes',
@@ -64,6 +54,8 @@ class ConfiguracoesIndex extends Component
     public string $tab = 'biblioteca';
 
     // ---- Biblioteca de Serviços ----
+    public string $bibliotecaFiltro = 'activos';
+
     public ?int $editandoId = null;
 
     public string $novoNome = '';
@@ -74,6 +66,14 @@ class ConfiguracoesIndex extends Component
 
     /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
     public $novoLogo = null;
+
+    // ---- Métodos de pagamento ----
+    public ?int $editandoMetodoId = null;
+
+    public string $novoMetodoNome = '';
+
+    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
+    public $novoMetodoLogo = null;
 
     // ---- Lembretes ----
     public ?string $editandoTemplate = null;
@@ -91,6 +91,16 @@ class ConfiguracoesIndex extends Component
 
     public string $empresaEmail = '';
 
+    /**
+     * Cosmetic only, per the admin's own confirmed choice — this changes what
+     * currency code/timezone label the app shows, not any real conversion
+     * math (Totais/MoneyValue keep computing plain MZN-shaped numbers; this
+     * just relabels the display).
+     */
+    public string $empresaMoeda = 'MZN';
+
+    public string $empresaFuso = 'Africa/Maputo';
+
     /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
     public $novoLogoEmpresa = null;
 
@@ -102,11 +112,23 @@ class ConfiguracoesIndex extends Component
 
     public string $smtpUtilizador = '';
 
+    /**
+     * Deliberately never pre-filled from the saved value in mount() (unlike
+     * every other SMTP field) — round-tripping an already-saved secret back
+     * into the browser on every page load is worse practice than asking the
+     * admin to re-type it when they want to change it. Left blank,
+     * guardarSmtp() below keeps whatever password is already saved; typing
+     * a new value replaces it.
+     */
+    public string $smtpPassword = '';
+
     public function mount(): void
     {
         $empresa = Configuracao::obter('empresa', []);
         $this->empresaNome = $empresa['nome'] ?? '';
         $this->empresaEmail = $empresa['email'] ?? '';
+        $this->empresaMoeda = $empresa['moeda'] ?? 'MZN';
+        $this->empresaFuso = $empresa['fuso_horario'] ?? 'Africa/Maputo';
 
         $smtp = Configuracao::obter('smtp', []);
         $this->smtpServidor = $smtp['servidor'] ?? '';
@@ -124,11 +146,31 @@ class ConfiguracoesIndex extends Component
 
     // ================= Biblioteca de Serviços =================
 
-    /** @return Collection<int, BibliotecaServico> */
+    /** All items for the active filter (activos/arquivados) — separate sections, not one dimmed-together list. */
     #[Computed]
     public function itensBiblioteca(): Collection
     {
-        return BibliotecaServico::query()->orderBy('arquivado')->orderBy('nome')->get();
+        return BibliotecaServico::query()
+            ->where('arquivado', $this->bibliotecaFiltro === 'arquivados')
+            ->orderBy('nome')
+            ->get();
+    }
+
+    #[Computed]
+    public function bibliotecaActivosCount(): int
+    {
+        return BibliotecaServico::query()->where('arquivado', false)->count();
+    }
+
+    #[Computed]
+    public function bibliotecaArquivadosCount(): int
+    {
+        return BibliotecaServico::query()->where('arquivado', true)->count();
+    }
+
+    public function setBibliotecaFiltro(string $filtro): void
+    {
+        $this->bibliotecaFiltro = in_array($filtro, ['activos', 'arquivados'], true) ? $filtro : 'activos';
     }
 
     #[Computed]
@@ -142,7 +184,7 @@ class ConfiguracoesIndex extends Component
     public function categoriaOptions(): array
     {
         return array_map(
-            fn (ServicoCategoria $c) => ['value' => $c->value, 'label' => self::CATEGORIA_LABELS[$c->value]],
+            fn (ServicoCategoria $c) => ['value' => $c->value, 'label' => $c->label()],
             ServicoCategoria::cases(),
         );
     }
@@ -198,7 +240,7 @@ class ConfiguracoesIndex extends Component
         }
 
         $this->cancelarEdicaoBiblioteca();
-        unset($this->itensBiblioteca);
+        unset($this->itensBiblioteca, $this->bibliotecaActivosCount, $this->bibliotecaArquivadosCount);
 
         $this->dispatch('toast', title: $mensagem, tone: 'success');
     }
@@ -209,11 +251,133 @@ class ConfiguracoesIndex extends Component
         $item = BibliotecaServico::findOrFail($id);
         $item->update(['arquivado' => ! $item->arquivado]);
 
-        unset($this->itensBiblioteca);
+        unset($this->itensBiblioteca, $this->bibliotecaActivosCount, $this->bibliotecaArquivadosCount);
 
         $this->dispatch(
             'toast',
             title: $item->arquivado ? 'Serviço arquivado' : 'Serviço reactivado',
+            body: $item->nome,
+            tone: $item->arquivado ? 'info' : 'success',
+        );
+    }
+
+    // ================= Métodos de pagamento =================
+
+    /**
+     * The 5 originally "well-known" método codes — the only ones with a real
+     * hand-authored icon/logo in App\View\Components\Ui\PaymentMethod's
+     * static map. Their MetodoPagamentoOpcao row's `nome` must stay exactly
+     * this code (it's also the literal value stored on every existing
+     * pagamentos.metodo / servicos.metodo_habitual row), so — unlike a
+     * custom método — renaming is not offered for them here: only
+     * arquivar/reactivar. A custom método's `nome` has no such constraint
+     * and is freely editable, same as biblioteca_servicos' `nome`.
+     *
+     * @return list<string>
+     */
+    private function metodosConhecidos(): array
+    {
+        return array_column(MetodoPagamento::cases(), 'value');
+    }
+
+    /** Public: the blade view checks this per row to decide which row actions to offer. */
+    public function metodoEhConhecido(string $nome): bool
+    {
+        return in_array($nome, $this->metodosConhecidos(), true);
+    }
+
+    /** All métodos, well-known first (insertion order), then any custom addition — mirrors itensBiblioteca's ordering intent. */
+    #[Computed]
+    public function itensMetodos(): Collection
+    {
+        return MetodoPagamentoOpcao::query()->orderBy('arquivado')->orderBy('id')->get();
+    }
+
+    #[Computed]
+    public function editandoMetodoItem(): ?MetodoPagamentoOpcao
+    {
+        return $this->editandoMetodoId !== null ? MetodoPagamentoOpcao::find($this->editandoMetodoId) : null;
+    }
+
+    /** Drives the form: editing a custom método shows the rename+logo fields, editing a well-known one shows neither. */
+    #[Computed]
+    public function editandoMetodoEhConhecido(): bool
+    {
+        $item = $this->editandoMetodoItem;
+
+        return $item !== null && $this->metodoEhConhecido($item->nome);
+    }
+
+    /** Only a custom (non-well-known) método can be renamed/given a custom logo — see metodosConhecidos()' docblock. */
+    public function editarMetodo(int $id): void
+    {
+        $item = MetodoPagamentoOpcao::findOrFail($id);
+
+        if ($this->metodoEhConhecido($item->nome)) {
+            return;
+        }
+
+        $this->resetValidation();
+        $this->editandoMetodoId = $id;
+        $this->novoMetodoNome = $item->nome;
+        $this->novoMetodoLogo = null;
+    }
+
+    public function cancelarEdicaoMetodo(): void
+    {
+        $this->resetValidation();
+        $this->editandoMetodoId = null;
+        $this->novoMetodoNome = '';
+        $this->novoMetodoLogo = null;
+    }
+
+    public function guardarMetodo(): void
+    {
+        // A well-known método's row is edited (its nome must never change —
+        // see metodosConhecidos()' docblock), never renamed through this form.
+        if ($this->editandoMetodoId !== null && $this->metodoEhConhecido($this->editandoMetodoItem?->nome ?? '')) {
+            $this->cancelarEdicaoMetodo();
+
+            return;
+        }
+
+        $data = $this->validate([
+            'novoMetodoNome' => ['required', 'string', 'max:255', Rule::unique('metodos_pagamento', 'nome')->ignore($this->editandoMetodoId)],
+            'novoMetodoLogo' => ['nullable', 'image', 'max:2048'],
+        ]);
+
+        $payload = ['nome' => $data['novoMetodoNome']];
+
+        if ($this->novoMetodoLogo) {
+            $payload['logo_path'] = $this->novoMetodoLogo->store('logos', 'public');
+        }
+
+        if ($this->editandoMetodoId !== null) {
+            MetodoPagamentoOpcao::findOrFail($this->editandoMetodoId)->update($payload);
+            $mensagem = 'Método de pagamento actualizado';
+        } else {
+            $payload['arquivado'] = false;
+            MetodoPagamentoOpcao::create($payload);
+            $mensagem = 'Método de pagamento adicionado';
+        }
+
+        $this->cancelarEdicaoMetodo();
+        unset($this->itensMetodos);
+
+        $this->dispatch('toast', title: $mensagem, tone: 'success');
+    }
+
+    /** Toggles arquivado — never a hard delete, per the brief. Allowed for a well-known método too (only its nome is locked). */
+    public function alternarArquivadoMetodo(int $id): void
+    {
+        $item = MetodoPagamentoOpcao::findOrFail($id);
+        $item->update(['arquivado' => ! $item->arquivado]);
+
+        unset($this->itensMetodos);
+
+        $this->dispatch(
+            'toast',
+            title: $item->arquivado ? 'Método arquivado' : 'Método reactivado',
             body: $item->nome,
             tone: $item->arquivado ? 'info' : 'success',
         );
@@ -330,14 +494,16 @@ class ConfiguracoesIndex extends Component
         $data = $this->validate([
             'empresaNome' => ['required', 'string', 'max:255'],
             'empresaEmail' => ['required', 'email', 'max:255'],
+            'empresaMoeda' => ['required', 'string', Rule::in(['MZN', 'USD', 'ZAR'])],
+            'empresaFuso' => ['required', 'string', Rule::in(['Africa/Maputo', 'UTC'])],
             'novoLogoEmpresa' => ['nullable', 'image', 'max:2048'],
         ]);
 
         $empresa = Configuracao::obter('empresa', []);
         $empresa['nome'] = $data['empresaNome'];
         $empresa['email'] = $data['empresaEmail'];
-        $empresa['moeda'] = $empresa['moeda'] ?? 'MZN';
-        $empresa['fuso_horario'] = $empresa['fuso_horario'] ?? 'Africa/Maputo';
+        $empresa['moeda'] = $data['empresaMoeda'];
+        $empresa['fuso_horario'] = $data['empresaFuso'];
 
         if ($this->novoLogoEmpresa) {
             $empresa['logo_path'] = $this->novoLogoEmpresa->store('logos', 'public');
@@ -356,7 +522,10 @@ class ConfiguracoesIndex extends Component
             'smtpPorta' => ['nullable', 'string', 'max:10'],
             'smtpSeguranca' => ['required', 'string'],
             'smtpUtilizador' => ['nullable', 'string', 'max:255'],
+            'smtpPassword' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $existente = Configuracao::obter('smtp', []);
 
         Configuracao::query()->updateOrCreate(['chave' => 'smtp'], [
             'valor' => [
@@ -364,17 +533,26 @@ class ConfiguracoesIndex extends Component
                 'porta' => $data['smtpPorta'],
                 'seguranca' => $data['smtpSeguranca'],
                 'utilizador' => $data['smtpUtilizador'],
+                // Blank password field means "keep the one already saved" —
+                // the field is never pre-filled (see its property docblock),
+                // so an empty submit is not the admin asking to clear it.
+                'password' => $data['smtpPassword'] !== '' ? $data['smtpPassword'] : ($existente['password'] ?? null),
             ],
         ]);
 
+        $this->smtpPassword = '';
         $this->dispatch('toast', title: 'Configuração de SMTP guardada', tone: 'success');
     }
 
     /**
-     * Real send attempt via the app's current mailer (MAIL_MAILER=log until
-     * real SMTP credentials exist in .env, per the brief) — proves the
-     * mechanism end-to-end without needing working SMTP yet. Success or
-     * failure both surface as a toast; a failure is also logged.
+     * Real send attempt via whichever mailer is actually active for this
+     * request: Configuracao::aplicarSmtpEmTempoDeExecucao() switches to the
+     * admin's saved SMTP settings when one is configured, otherwise this
+     * falls back to .env's MAIL_MAILER (today "log") unchanged — the same
+     * runtime mailer VerificacaoDiariaService/SuspenderDialog now use, so
+     * this button genuinely proves whether SMTP works, not just whether the
+     * mail pipeline runs. Success or failure both surface as a toast; a
+     * failure is also logged (never the password itself).
      */
     public function testarEmail(): void
     {
@@ -385,6 +563,8 @@ class ConfiguracoesIndex extends Component
 
             return;
         }
+
+        Configuracao::aplicarSmtpEmTempoDeExecucao();
 
         try {
             Mail::raw('Isto é um email de teste do Vencia.', function ($message) use ($destino): void {

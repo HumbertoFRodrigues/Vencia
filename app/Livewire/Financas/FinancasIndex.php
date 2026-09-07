@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Financas;
 
-use App\Enums\MetodoPagamento;
 use App\Enums\ServicoStatus;
+use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Models\Servico;
 use App\Services\RelatorioPdf;
@@ -38,9 +38,13 @@ class FinancasIndex extends Component
     }
 
     /**
-     * "Como o dinheiro entrou" — one row per MetodoPagamento case (even a
-     * método with zero pagamentos this month still gets a row, per the
-     * brief), current calendar month, sorted by amount descending.
+     * "Como o dinheiro entrou" — one row per active método (even one with
+     * zero pagamentos this month still gets a row, per the brief), current
+     * calendar month, sorted by amount descending. Also includes any
+     * *archived* método that still has a payment this month (an admin can
+     * archive a method mid-month and the breakdown must still account for
+     * every real MZN that came in), even though it's no longer offered as a
+     * selectable option elsewhere.
      *
      * @return list<array{metodo: string, valor: float}>
      */
@@ -57,9 +61,17 @@ class FinancasIndex extends Component
             ->pluck('total', 'metodo');
 
         $linhas = [];
+        $vistos = [];
 
-        foreach (MetodoPagamento::cases() as $case) {
-            $linhas[] = ['metodo' => $case->value, 'valor' => (float) ($somas[$case->value] ?? 0)];
+        foreach (MetodoPagamentoOpcao::nomesActivos() as $nome) {
+            $vistos[$nome] = true;
+            $linhas[] = ['metodo' => $nome, 'valor' => (float) ($somas[$nome] ?? 0)];
+        }
+
+        foreach ($somas->keys() as $nome) {
+            if (! isset($vistos[$nome])) {
+                $linhas[] = ['metodo' => $nome, 'valor' => (float) $somas[$nome]];
+            }
         }
 
         usort($linhas, fn (array $a, array $b) => $b['valor'] <=> $a['valor']);
@@ -124,7 +136,7 @@ class FinancasIndex extends Component
                     $s->cliente?->nome ?? '',
                     $s->vencimento?->format('d/m/Y') ?? '',
                     $s->periodicidade->label(),
-                    number_format((float) $s->valor, 0, ',', '.').' MZN',
+                    number_format((float) $s->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
                 ], ';');
             }
 

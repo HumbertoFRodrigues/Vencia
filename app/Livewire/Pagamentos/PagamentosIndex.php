@@ -5,6 +5,7 @@ namespace App\Livewire\Pagamentos;
 use App\Enums\HistoricoKind;
 use App\Models\Cliente;
 use App\Models\Historico;
+use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Services\RelatorioPdf;
 use App\Services\Totais;
@@ -187,6 +188,21 @@ class PagamentosIndex extends Component
         return $opcoes;
     }
 
+    /**
+     * Every active (non-arquivado) método, for the filter pill-strip — the
+     * pills also double as the applied filter's own value list (see
+     * $metodos above), so an archived método the ledger still holds old rows
+     * for stays filterable-out-of-the-box (it simply won't show as a pill to
+     * toggle, matching "archived is no longer offered as a choice").
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function metodosDisponiveis(): array
+    {
+        return MetodoPagamentoOpcao::nomesActivos();
+    }
+
     #[On('servico-actualizado')]
     public function actualizar(): void
     {
@@ -227,9 +243,9 @@ class PagamentosIndex extends Component
                 'title' => 'Pagamento apagado',
                 'description' => sprintf(
                     '%s — %s — %s',
-                    number_format((float) $pagamento->valor, 2, ',', '.').' MZN',
+                    number_format((float) $pagamento->valor, 2, ',', '.').' '.\App\Models\Configuracao::moeda(),
                     $pagamento->data->format('d/m/Y'),
-                    PaymentMethod::labelFor($pagamento->metodo->value),
+                    PaymentMethod::labelFor($pagamento->metodo),
                 ),
                 'kind' => HistoricoKind::Pagamento,
             ]);
@@ -263,8 +279,8 @@ class PagamentosIndex extends Component
                     $p->cliente?->nome ?? '',
                     $p->servico?->nome ?? '',
                     $p->periodo,
-                    PaymentMethod::labelFor($p->metodo->value),
-                    number_format((float) $p->valor, 0, ',', '.').' MZN',
+                    PaymentMethod::labelFor($p->metodo),
+                    number_format((float) $p->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
                 ], ';');
             }
 
@@ -323,7 +339,7 @@ class PagamentosIndex extends Component
             $p->cliente?->nome ?? '',
             $p->servico?->nome ?? '',
             $p->periodo,
-            PaymentMethod::labelFor($p->metodo->value),
+            PaymentMethod::labelFor($p->metodo),
             RelatorioPdf::moeda((float) $p->valor),
         ])->all();
 

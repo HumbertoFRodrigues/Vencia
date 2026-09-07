@@ -19,7 +19,6 @@
     <x-ui.stat-card
         label="Receita deste mês"
         :value="$totais['entradas']"
-        currency="MZN"
         icon="wallet"
         tone="in"
         :footnote="$totais['nPagamentos'].' pagamentos'"
@@ -27,14 +26,12 @@
     <x-ui.stat-card
         label="Receita esperada"
         :value="$totais['esperada']"
-        currency="MZN"
         icon="target"
-        :footnote="'faltam '.number_format($totais['aReceber'], 0, ',', '.').' MZN'"
+        :footnote="'faltam '.number_format($totais['aReceber'], 0, ',', '.').' '.\App\Models\Configuracao::moeda()"
     />
     <x-ui.stat-card
         label="Em atraso"
         :value="$totais['emAtraso']"
-        currency="MZN"
         tone="out"
         icon="circle-alert"
         :footnote="$totais['nEmAtraso'].' '.($totais['nEmAtraso'] === 1 ? 'serviço' : 'serviços')"

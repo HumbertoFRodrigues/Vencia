@@ -8,6 +8,7 @@ use App\Enums\Periodo;
 use App\Models\BibliotecaServico;
 use App\Models\Cliente;
 use App\Models\Historico;
+use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
 use App\Models\ServicoLembreteConfig;
 use App\Services\ServicoStatusService;
@@ -39,9 +40,6 @@ class NewSubscriptionDialog extends Component
         ['value' => 'unica', 'label' => 'Única'],
         ['value' => 'personalizada', 'label' => 'Personalizada'],
     ];
-
-    /** @var list<string> */
-    private const METODOS = ['mpesa', 'emola', 'transferencia', 'dinheiro', 'outro'];
 
     public bool $show = false;
 
@@ -108,11 +106,11 @@ class NewSubscriptionDialog extends Component
         $this->descricao = $item?->descricao_padrao ?? '';
     }
 
-    /** @return list<string> */
+    /** Every active (non-arquivado) método, well-known plus any custom one the admin has added. @return list<string> */
     #[Computed]
     public function metodos(): array
     {
-        return self::METODOS;
+        return MetodoPagamentoOpcao::nomesActivos();
     }
 
     /** @return Collection<int, BibliotecaServico> */

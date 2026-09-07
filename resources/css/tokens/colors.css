@@ -27,7 +27,7 @@
 /* --- Chrome & scrims (theme-aware) --- */
 --topbar-bg:rgba(255,255,255,.82);--nav-hover:rgba(20,23,29,.045);--scrim:rgba(20,23,29,.38);--table-head-bg:var(--ink-25);--inset-highlight:rgba(255,255,255,.10);
 /* --- Service category tints --- */
---cat-dominio-bg:#e8f0fb;--cat-dominio-fg:#1f4f8f;--cat-hospedagem-bg:#eef1fe;--cat-hospedagem-fg:#2839b4;--cat-email-bg:#f0ecfb;--cat-email-fg:#5636a8;--cat-ia-bg:#e8f6f0;--cat-ia-fg:#0c6146;--cat-software-bg:#f1f3f7;--cat-software-fg:#343a47;--cat-manutencao-bg:#fdf3e3;--cat-manutencao-fg:#824d06;--cat-desenvolvimento-bg:#f1f3f7;--cat-desenvolvimento-fg:#22262f;--cat-outro-bg:#f1f3f7;--cat-outro-fg:#4d5464;
+--cat-dominio-bg:#e8f0fb;--cat-dominio-fg:#1f4f8f;--cat-hospedagem-bg:#eef1fe;--cat-hospedagem-fg:#2839b4;--cat-email-bg:#f0ecfb;--cat-email-fg:#5636a8;--cat-ia-bg:#e8f6f0;--cat-ia-fg:#0c6146;--cat-software-bg:#f1f3f7;--cat-software-fg:#343a47;--cat-manutencao-bg:#fdf3e3;--cat-manutencao-fg:#824d06;--cat-desenvolvimento-bg:#f1f3f7;--cat-desenvolvimento-fg:#22262f;--cat-marketing-bg:#fce8f1;--cat-marketing-fg:#9d1a5c;--cat-design-bg:#e6f7f5;--cat-design-fg:#0f766e;--cat-seguranca-bg:#e6f6fb;--cat-seguranca-fg:#0e6c85;--cat-consultoria-bg:#f6efe4;--cat-consultoria-fg:#8a5a2b;--cat-telefonia-bg:#eef2f6;--cat-telefonia-fg:#3e5871;--cat-outro-bg:#f1f3f7;--cat-outro-fg:#4d5464;
 /* --- Text on filled controls (same in both themes) --- */
 --on-accent:#ffffff;--on-danger:#ffffff;
 /* --- Focus ring --- */
@@ -51,6 +51,6 @@
 --ring:0 0 0 3px rgba(92,111,240,.34);
 --topbar-bg:rgba(21,25,31,.84);--nav-hover:rgba(255,255,255,.05);--scrim:rgba(4,6,9,.62);--table-head-bg:#11151a;--inset-highlight:rgba(255,255,255,.07);
 --green-100:#1c3d31;--amber-100:#3d3018;--red-100:#3d201c;
---cat-dominio-bg:#152230;--cat-dominio-fg:#8fb6e8;--cat-hospedagem-bg:#181d33;--cat-hospedagem-fg:#a3aef5;--cat-email-bg:#221a33;--cat-email-fg:#c3aef0;--cat-ia-bg:#122a22;--cat-ia-fg:#7fd7b0;--cat-software-bg:#1f242c;--cat-software-fg:#c8cdd8;--cat-manutencao-bg:#2c2313;--cat-manutencao-fg:#e8c489;--cat-desenvolvimento-bg:#1f242c;--cat-desenvolvimento-fg:#e0e4ea;--cat-outro-bg:#1f242c;--cat-outro-fg:#9fa8b6;
+--cat-dominio-bg:#152230;--cat-dominio-fg:#8fb6e8;--cat-hospedagem-bg:#181d33;--cat-hospedagem-fg:#a3aef5;--cat-email-bg:#221a33;--cat-email-fg:#c3aef0;--cat-ia-bg:#122a22;--cat-ia-fg:#7fd7b0;--cat-software-bg:#1f242c;--cat-software-fg:#c8cdd8;--cat-manutencao-bg:#2c2313;--cat-manutencao-fg:#e8c489;--cat-desenvolvimento-bg:#1f242c;--cat-desenvolvimento-fg:#e0e4ea;--cat-marketing-bg:#331a29;--cat-marketing-fg:#f0a8cd;--cat-design-bg:#122e2b;--cat-design-fg:#6fd3c7;--cat-seguranca-bg:#122730;--cat-seguranca-fg:#7ecbe3;--cat-consultoria-bg:#2c2517;--cat-consultoria-fg:#e0bd8a;--cat-telefonia-bg:#1c222b;--cat-telefonia-fg:#a9b9c9;--cat-outro-bg:#1f242c;--cat-outro-fg:#9fa8b6;
 }
 [data-theme="dark"] img[data-logo]{background:#ffffff}

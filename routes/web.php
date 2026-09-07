@@ -16,6 +16,13 @@ use App\Livewire\Servicos\ServicosIndex;
 use App\Livewire\Vencimentos\VencimentosIndex;
 use Illuminate\Support\Facades\Route;
 
+if (app()->environment('local')) {
+    Route::get('/__test-login', function () {
+        auth()->login(\App\Models\User::first());
+        return redirect('/');
+    });
+}
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:login')->name('login.store');

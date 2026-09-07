@@ -119,6 +119,10 @@ class SuspenderDialog extends Component
             return;
         }
 
+        // Switches the mailer to the admin's UI-configured SMTP settings, when
+        // one is set — a no-op (keeps .env's MAIL_MAILER) otherwise.
+        Configuracao::aplicarSmtpEmTempoDeExecucao();
+
         try {
             Mail::to($servico->cliente->email)
                 ->bcc(Configuracao::emailBccAdmin($servico->cliente->email))

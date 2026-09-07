@@ -6,7 +6,9 @@ use App\Enums\HistoricoKind;
 use App\Enums\Periodicidade;
 use App\Enums\Periodo;
 use App\Enums\ServicoCategoria;
+use App\Models\Configuracao;
 use App\Models\Historico;
+use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -35,9 +37,6 @@ class EditarServicoDialog extends Component
         ['value' => 'unica', 'label' => 'Única'],
         ['value' => 'personalizada', 'label' => 'Personalizada'],
     ];
-
-    /** @var list<string> */
-    private const METODOS = ['mpesa', 'emola', 'transferencia', 'dinheiro', 'outro'];
 
     /** Field => human label, used both for change-detection and the Histórico description. */
     private const ROTULOS = [
@@ -93,7 +92,7 @@ class EditarServicoDialog extends Component
         $this->duracaoDias = $servico->duracao_dias !== null ? (string) $servico->duracao_dias : null;
         $this->inicio = $servico->inicio->toDateString();
         $this->vencimento = $servico->vencimento?->toDateString();
-        $this->metodoHabitual = $servico->metodo_habitual?->value ?? 'mpesa';
+        $this->metodoHabitual = $servico->metodo_habitual ?? 'mpesa';
 
         $this->show = true;
     }
@@ -104,11 +103,11 @@ class EditarServicoDialog extends Component
         $this->resetValidation();
     }
 
-    /** @return list<string> */
+    /** Every active (non-arquivado) método, well-known plus any custom one the admin has added. @return list<string> */
     #[Computed]
     public function metodos(): array
     {
-        return self::METODOS;
+        return MetodoPagamentoOpcao::nomesActivos();
     }
 
     /** @return list<array{value: string, label: string}> */
@@ -245,7 +244,7 @@ class EditarServicoDialog extends Component
         }
 
         return match ($campo) {
-            'valor' => $valor !== null && $valor !== '' ? number_format((float) $valor, 2, ',', '.').' MZN' : '—',
+            'valor' => $valor !== null && $valor !== '' ? number_format((float) $valor, 2, ',', '.').' '.Configuracao::moeda() : '—',
             'inicio', 'vencimento' => $this->paraData($valor)?->format('d/m/Y') ?? '—',
             'duracao_dias' => $valor !== null && $valor !== '' ? $valor.' dias' : '—',
             default => $valor !== null && trim((string) $valor) !== '' ? (string) $valor : '—',

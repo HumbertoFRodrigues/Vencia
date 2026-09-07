@@ -3,9 +3,10 @@
 namespace App\Livewire\Pagamentos;
 
 use App\Enums\HistoricoKind;
-use App\Enums\MetodoPagamento;
 use App\Models\Cliente;
+use App\Models\Configuracao;
 use App\Models\Historico;
+use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Models\Servico;
 use App\View\Components\Ui\PaymentMethod;
@@ -107,17 +108,17 @@ class RegistrarPagamentoDialog extends Component
             $this->valor = (string) $pagamento->valor;
             $this->data = $pagamento->data->toDateString();
             $this->periodo = $pagamento->periodo;
-            $this->metodo = $pagamento->metodo->value;
+            $this->metodo = $pagamento->metodo;
         } elseif ($this->servicoId !== null) {
             $servico = Servico::find($this->servicoId);
             $this->valor = $servico ? (string) $servico->valor : '';
-            $this->metodo = $servico?->metodo_habitual?->value ?? 'mpesa';
+            $this->metodo = $servico?->metodo_habitual ?? 'mpesa';
         } else {
             $primeiroServico = Servico::query()->orderBy('nome')->first();
             $this->servicoSelecionado = $primeiroServico ? (string) $primeiroServico->id : '';
             $this->clienteSelecionado = $primeiroServico ? (string) $primeiroServico->cliente_id : '';
             $this->valor = $primeiroServico ? (string) $primeiroServico->valor : '';
-            $this->metodo = $primeiroServico?->metodo_habitual?->value ?? 'mpesa';
+            $this->metodo = $primeiroServico?->metodo_habitual ?? 'mpesa';
             unset($this->servicosOptions);
         }
 
@@ -203,6 +204,13 @@ class RegistrarPagamentoDialog extends Component
         return self::PERIODO_OPTIONS;
     }
 
+    /** Every active (non-arquivado) método, well-known plus any custom one the admin has added. @return list<string> */
+    #[Computed]
+    public function metodos(): array
+    {
+        return MetodoPagamentoOpcao::nomesActivos();
+    }
+
     /**
      * @return array<string, array<int, mixed>>
      */
@@ -268,7 +276,7 @@ class RegistrarPagamentoDialog extends Component
 
         $valorFormatado = number_format((float) $data['valor'], 0, ',', '.');
 
-        $this->dispatch('toast', title: 'Pagamento registado', body: $valorFormatado.' MZN — '.$servico->nome, tone: 'success');
+        $this->dispatch('toast', title: 'Pagamento registado', body: $valorFormatado.' '.Configuracao::moeda().' — '.$servico->nome, tone: 'success');
         // Reuses the same refresh signal RenovarDialog dispatches, so both
         // ServicoDetail's and PagamentosIndex's own listeners for it pick up
         // the new ledger row without a dedicated event just for this dialog.
@@ -345,13 +353,11 @@ class RegistrarPagamentoDialog extends Component
     private function valorExibicao(string $campo, mixed $valor): string
     {
         if ($campo === 'metodo') {
-            $metodoValue = $valor instanceof MetodoPagamento ? $valor->value : (string) $valor;
-
-            return PaymentMethod::labelFor($metodoValue);
+            return PaymentMethod::labelFor((string) $valor);
         }
 
         return match ($campo) {
-            'valor' => number_format((float) $valor, 2, ',', '.').' MZN',
+            'valor' => number_format((float) $valor, 2, ',', '.').' '.Configuracao::moeda(),
             'data' => $this->paraData($valor)?->format('d/m/Y') ?? '—',
             default => (string) $valor,
         };

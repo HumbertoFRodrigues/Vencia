@@ -43,7 +43,7 @@ class ReciboController extends Controller
             'empresa' => $empresa,
             'logoDataUri' => $logoDataUri,
             'referencia' => $referencia,
-            'metodoLabel' => PaymentMethod::labelFor($pagamento->metodo->value),
+            'metodoLabel' => PaymentMethod::labelFor($pagamento->metodo),
         ])->setPaper('a4');
 
         return $pdf->download('recibo-'.str_pad((string) $pagamento->id, 6, '0', STR_PAD_LEFT).'.pdf');

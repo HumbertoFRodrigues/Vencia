@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Enums\IntervaloLembrete;
+use App\Mail\Concerns\ComLayoutDeEmail;
 use App\Models\Configuracao;
 use App\Models\Servico;
 use Illuminate\Mail\Mailable;
@@ -25,9 +26,15 @@ use Illuminate\Queue\SerializesModels;
  * DB-editable wording. Everything else — subject and the rest of the body —
  * is read fresh from Configuracao on every send, so Phase 7's template
  * editor works against this mailable with zero changes.
+ *
+ * Renders through the shared resources/views/emails/notificacao.blade.php
+ * wrapper (see ComLayoutDeEmail) for a real HTML layout instead of the old
+ * nl2br(e($corpo)) plain-text rendering; the admin's own template wording
+ * still flows through unchanged, only the presentation changed.
  */
 class LembreteVencimentoMail extends Mailable
 {
+    use ComLayoutDeEmail;
     use SerializesModels;
 
     public function __construct(
@@ -40,7 +47,7 @@ class LembreteVencimentoMail extends Mailable
         $template = Configuracao::obter('email_template_renovacao', []);
 
         return new Envelope(
-            subject: $this->substituir((string) ($template['assunto'] ?? 'O seu serviço vence em breve')),
+            subject: $this->substituir((string) ($template['assunto'] ?? 'Aviso de vencimento do seu serviço')),
         );
     }
 
@@ -50,7 +57,11 @@ class LembreteVencimentoMail extends Mailable
         $corpo = $this->substituir((string) ($template['corpo'] ?? ''));
         $corpo = $this->comContextoIntervalo($corpo);
 
-        return new Content(htmlString: nl2br(e($corpo)));
+        return $this->contentComLayout('Aviso de vencimento', $corpo, [
+            'Serviço' => $this->servico->nome,
+            'Valor' => $this->formatarValor((float) $this->servico->valor),
+            'Vencimento' => $this->servico->vencimento?->format('d/m/Y') ?? '',
+        ]);
     }
 
     /** Replaces the shared placeholder tokens with real values for this servico. */
@@ -97,7 +108,7 @@ class LembreteVencimentoMail extends Mailable
         return $contexto."\n\n".$corpo;
     }
 
-    /** Same convention as resources/views/components/ui/money-value.blade.php: dot thousands, comma decimals, "MZN" suffix. */
+    /** Same convention as resources/views/components/ui/money-value.blade.php: dot thousands, comma decimals, configured currency suffix. */
     private function formatarValor(float $valor): string
     {
         $abs = abs($valor);
@@ -106,6 +117,6 @@ class LembreteVencimentoMail extends Mailable
         $agrupado = number_format($inteiro, 0, '', '.');
         $formatado = ($valor < 0 ? '-' : '').$agrupado.($fracao ? ','.str_pad((string) $fracao, 2, '0', STR_PAD_LEFT) : '');
 
-        return $formatado.' MZN';
+        return $formatado.' '.Configuracao::moeda();
     }
 }

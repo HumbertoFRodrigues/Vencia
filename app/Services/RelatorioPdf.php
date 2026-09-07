@@ -77,10 +77,10 @@ class RelatorioPdf
         ]);
     }
 
-    /** Same pt-PT convention as the CSV exports: dot thousands, no decimals, trailing " MZN". */
+    /** Same pt-PT convention as the CSV exports: dot thousands, no decimals, trailing currency suffix. */
     public static function moeda(float $valor): string
     {
-        return number_format($valor, 0, ',', '.').' MZN';
+        return number_format($valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda();
     }
 
     /**

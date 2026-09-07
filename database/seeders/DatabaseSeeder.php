@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Enums\MetodoPagamento;
 use App\Models\BibliotecaServico;
 use App\Models\Cliente;
 use App\Models\Configuracao;
 use App\Models\Historico;
+use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Models\Servico;
 use App\Models\ServicoLembreteConfig;
@@ -37,6 +39,7 @@ class DatabaseSeeder extends Seeder
 
         $this->seedAdmin();
         $this->seedConfiguracoes();
+        $this->seedMetodosPagamento();
         $biblioteca = $this->seedBiblioteca();
         $clientes = $this->seedClientes();
         $servicos = $this->seedServicos($clientes, $biblioteca);
@@ -91,9 +94,17 @@ class DatabaseSeeder extends Seeder
         ]);
 
         Configuracao::query()->updateOrCreate(['chave' => 'email_template_renovacao'], [
+            // Deliberately never asserts "será renovado" (will be renewed) — this
+            // app has no automatic billing, the client has to actually pay and
+            // the admin manually clicks "Renovar". "Vence em [DATA]" states the
+            // due date as a plain fact that stays true before, on, and after the
+            // date; LembreteVencimentoMail::comContextoIntervalo() inserts the
+            // before/on/after nuance ("Faltam N dias" / "hoje" / "já passou") as
+            // its own paragraph right after the greeting, so this body never
+            // needs its own tense to match every interval.
             'valor' => [
-                'assunto' => 'O seu serviço [SERVIÇO] será renovado em breve',
-                'corpo' => "Olá, [NOME].\n\nO seu serviço [SERVIÇO] será renovado em [DATA].\n\nValor da renovação: [VALOR].\n\nAtenciosamente,\n[NOME DA EMPRESA]",
+                'assunto' => 'O seu serviço [SERVIÇO] — vencimento a [DATA]',
+                'corpo' => "Olá, [NOME].\n\nO seu serviço [SERVIÇO] vence em [DATA].\n\nO acesso é suspenso caso o pagamento não seja renovado. Para renovar, contacte-nos e efectue o pagamento de [VALOR].\n\nAtenciosamente,\n[NOME DA EMPRESA]",
             ],
         ]);
 
@@ -103,6 +114,26 @@ class DatabaseSeeder extends Seeder
                 'corpo' => "Olá, [NOME].\n\nO seu serviço [SERVIÇO] foi suspenso em [DATA] por falta de renovação do pagamento.\n\nO acesso fica indisponível até regularização. Para reactivar, contacte-nos e efectue o pagamento de [VALOR].\n\nAtenciosamente,\n[NOME DA EMPRESA]",
             ],
         ]);
+    }
+
+    /**
+     * Seeds the 5 well-known métodos (see App\Enums\MetodoPagamento) as real,
+     * manageable MetodoPagamentoOpcao rows, so they show up in Configurações
+     * alongside any custom método the admin adds — even though their actual
+     * icon/logo still comes from the enum lookup (App\View\Components\Ui\
+     * PaymentMethod), not from this row. `nome` is set to the enum's exact
+     * code (mpesa/emola/...), never a display label, since that's the literal
+     * string every existing pagamentos.metodo/servicos.metodo_habitual row
+     * already holds — see the metodos_pagamento migration's docblock.
+     */
+    private function seedMetodosPagamento(): void
+    {
+        foreach (MetodoPagamento::cases() as $case) {
+            MetodoPagamentoOpcao::query()->updateOrCreate(
+                ['nome' => $case->value],
+                ['arquivado' => false],
+            );
+        }
     }
 
     /** @return array<string, BibliotecaServico> keyed by nome */

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\MetodoPagamento;
 use App\Enums\Periodicidade;
 use App\Enums\Periodo;
 use App\Enums\ServicoCategoria;
@@ -35,7 +34,9 @@ class Servico extends Model
         'vencimento' => 'date',
         'status' => ServicoStatus::class,
         'proximo_aviso' => 'date',
-        'metodo_habitual' => MetodoPagamento::class,
+        // Plain string, not an enum cast — see Pagamento::$casts' docblock on
+        // 'metodo' for why: the set of valid métodos is admin-managed via
+        // MetodoPagamentoOpcao now, not a fixed PHP enum.
     ];
 
     public function cliente(): BelongsTo

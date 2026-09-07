@@ -14,6 +14,11 @@ enum ServicoCategoria: string
     case Software = 'software';
     case Manutencao = 'manutencao';
     case Desenvolvimento = 'desenvolvimento';
+    case Marketing = 'marketing';
+    case Design = 'design';
+    case Seguranca = 'seguranca';
+    case Consultoria = 'consultoria';
+    case Telefonia = 'telefonia';
     case Outro = 'outro';
 
     public function icon(): string
@@ -26,6 +31,11 @@ enum ServicoCategoria: string
             self::Software => 'app-window',
             self::Manutencao => 'wrench',
             self::Desenvolvimento => 'code',
+            self::Marketing => 'megaphone',
+            self::Design => 'palette',
+            self::Seguranca => 'shield-check',
+            self::Consultoria => 'briefcase',
+            self::Telefonia => 'phone',
             self::Outro => 'package',
         };
     }
@@ -40,6 +50,11 @@ enum ServicoCategoria: string
             self::Software => 'Software',
             self::Manutencao => 'Manutenção',
             self::Desenvolvimento => 'Desenvolvimento',
+            self::Marketing => 'Marketing',
+            self::Design => 'Design',
+            self::Seguranca => 'Segurança',
+            self::Consultoria => 'Consultoria',
+            self::Telefonia => 'Telefonia',
             self::Outro => 'Outro',
         };
     }

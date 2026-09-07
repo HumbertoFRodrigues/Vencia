@@ -1,11 +1,12 @@
 @props([
     'amount' => 0,
-    'currency' => 'MZN',
+    'currency' => null,
     'period' => null,
     'size' => 'md',
     'tone' => 'neutral',
 ])
 @php
+    $currency ??= \App\Models\Configuracao::moeda();
     $amt = (float) $amount;
     $neg = $amt < 0;
     $abs = abs($amt);

@@ -60,6 +60,13 @@ class VerificacaoDiariaService
             return $resumo;
         }
 
+        // Switches the mailer to the admin's UI-configured SMTP settings for
+        // the rest of this run, when one is set — a no-op (keeps .env's
+        // MAIL_MAILER) otherwise. Called once here rather than per servico:
+        // SMTP config doesn't change mid-run, and every send below goes
+        // through the one mailer this selects.
+        Configuracao::aplicarSmtpEmTempoDeExecucao();
+
         Servico::query()
             ->whereNotIn('status', [ServicoStatus::Suspenso, ServicoStatus::Cancelado])
             ->cursor()

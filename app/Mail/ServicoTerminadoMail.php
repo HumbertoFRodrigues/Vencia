@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\ComLayoutDeEmail;
 use App\Models\Configuracao;
 use App\Models\Servico;
 use App\Models\Suspensao;
@@ -16,9 +17,15 @@ use Illuminate\Queue\SerializesModels;
  * configuracoes.email_template_servico_terminado (assunto/corpo) fresh on
  * every send, so Phase 7's template editor works against this mailable with
  * zero changes here.
+ *
+ * Renders through the shared resources/views/emails/notificacao.blade.php
+ * wrapper (see ComLayoutDeEmail) for a real HTML layout instead of the old
+ * nl2br(e($corpo)) plain-text rendering; the admin's own template wording
+ * still flows through unchanged, only the presentation changed.
  */
 class ServicoTerminadoMail extends Mailable
 {
+    use ComLayoutDeEmail;
     use SerializesModels;
 
     public function __construct(
@@ -40,7 +47,11 @@ class ServicoTerminadoMail extends Mailable
         $template = Configuracao::obter('email_template_servico_terminado', []);
         $corpo = $this->substituir((string) ($template['corpo'] ?? ''));
 
-        return new Content(htmlString: nl2br(e($corpo)));
+        return $this->contentComLayout('Serviço suspenso', $corpo, [
+            'Serviço' => $this->servico->nome,
+            'Valor' => $this->formatarValor((float) $this->servico->valor),
+            'Suspenso em' => $this->suspensao->data?->format('d/m/Y') ?? '',
+        ]);
     }
 
     /** Replaces the shared placeholder tokens — [DATA] is the suspension date, not the vencimento. */
@@ -58,7 +69,7 @@ class ServicoTerminadoMail extends Mailable
         ]);
     }
 
-    /** Same convention as resources/views/components/ui/money-value.blade.php: dot thousands, comma decimals, "MZN" suffix. */
+    /** Same convention as resources/views/components/ui/money-value.blade.php: dot thousands, comma decimals, configured currency suffix. */
     private function formatarValor(float $valor): string
     {
         $abs = abs($valor);
@@ -67,6 +78,6 @@ class ServicoTerminadoMail extends Mailable
         $agrupado = number_format($inteiro, 0, '', '.');
         $formatado = ($valor < 0 ? '-' : '').$agrupado.($fracao ? ','.str_pad((string) $fracao, 2, '0', STR_PAD_LEFT) : '');
 
-        return $formatado.' MZN';
+        return $formatado.' '.Configuracao::moeda();
     }
 }

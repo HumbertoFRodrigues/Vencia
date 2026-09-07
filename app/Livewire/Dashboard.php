@@ -87,7 +87,7 @@ class Dashboard extends Component
                     $s->nome,
                     $s->cliente?->nome ?? '',
                     $s->vencimento?->format('d/m/Y') ?? '',
-                    number_format((float) $s->valor, 0, ',', '.').' MZN',
+                    number_format((float) $s->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
                     $this->statusLabel($s->status),
                 ], ';');
             }

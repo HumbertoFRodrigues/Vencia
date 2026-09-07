@@ -18,17 +18,6 @@ class ServiceLogo extends Component
     /** @var array<string, string> lowercase service name => file name in assetsBase */
     private const LOGO_LIBRARY = [];
 
-    private const CATEGORY_ICON = [
-        'dominio' => 'globe',
-        'hospedagem' => 'server',
-        'email' => 'mail',
-        'ia' => 'sparkles',
-        'software' => 'app-window',
-        'manutencao' => 'wrench',
-        'desenvolvimento' => 'code',
-        'outro' => 'package',
-    ];
-
     public string $category;
 
     public ?string $url;
@@ -50,13 +39,12 @@ class ServiceLogo extends Component
     ) {
         $this->category = $category instanceof ServicoCategoria ? $category->value : $category;
 
-        if (! array_key_exists($this->category, self::CATEGORY_ICON)) {
-            $this->category = 'outro';
-        }
+        $categoriaEnum = ServicoCategoria::tryFrom($this->category) ?? ServicoCategoria::Outro;
+        $this->category = $categoriaEnum->value;
 
         $this->bgVar = "--cat-{$this->category}-bg";
         $this->fgVar = "--cat-{$this->category}-fg";
-        $this->categoryIcon = self::CATEGORY_ICON[$this->category];
+        $this->categoryIcon = $categoriaEnum->icon();
         $this->url = $src ?: self::resolveLogo($name, $assetsBase);
         $this->initials = self::initialsFor($name);
     }

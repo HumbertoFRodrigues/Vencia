@@ -50,7 +50,7 @@
                 </div>
 
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-                    <x-ui.input label="Valor" wire:model="valor" suffix="MZN" :error="$errors->first('valor')" />
+                    <x-ui.input label="Valor" wire:model="valor" :suffix="\App\Models\Configuracao::moeda()" :error="$errors->first('valor')" />
                     <x-ui.select label="Periodicidade" wire:model.live="periodicidade" :options="$this->periodicidadeOptions" />
                     <x-ui.input label="Data de início" type="date" wire:model.live="inicio" :error="$errors->first('inicio')" />
                     @if($periodicidade === 'personalizada')
