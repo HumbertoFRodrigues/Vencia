@@ -66,8 +66,6 @@ class AppServiceProvider extends ServiceProvider
             $view->with([
                 'navItems' => $navItems,
                 'navActive' => $navActive,
-                'sidebarAVencer' => $totais['aVencer'],
-                'sidebarAReceber' => $totais['nAReceber'],
             ]);
         });
     }

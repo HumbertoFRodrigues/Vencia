@@ -268,6 +268,8 @@ class PagamentosIndex extends Component
             ->orderByDesc('id')
             ->get();
 
+        $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
+
         return response()->streamDownload(function () use ($pagamentos): void {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
@@ -342,6 +344,8 @@ class PagamentosIndex extends Component
             PaymentMethod::labelFor($p->metodo),
             RelatorioPdf::moeda((float) $p->valor),
         ])->all();
+
+        $this->dispatch('toast', title: 'A exportar PDF', body: 'A transferência começa em breve.', tone: 'success');
 
         return RelatorioPdf::gerar(
             titulo: 'Pagamentos',

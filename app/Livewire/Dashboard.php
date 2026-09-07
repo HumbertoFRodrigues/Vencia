@@ -77,6 +77,8 @@ class Dashboard extends Component
     {
         $servicos = $this->proximosVencimentos;
 
+        $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
+
         return response()->streamDownload(function () use ($servicos): void {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
@@ -110,6 +112,8 @@ class Dashboard extends Component
             RelatorioPdf::moeda((float) $s->valor),
             $this->statusLabel($s->status),
         ])->all();
+
+        $this->dispatch('toast', title: 'A exportar PDF', body: 'A transferência começa em breve.', tone: 'success');
 
         return RelatorioPdf::gerar(
             titulo: 'Próximos Vencimentos',

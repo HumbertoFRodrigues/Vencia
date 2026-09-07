@@ -125,6 +125,8 @@ class FinancasIndex extends Component
     {
         $servicos = $this->aReceber;
 
+        $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
+
         return response()->streamDownload(function () use ($servicos): void {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
@@ -166,6 +168,8 @@ class FinancasIndex extends Component
             $s->periodicidade->label(),
             RelatorioPdf::moeda((float) $s->valor),
         ])->all();
+
+        $this->dispatch('toast', title: 'A exportar PDF', body: 'A transferência começa em breve.', tone: 'success');
 
         return RelatorioPdf::gerar(
             titulo: 'Finanças — A Receber',

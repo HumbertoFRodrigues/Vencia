@@ -43,7 +43,7 @@
         </x-ui.sidebar-nav>
 
         <div class="app-shell__main">
-            <x-ui.top-bar :alert-count="$sidebarAVencer + $sidebarAReceber" />
+            <x-ui.top-bar />
 
             <main class="app-shell__content">
                 <div class="app-shell__content-inner">
