@@ -61,6 +61,15 @@ class NewSubscriptionDialog extends Component
 
     public ?string $duracaoDias = null;
 
+    /**
+     * Optional manual override of the calculated vencimento — for a serviço
+     * the admin is entering that already exists in real life (a client
+     * migrated into the system), where "início + periodicidade" doesn't
+     * land on the real due date. Left empty, vencimentoCalculado() is used
+     * as before; filled, it wins outright.
+     */
+    public string $vencimentoManual = '';
+
     public string $descricao = '';
 
     public string $metodoHabitual = 'mpesa';
@@ -69,7 +78,7 @@ class NewSubscriptionDialog extends Component
     public function abrir(?int $clienteId = null): void
     {
         $this->resetValidation();
-        $this->reset(['novoClienteNome', 'novoClienteEmail', 'valor', 'duracaoDias', 'descricao']);
+        $this->reset(['novoClienteNome', 'novoClienteEmail', 'valor', 'duracaoDias', 'descricao', 'vencimentoManual']);
 
         $primeira = BibliotecaServico::query()->where('arquivado', false)->orderBy('nome')->first();
         $this->bibliotecaServicoId = $primeira?->id;
@@ -178,6 +187,7 @@ class NewSubscriptionDialog extends Component
             'valor' => ['required', 'numeric', 'min:0.01'],
             'periodicidade' => ['required', Rule::enum(Periodicidade::class)],
             'inicio' => ['required', 'date'],
+            'vencimentoManual' => ['nullable', 'date'],
             'duracaoDias' => [$this->periodicidade === 'personalizada' ? 'required' : 'nullable', 'integer', 'min:1'],
             'descricao' => ['nullable', 'string'],
             'metodoHabitual' => ['required', 'string'],
@@ -210,7 +220,9 @@ class NewSubscriptionDialog extends Component
             $bibliotecaServico = BibliotecaServico::findOrFail($this->bibliotecaServicoId);
             $periodicidade = Periodicidade::from($this->periodicidade);
             $duracaoDias = $periodicidade === Periodicidade::Personalizada ? (int) $this->duracaoDias : null;
-            $vencimento = $this->vencimentoCalculado;
+            $vencimento = trim($this->vencimentoManual) !== ''
+                ? Carbon::parse($this->vencimentoManual)
+                : $this->vencimentoCalculado;
 
             $servico = Servico::create([
                 'cliente_id' => $cliente->id,

@@ -30,6 +30,10 @@ class ReciboController extends Controller
             $conteudo = Storage::disk('public')->get($logoPath);
             $mime = Storage::disk('public')->mimeType($logoPath) ?: 'image/png';
             $logoDataUri = 'data:'.$mime.';base64,'.base64_encode($conteudo);
+        } elseif (is_file(public_path('assets/logo-mark.png'))) {
+            // Falls back to the Vencia app mark until the empresa uploads its own logo,
+            // same convention as RelatorioPdf::logoDataUri() — never ships a bare header.
+            $logoDataUri = 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('assets/logo-mark.png')));
         }
 
         $referencia = '#'.str_pad((string) $pagamento->id, 6, '0', STR_PAD_LEFT);

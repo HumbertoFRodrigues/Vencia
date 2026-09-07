@@ -58,10 +58,22 @@
                     @endif
                 </div>
 
+                @if($periodicidade !== 'unica')
+                    <x-ui.input
+                        label="Data de vencimento (opcional)"
+                        type="date"
+                        wire:model.live="vencimentoManual"
+                        :error="$errors->first('vencimentoManual')"
+                        hint="Deixe em branco para calcular a partir da data de início. Preencha só se este serviço já existe e o vencimento real é outro — por exemplo, um cliente que está a migrar para o sistema."
+                    />
+                @endif
+
                 <div style="padding:10px 12px;background:var(--surface-sunken);border-radius:var(--radius-sm);display:flex;align-items:center;gap:8px;font-size:var(--text-sm);color:var(--text-body)">
                     <x-ui.icon name="calendar-check" size="15" color="var(--text-muted)" />
                     @if($periodicidade === 'unica')
                         Sem vencimento — periodicidade única, sem ciclo de renovação.
+                    @elseif(trim($vencimentoManual) !== '')
+                        Vencimento definido manualmente: <strong class="num" style="color:var(--text-strong)">{{ \Illuminate\Support\Carbon::parse($vencimentoManual)->format('d/m/Y') }}</strong>
                     @elseif($this->vencimentoCalculado)
                         Vencimento calculado: <strong class="num" style="color:var(--text-strong)">{{ $this->vencimentoCalculado->format('d/m/Y') }}</strong>
                     @else

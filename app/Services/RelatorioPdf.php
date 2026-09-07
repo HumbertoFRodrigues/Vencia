@@ -83,15 +83,26 @@ class RelatorioPdf
         return number_format($valor, 0, ',', '.').' MZN';
     }
 
+    /**
+     * The company's own uploaded logo wins when configured (Configurações →
+     * Empresa); until then, falling back to the Vencia app mark keeps these
+     * reports from looking bare/unbranded rather than showing nothing.
+     */
     private static function logoDataUri(?string $logoPath): ?string
     {
-        if (! $logoPath || ! Storage::disk('public')->exists($logoPath)) {
-            return null;
+        if ($logoPath && Storage::disk('public')->exists($logoPath)) {
+            $conteudo = Storage::disk('public')->get($logoPath);
+            $mime = Storage::disk('public')->mimeType($logoPath) ?: 'image/png';
+
+            return 'data:'.$mime.';base64,'.base64_encode($conteudo);
         }
 
-        $conteudo = Storage::disk('public')->get($logoPath);
-        $mime = Storage::disk('public')->mimeType($logoPath) ?: 'image/png';
+        $fallback = public_path('assets/logo-mark.png');
 
-        return 'data:'.$mime.';base64,'.base64_encode($conteudo);
+        if (is_file($fallback)) {
+            return 'data:image/png;base64,'.base64_encode(file_get_contents($fallback));
+        }
+
+        return null;
     }
 }
