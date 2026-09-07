@@ -10,7 +10,7 @@
 <div style="display:flex;flex-direction:column;gap:18px">
 <x-ui.page-header :eyebrow="$mesLabel" title="Dashboard">
     <x-slot:actions>
-        <x-ui.button icon="download" wire:click="exportarCsv">Exportar</x-ui.button>
+        <x-ui.export-menu />
         <x-ui.button variant="primary" icon="plus" wire:click="$dispatch('assinatura:abrir')">Nova assinatura</x-ui.button>
     </x-slot:actions>
 </x-ui.page-header>

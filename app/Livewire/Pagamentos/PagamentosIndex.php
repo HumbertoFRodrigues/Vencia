@@ -6,6 +6,7 @@ use App\Enums\HistoricoKind;
 use App\Models\Cliente;
 use App\Models\Historico;
 use App\Models\Pagamento;
+use App\Services\RelatorioPdf;
 use App\Services\Totais;
 use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -271,6 +272,69 @@ class PagamentosIndex extends Component
         }, 'pagamentos_'.now()->format('Y-m-d_His').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    /**
+     * Every filter that's currently narrowing the ledger, in the same
+     * mês/métodos/cliente/pesquisa order the filter bar shows them — used as
+     * the PDF export's subtitle so the report says exactly what it covers.
+     */
+    private function descricaoFiltros(): string
+    {
+        $partes = [];
+
+        if ($this->mes === 'todos') {
+            $partes[] = 'Todos os meses';
+        } else {
+            $opcao = collect($this->mesesDisponiveis)->firstWhere('value', $this->mes);
+            $partes[] = $opcao['label'] ?? $this->mes;
+        }
+
+        if ($this->metodos !== []) {
+            $partes[] = 'Métodos: '.implode(', ', array_map(
+                fn (string $m) => PaymentMethod::labelFor($m),
+                $this->metodos,
+            ));
+        }
+
+        if ($this->cliente !== 'todos') {
+            $opcao = collect($this->clientesOptions)->firstWhere('value', $this->cliente);
+            $partes[] = 'Cliente: '.($opcao['label'] ?? $this->cliente);
+        }
+
+        if (trim($this->q) !== '') {
+            $partes[] = 'Pesquisa: "'.trim($this->q).'"';
+        }
+
+        return implode(' · ', $partes);
+    }
+
+    /** Same filtered ledger as exportarCsv() (reuses pagamentosQuery()), through the shared relatório template. */
+    public function exportarPdf(): StreamedResponse
+    {
+        $pagamentos = $this->pagamentosQuery()
+            ->with(['cliente', 'servico'])
+            ->orderByDesc('data')
+            ->orderByDesc('id')
+            ->get();
+
+        $linhas = $pagamentos->map(fn (Pagamento $p) => [
+            $p->data->format('d/m/Y'),
+            $p->cliente?->nome ?? '',
+            $p->servico?->nome ?? '',
+            $p->periodo,
+            PaymentMethod::labelFor($p->metodo->value),
+            RelatorioPdf::moeda((float) $p->valor),
+        ])->all();
+
+        return RelatorioPdf::gerar(
+            titulo: 'Pagamentos',
+            subtitulo: $this->descricaoFiltros(),
+            colunas: ['Data', 'Cliente', 'Serviço', 'Período', 'Método', 'Valor'],
+            linhas: $linhas,
+            nomeArquivo: 'pagamentos_'.now()->format('Y-m-d_His').'.pdf',
+            colunasNumericas: [5],
+        );
     }
 
     public function render()

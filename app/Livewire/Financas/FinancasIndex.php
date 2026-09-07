@@ -6,6 +6,7 @@ use App\Enums\MetodoPagamento;
 use App\Enums\ServicoStatus;
 use App\Models\Pagamento;
 use App\Models\Servico;
+use App\Services\RelatorioPdf;
 use App\Services\Totais;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -131,6 +132,44 @@ class FinancasIndex extends Component
         }, 'financas_'.now()->format('Y-m-d_His').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    /**
+     * Same "A receber" table as exportarCsv(), through the shared relatório
+     * template. Also carries a short MRR/ARR/entradas summary above the
+     * table — unlike Dashboard/Pagamentos, this screen has more than one
+     * exportable "thing" (the tiles are a second real dataset, not just
+     * decoration), so a bare row-list would leave out half of what this
+     * screen actually reports.
+     */
+    public function exportarPdf(): StreamedResponse
+    {
+        $servicos = $this->aReceber;
+        $totais = $this->totais;
+
+        $linhas = $servicos->map(fn (Servico $s) => [
+            $s->nome,
+            $s->cliente?->nome ?? '',
+            $s->vencimento?->format('d/m/Y') ?? '',
+            $s->periodicidade->label(),
+            RelatorioPdf::moeda((float) $s->valor),
+        ])->all();
+
+        return RelatorioPdf::gerar(
+            titulo: 'Finanças — A Receber',
+            subtitulo: 'Serviços vencidos e a vencer, com o resumo financeiro do mês corrente',
+            colunas: ['Serviço', 'Cliente', 'Vencimento', 'Período', 'Valor'],
+            linhas: $linhas,
+            nomeArquivo: 'financas_'.now()->format('Y-m-d_His').'.pdf',
+            colunasNumericas: [4],
+            resumo: [
+                'Entradas do mês' => RelatorioPdf::moeda($totais['entradas']),
+                'A receber' => RelatorioPdf::moeda($totais['aReceber']),
+                'Em atraso' => RelatorioPdf::moeda($totais['emAtraso']),
+                'Receita mensal recorrente' => RelatorioPdf::moeda($totais['mrr']),
+                'Receita anual recorrente' => RelatorioPdf::moeda($totais['arr']),
+            ],
+        );
     }
 
     public function render()

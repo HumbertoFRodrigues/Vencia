@@ -575,11 +575,19 @@
 .top-bar__actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .top-bar__bell-wrap { position: relative; display: flex; }
 .top-bar__badge { position: absolute; top: 4px; right: 4px; min-width: 15px; height: 15px; padding: 0 3px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); background: var(--red-600); color: var(--on-danger); font-family: var(--font-mono); font-size: 9px; font-weight: var(--weight-semibold); }
-.top-bar__profile { position: relative; display: flex; flex: 0 0 auto; }
 .top-bar__avatar { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-sunken); color: var(--text-muted); overflow: hidden; flex: 0 0 auto; border: none; padding: 0; cursor: pointer; transition: var(--transition-control); }
 .top-bar__avatar:hover { background: var(--surface-hover); color: var(--text-strong); }
 .top-bar__avatar:focus-visible { box-shadow: var(--ring); }
-.top-bar__profile-panel {
+.top-bar__profile-info { padding: 8px 10px 10px; margin-bottom: 4px; border-bottom: 1px solid var(--border-subtle); }
+.top-bar__profile-info strong { display: block; font-size: var(--text-sm); color: var(--text-strong); font-weight: var(--weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top-bar__profile-info span { display: block; font-size: var(--text-xs); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Generic dropdown (data-dropdown-toggle/-panel, layouts/app.blade.php) ----------
+   Backs both the profile menu above and the export menu below — any future
+   toggle+panel pair just needs the same data-dropdown-group value on both
+   halves, no new CSS. */
+.dropdown { position: relative; display: flex; flex: 0 0 auto; }
+.dropdown-panel {
   position: absolute; top: calc(100% + 8px); right: 0; width: 220px;
   z-index: 50; padding: 6px;
   background: var(--surface-card);
@@ -587,17 +595,15 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-overlay);
 }
-.top-bar__profile-info { padding: 8px 10px 10px; margin-bottom: 4px; border-bottom: 1px solid var(--border-subtle); }
-.top-bar__profile-info strong { display: block; font-size: var(--text-sm); color: var(--text-strong); font-weight: var(--weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.top-bar__profile-info span { display: block; font-size: var(--text-xs); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.top-bar__profile-logout {
+.dropdown-menu-item {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 7px 10px; margin: 0;
   border: none; border-radius: var(--radius-sm);
-  background: transparent; color: var(--text-body); font: inherit; text-align: left;
+  background: transparent; color: var(--text-body); font: inherit; font-size: var(--text-sm); text-align: left;
   cursor: pointer; transition: var(--transition-control);
 }
-.top-bar__profile-logout:hover { background: var(--surface-hover); color: var(--red-600); }
+.dropdown-menu-item:hover { background: var(--surface-hover); color: var(--text-strong); }
+.dropdown-menu-item--danger:hover { color: var(--red-600); }
 
 /* ---------- App shell ---------- */
 .app-shell { display: flex; min-height: 100vh; background: var(--surface-app); }
@@ -626,7 +632,7 @@
 /* ---------- Navigation loading indicator (wire:navigate, layouts/app.blade.php) ---------- */
 /* A slim, non-blocking presence — not a full-screen overlay — fixed near the
    top of the viewport, using the same floating-panel language as .toast /
-   .top-bar__profile-panel (surface-card + border-subtle + shadow-overlay).
+   .dropdown-panel (surface-card + border-subtle + shadow-overlay).
    The logo pulses gently via CSS; the global prefers-reduced-motion rule in
    tokens/motion.css (animation-duration: .01ms !important on `*`) already
    neutralises this animation for users who request it. */

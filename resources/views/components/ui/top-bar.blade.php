@@ -18,18 +18,18 @@
             <x-ui.icon-button icon="bell" label="Notificações" />
             @if($alertCount)<span class="top-bar__badge">{{ $alertCount }}</span>@endif
         </div>
-        <div class="top-bar__profile" data-profile-menu>
-            <button type="button" class="top-bar__avatar" data-profile-toggle aria-haspopup="true" aria-expanded="false" aria-label="Perfil">
+        <div class="dropdown">
+            <button type="button" class="top-bar__avatar" data-dropdown-toggle data-dropdown-group="profile" aria-haspopup="true" aria-expanded="false" aria-label="Perfil">
                 <x-ui.icon name="circle-user-round" size="20" />
             </button>
-            <div class="top-bar__profile-panel" data-profile-panel hidden>
+            <div class="dropdown-panel" data-dropdown-panel data-dropdown-group="profile" hidden>
                 <div class="top-bar__profile-info">
                     <strong>{{ auth()->user()->name }}</strong>
                     <span>{{ auth()->user()->email }}</span>
                 </div>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="top-bar__profile-logout">
+                    <button type="submit" class="dropdown-menu-item dropdown-menu-item--danger">
                         <x-ui.icon name="log-out" size="16" />
                         Sair
                     </button>

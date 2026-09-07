@@ -12,7 +12,7 @@
 <div style="display:flex;flex-direction:column;gap:16px">
     <x-ui.page-header :eyebrow="$mesLabel" title="Finanças">
         <x-slot:actions>
-            <x-ui.button icon="download" wire:click="exportarCsv">Exportar</x-ui.button>
+            <x-ui.export-menu />
         </x-slot:actions>
     </x-ui.page-header>
 

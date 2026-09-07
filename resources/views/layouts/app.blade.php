@@ -93,31 +93,49 @@
         });
     </script>
 
-    {{-- Profile dropdown in the top bar: same plain click-toggle pattern as
-         the theme toggle above, no Alpine/Livewire involved. --}}
+    {{-- Generic dropdown mechanism: a data-dropdown-toggle button paired with
+         a data-dropdown-panel by a shared data-dropdown-group value, so any
+         number of independent dropdowns (today: the profile menu and the
+         export menu) can coexist on one page without interfering with each
+         other. Same plain click-toggle pattern as the theme toggle above, no
+         Alpine/Livewire involved. --}}
     <script>
         document.addEventListener('click', function (e) {
-            var panel = document.querySelector('[data-profile-panel]');
-            var toggle = document.querySelector('[data-profile-toggle]');
-            if (!panel || !toggle) return;
+            var toggle = e.target.closest('[data-dropdown-toggle]');
 
-            if (e.target.closest('[data-profile-toggle]')) {
-                var isHidden = panel.hasAttribute('hidden');
-                if (isHidden) {
+            if (toggle) {
+                var group = toggle.getAttribute('data-dropdown-group');
+                var panel = document.querySelector('[data-dropdown-panel][data-dropdown-group="' + group + '"]');
+                if (!panel) return;
+
+                var wasHidden = panel.hasAttribute('hidden');
+
+                // Opening one dropdown closes every other open one first.
+                document.querySelectorAll('[data-dropdown-panel]:not([hidden])').forEach(function (openPanel) {
+                    if (openPanel === panel) return;
+                    closeDropdown(openPanel);
+                });
+
+                if (wasHidden) {
                     panel.removeAttribute('hidden');
                     toggle.setAttribute('aria-expanded', 'true');
                 } else {
-                    panel.setAttribute('hidden', '');
-                    toggle.setAttribute('aria-expanded', 'false');
+                    closeDropdown(panel);
                 }
                 return;
             }
 
-            if (!panel.hasAttribute('hidden') && !e.target.closest('[data-profile-panel]')) {
-                panel.setAttribute('hidden', '');
-                toggle.setAttribute('aria-expanded', 'false');
-            }
+            // Any other click (an outside click, or a click on a menu item
+            // inside an open panel) closes every currently open panel.
+            document.querySelectorAll('[data-dropdown-panel]:not([hidden])').forEach(closeDropdown);
         });
+
+        function closeDropdown(panel) {
+            panel.setAttribute('hidden', '');
+            var group = panel.getAttribute('data-dropdown-group');
+            var toggle = document.querySelector('[data-dropdown-toggle][data-dropdown-group="' + group + '"]');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+        }
     </script>
 
     {{-- Branded wire:navigate loading indicator: no Alpine, just the two

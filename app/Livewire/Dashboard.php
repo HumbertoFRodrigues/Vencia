@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Enums\ServicoStatus;
 use App\Models\Servico;
+use App\Services\RelatorioPdf;
 use App\Services\Totais;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
@@ -95,6 +96,31 @@ class Dashboard extends Component
         }, 'proximos_vencimentos_'.now()->format('Y-m-d_His').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    /** Same "próximos vencimentos" rows as exportarCsv(), through the shared relatório template. */
+    public function exportarPdf(): StreamedResponse
+    {
+        $servicos = $this->proximosVencimentos;
+
+        $linhas = $servicos->map(fn (Servico $s) => [
+            $s->nome,
+            $s->cliente?->nome ?? '',
+            $s->vencimento?->format('d/m/Y') ?? '',
+            RelatorioPdf::moeda((float) $s->valor),
+            $this->statusLabel($s->status),
+        ])->all();
+
+        return RelatorioPdf::gerar(
+            titulo: 'Próximos Vencimentos',
+            subtitulo: $servicos->count() === 1
+                ? 'O serviço mais próximo do vencimento'
+                : 'Os '.$servicos->count().' serviços mais próximos do vencimento',
+            colunas: ['Serviço', 'Cliente', 'Vencimento', 'Valor', 'Estado'],
+            linhas: $linhas,
+            nomeArquivo: 'proximos_vencimentos_'.now()->format('Y-m-d_His').'.pdf',
+            colunasNumericas: [3],
+        );
     }
 
     /** Mirrors StatusBadge's label map (that one's LABELS const is private to the component). */
