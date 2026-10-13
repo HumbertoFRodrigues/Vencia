@@ -33,10 +33,10 @@
         @if(isset($footer) && trim($footer))
             <div class="sidebar-nav__footer"><span class="sidebar-nav__footer-dot"></span><span class="sidebar-nav__footer-text">{{ $footer }}</span></div>
         @endif
-        <button type="button" class="sidebar-nav__toggle" data-sidebar-toggle title="Ocultar/expandir menu">
+        <button type="button" class="sidebar-nav__toggle" data-sidebar-toggle title="Mostrar só os ícones / expandir">
             <x-ui.icon name="panel-left-close" size="15" class="sidebar-nav__toggle-icon--expanded" />
             <x-ui.icon name="panel-left-open" size="15" class="sidebar-nav__toggle-icon--collapsed" />
-            <span class="sidebar-nav__toggle-label">Ocultar menu</span>
+            <span class="sidebar-nav__toggle-label">Compactar menu</span>
         </button>
     </div>
 </nav>

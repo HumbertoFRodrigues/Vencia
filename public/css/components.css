@@ -570,11 +570,14 @@
   [data-sidebar-collapsed] .sidebar-nav__toggle { justify-content: center; padding: 0; }
   [data-sidebar-collapsed] .sidebar-nav__toggle-icon--expanded { display: none; }
   [data-sidebar-collapsed] .sidebar-nav__toggle-icon--collapsed { display: inline-block; }
+
+  /* Focus mode: the ☰ button hides the whole sidebar (html[data-sidebar-hidden]). */
+  [data-sidebar-hidden] .sidebar-nav { display: none; }
 }
 
-/* Phone/tablet: the sidebar becomes a drawer opened from the top bar's menu
-   button (html[data-nav-open], same survive-the-morph idea as above). */
-.top-bar__menu { display: none; }
+/* The ☰ button sits in the top-left corner of the top bar on every screen:
+   focus mode on a computer, drawer on a phone (html[data-nav-open]). */
+.top-bar__menu { margin-left: -6px; flex: 0 0 auto; }
 .top-bar__search { flex: 0 0 auto; }
 .nav-scrim { display: none; }
 @media (max-width: 860px) {
@@ -586,7 +589,7 @@
   .sidebar-nav__item { height: 40px; }
   .sidebar-nav__toggle { display: none; }
   .top-bar { gap: 8px; }
-  .top-bar__menu { display: inline-flex; }
+
   .top-bar__search { flex: 1 1 auto; min-width: 0; }
   .global-search { width: 100%; }
   .top-bar__search .search-input { width: 100% !important; } /* overrides the component's inline desktop width */

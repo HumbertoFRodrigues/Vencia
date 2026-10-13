@@ -5,8 +5,8 @@
     'bell' => true,
 ])
 <header {{ $attributes->class(['top-bar']) }}>
-    <button type="button" class="icon-btn icon-btn--ghost icon-btn--md top-bar__menu" data-nav-toggle aria-label="Abrir menu" aria-controls="menu-principal" aria-expanded="false">
-        <x-ui.icon name="list" size="18" />
+    <button type="button" class="icon-btn icon-btn--ghost icon-btn--md top-bar__menu" data-nav-toggle aria-label="Esconder menu" title="Esconder menu" aria-controls="menu-principal" aria-expanded="true">
+        <x-ui.icon name="menu" size="18" />
     </button>
     @if($title)<strong class="top-bar__title">{{ $title }}</strong>@endif
     @if($search)

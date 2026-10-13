@@ -30,6 +30,9 @@
                 if (window.localStorage.getItem('sm-sidebar-collapsed') === '1') {
                     document.documentElement.setAttribute('data-sidebar-collapsed', '');
                 }
+                if (window.localStorage.getItem('sm-sidebar-hidden') === '1') {
+                    document.documentElement.setAttribute('data-sidebar-hidden', '');
+                }
             } catch (e) {}
         })();
     </script>
@@ -111,21 +114,50 @@
         });
     </script>
 
-    {{-- Phone drawer: the menu button opens the sidebar; the scrim, Escape or
-         any page navigation closes it. State lives on <html> like the theme. --}}
+    {{-- The ☰ button in the top-left corner. On a computer it hides/shows the
+         whole sidebar for a distraction-free page (remembered, like the theme);
+         on a phone it opens the sidebar as a drawer that the scrim, Escape or
+         any navigation closes. Both states live on <html>, so they survive
+         wire:navigate's body morphing. --}}
     <script>
         (function () {
             var root = document.documentElement;
-            function setOpen(open) {
-                if (open) { root.setAttribute('data-nav-open', ''); } else { root.removeAttribute('data-nav-open'); }
-                document.querySelectorAll('[data-nav-toggle]').forEach(function (b) { b.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+            var telemovel = window.matchMedia('(max-width: 860px)');
+
+            function sincronizarBotao() {
+                var visivel = telemovel.matches ? root.hasAttribute('data-nav-open') : !root.hasAttribute('data-sidebar-hidden');
+                var rotulo = visivel ? 'Esconder menu' : 'Mostrar menu';
+                document.querySelectorAll('[data-nav-toggle]').forEach(function (b) {
+                    b.setAttribute('aria-expanded', visivel ? 'true' : 'false');
+                    b.setAttribute('aria-label', rotulo);
+                    b.setAttribute('title', rotulo);
+                });
             }
+
+            function abrirGaveta(aberta) {
+                if (aberta) { root.setAttribute('data-nav-open', ''); } else { root.removeAttribute('data-nav-open'); }
+                sincronizarBotao();
+            }
+
+            function alternarBarraLateral() {
+                var esconder = !root.hasAttribute('data-sidebar-hidden');
+                if (esconder) { root.setAttribute('data-sidebar-hidden', ''); } else { root.removeAttribute('data-sidebar-hidden'); }
+                try { window.localStorage.setItem('sm-sidebar-hidden', esconder ? '1' : '0'); } catch (e) {}
+                sincronizarBotao();
+            }
+
             document.addEventListener('click', function (e) {
-                if (e.target.closest('[data-nav-toggle]')) { setOpen(!root.hasAttribute('data-nav-open')); return; }
-                if (e.target.closest('[data-nav-close]')) { setOpen(false); }
+                if (e.target.closest('[data-nav-toggle]')) {
+                    if (telemovel.matches) { abrirGaveta(!root.hasAttribute('data-nav-open')); } else { alternarBarraLateral(); }
+                    return;
+                }
+                if (e.target.closest('[data-nav-close]')) { abrirGaveta(false); }
             });
-            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && root.hasAttribute('data-nav-open')) { setOpen(false); } });
-            document.addEventListener('livewire:navigate', function () { setOpen(false); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && root.hasAttribute('data-nav-open')) { abrirGaveta(false); } });
+            document.addEventListener('livewire:navigate', function () { abrirGaveta(false); });
+            document.addEventListener('livewire:navigated', sincronizarBotao);
+            telemovel.addEventListener('change', sincronizarBotao);
+            sincronizarBotao();
         })();
     </script>
 
