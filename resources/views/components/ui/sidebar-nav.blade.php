@@ -15,6 +15,7 @@
         <img src="{{ $logoSrc }}" alt="" class="sidebar-nav__logo" />
         <span class="sidebar-nav__brand-name">{{ $brand }}</span>
     </div>
+    {{ $switcher ?? '' }}
     <div class="sidebar-nav__list">
         @foreach($items as $it)
             @php

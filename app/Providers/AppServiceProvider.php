@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\FinancasPessoais;
 use App\Services\Totais;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -39,18 +40,30 @@ class AppServiceProvider extends ServiceProvider
         // (not a Livewire component) so the shell never re-renders on inner
         // Livewire interactions.
         View::composer('layouts.app', function ($view): void {
-            $totais = app(Totais::class)->calcular();
+            $painel = request()->routeIs('pessoal.*') ? 'pessoal' : 'empresa';
 
-            $definitions = [
-                ['id' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard'],
-                ['id' => 'clientes', 'label' => 'Clientes', 'icon' => 'users', 'route' => 'clientes.index'],
-                ['id' => 'servicos', 'label' => 'Serviços', 'icon' => 'package', 'route' => 'servicos.index'],
-                ['id' => 'vencimentos', 'label' => 'Vencimentos', 'icon' => 'calendar-clock', 'route' => 'vencimentos.index', 'badge' => $totais['aVencer']],
-                ['id' => 'pagamentos', 'label' => 'Pagamentos', 'icon' => 'banknote', 'route' => 'pagamentos.index', 'badge' => $totais['nAReceber']],
-                ['id' => 'financas', 'label' => 'Finanças', 'icon' => 'chart-line', 'route' => 'financas.index'],
-                ['id' => 'historico', 'label' => 'Histórico', 'icon' => 'history', 'route' => 'historico.index'],
-                ['id' => 'configuracoes', 'label' => 'Configurações', 'icon' => 'settings', 'route' => 'configuracoes.index'],
-            ];
+            if ($painel === 'pessoal') {
+                $definitions = [
+                    ['id' => 'resumo', 'label' => 'Resumo', 'icon' => 'layout-dashboard', 'route' => 'pessoal.resumo', 'badge' => app(FinancasPessoais::class)->nAtrasoHoje()],
+                    ['id' => 'movimentos', 'label' => 'Movimentos', 'icon' => 'list', 'route' => 'pessoal.movimentos'],
+                    ['id' => 'fixos', 'label' => 'Fixos mensais', 'icon' => 'repeat', 'route' => 'pessoal.fixos'],
+                    ['id' => 'orcamentos', 'label' => 'Orçamentos', 'icon' => 'target', 'route' => 'pessoal.orcamentos'],
+                    ['id' => 'analise', 'label' => 'Análise', 'icon' => 'chart-line', 'route' => 'pessoal.analise'],
+                ];
+            } else {
+                $totais = app(Totais::class)->calcular();
+
+                $definitions = [
+                    ['id' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard'],
+                    ['id' => 'clientes', 'label' => 'Clientes', 'icon' => 'users', 'route' => 'clientes.index'],
+                    ['id' => 'servicos', 'label' => 'Serviços', 'icon' => 'package', 'route' => 'servicos.index'],
+                    ['id' => 'vencimentos', 'label' => 'Vencimentos', 'icon' => 'calendar-clock', 'route' => 'vencimentos.index', 'badge' => $totais['aVencer']],
+                    ['id' => 'pagamentos', 'label' => 'Pagamentos', 'icon' => 'banknote', 'route' => 'pagamentos.index', 'badge' => $totais['nAReceber']],
+                    ['id' => 'financas', 'label' => 'Finanças', 'icon' => 'chart-line', 'route' => 'financas.index'],
+                    ['id' => 'historico', 'label' => 'Histórico', 'icon' => 'history', 'route' => 'historico.index'],
+                    ['id' => 'configuracoes', 'label' => 'Configurações', 'icon' => 'settings', 'route' => 'configuracoes.index'],
+                ];
+            }
 
             $navActive = null;
             $navItems = array_map(function (array $item) use (&$navActive): array {
@@ -66,6 +79,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with([
                 'navItems' => $navItems,
                 'navActive' => $navActive,
+                'painel' => $painel,
             ]);
         });
     }

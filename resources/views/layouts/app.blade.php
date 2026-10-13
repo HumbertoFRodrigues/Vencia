@@ -9,6 +9,8 @@
     <title>{{ isset($title) ? $title.' · Vencia' : 'Vencia' }}</title>
 
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    {{-- Versioned by mtime so a changed file is never served from a stale browser cache. --}}
+    <link rel="stylesheet" href="{{ asset('css/pessoal.css') }}?v={{ @filemtime(public_path('css/pessoal.css')) }}">
 
     {{-- Applied before paint to avoid a flash of the wrong theme. --}}
     <script>
@@ -39,11 +41,12 @@
 <body>
     <div class="app-shell">
         <x-ui.sidebar-nav :items="$navItems" :active="$navActive">
-            <x-slot:footer>Verificação diária às 07:00</x-slot:footer>
+            <x-slot:switcher><x-ui.panel-switch :active="$painel" /></x-slot:switcher>
+            <x-slot:footer>{{ $painel === 'pessoal' ? 'Painel privado — só tu vês' : 'Verificação diária às 07:00' }}</x-slot:footer>
         </x-ui.sidebar-nav>
 
         <div class="app-shell__main">
-            <x-ui.top-bar />
+            <x-ui.top-bar :search="$painel === 'empresa'" :bell="$painel === 'empresa'" />
 
             <main class="app-shell__content">
                 <div class="app-shell__content-inner">

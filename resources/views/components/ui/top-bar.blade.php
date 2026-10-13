@@ -2,6 +2,7 @@
     'title' => null,
     'search' => true,
     'themeToggle' => true,
+    'bell' => true,
 ])
 <header {{ $attributes->class(['top-bar']) }}>
     @if($title)<strong class="top-bar__title">{{ $title }}</strong>@endif
@@ -13,7 +14,7 @@
     <div class="top-bar__actions">
         {{ $actions ?? '' }}
         @if($themeToggle)<x-ui.theme-toggle />@endif
-        <livewire:shared.notification-bell />
+        @if($bell)<livewire:shared.notification-bell />@endif
         <div class="dropdown">
             <button type="button" class="top-bar__avatar" data-dropdown-toggle data-dropdown-group="profile" aria-haspopup="true" aria-expanded="false" aria-label="Perfil">
                 <x-ui.icon name="circle-user-round" size="20" />

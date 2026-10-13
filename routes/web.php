@@ -11,6 +11,11 @@ use App\Livewire\Dashboard;
 use App\Livewire\Financas\FinancasIndex;
 use App\Livewire\Historico\HistoricoIndex;
 use App\Livewire\Pagamentos\PagamentosIndex;
+use App\Livewire\Pessoal\Analise as PessoalAnalise;
+use App\Livewire\Pessoal\Fixos as PessoalFixos;
+use App\Livewire\Pessoal\Movimentos as PessoalMovimentos;
+use App\Livewire\Pessoal\Orcamentos as PessoalOrcamentos;
+use App\Livewire\Pessoal\Resumo as PessoalResumo;
 use App\Livewire\Servicos\ServicoDetail;
 use App\Livewire\Servicos\ServicosIndex;
 use App\Livewire\Vencimentos\VencimentosIndex;
@@ -52,4 +57,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/vencimentos', VencimentosIndex::class)->name('vencimentos.index');
     Route::get('/historico', HistoricoIndex::class)->name('historico.index');
     Route::get('/configuracoes', ConfiguracoesIndex::class)->name('configuracoes.index');
+
+    Route::prefix('pessoal')->name('pessoal.')->group(function () {
+        Route::get('/', PessoalResumo::class)->name('resumo');
+        Route::get('/movimentos', PessoalMovimentos::class)->name('movimentos');
+        Route::get('/fixos', PessoalFixos::class)->name('fixos');
+        Route::get('/orcamentos', PessoalOrcamentos::class)->name('orcamentos');
+        Route::get('/analise', PessoalAnalise::class)->name('analise');
+    });
 });
