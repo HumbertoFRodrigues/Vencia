@@ -26,6 +26,14 @@ class SegurancaTest extends TestCase
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     }
 
+    public function test_error_pages_are_in_portuguese(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->get('/pagina-que-nao-existe')->assertNotFound()->assertSee('Página não encontrada');
+        $this->get('/servicos/999999')->assertNotFound()->assertSee('Voltar ao início');
+    }
+
     public function test_forgot_password_does_not_reveal_whether_an_account_exists(): void
     {
         User::factory()->create(['email' => 'existe@teste.mz']);

@@ -95,6 +95,22 @@
         });
     </script>
 
+    {{-- Session expired mid-action: Livewire's own prompt is in English. --}}
+    <script>
+        document.addEventListener('livewire:init', function () {
+            var avisado = false;
+            Livewire.interceptRequest(function (pedido) {
+                pedido.onError(function (e) {
+                    if (!e.response || e.response.status !== 419) return;
+                    e.preventDefault();
+                    if (avisado) return;
+                    avisado = true;
+                    if (confirm('A sessão expirou por inactividade.\nRecarregar a página para continuar?')) window.location.reload();
+                });
+            });
+        });
+    </script>
+
     {{-- Phone drawer: the menu button opens the sidebar; the scrim, Escape or
          any page navigation closes it. State lives on <html> like the theme. --}}
     <script>
