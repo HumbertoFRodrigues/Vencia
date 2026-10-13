@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -61,13 +62,16 @@ class RegistrarPagamentoDialog extends Component
     public bool $show = false;
 
     /** Fixed at mount time when this instance is scoped to one servico (ServicoDetail's usage). */
+    #[Locked]
     public ?int $servicoId = null;
 
     /** The servicoId this instance was mounted with — restored at the top of every abrir(), so a
      *  previous edit's temporary override of $servicoId (below) never leaks into the next "create" open. */
+    #[Locked]
     public ?int $servicoIdFixo = null;
 
     /** Non-null while editing an existing pagamento instead of creating a new one. */
+    #[Locked]
     public ?int $pagamentoId = null;
 
     public string $clienteSelecionado = '';
@@ -216,11 +220,15 @@ class RegistrarPagamentoDialog extends Component
      */
     protected function rules(): array
     {
+        $original = $this->pagamentoId ? Pagamento::find($this->pagamentoId) : null;
+
         $rules = [
-            'valor' => ['required', 'numeric', 'min:0.01'],
-            'data' => ['required', 'date'],
-            'periodo' => ['required', 'string'],
-            'metodo' => ['required', 'string'],
+            'valor' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
+            'data' => ['required', 'date_format:Y-m-d'],
+            // When editing, the payment's own período/método stay valid even if no longer offered
+            // (renewals store e.g. "Anual"; a método may have been archived since).
+            'periodo' => ['required', Rule::in([...array_column(self::PERIODO_OPTIONS, 'value'), $original?->periodo])],
+            'metodo' => ['required', Rule::in([...MetodoPagamentoOpcao::nomesActivos(), $original?->metodo])],
         ];
 
         if ($this->servicoId === null) {

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
 
 class Configuracao extends Model
 {
@@ -106,9 +108,23 @@ class Configuracao extends Model
                 default => 'tls', // STARTTLS
             },
             'mail.mailers.smtp.username' => $smtp['utilizador'] ?: null,
-            'mail.mailers.smtp.password' => $smtp['password'] ?? null,
+            'mail.mailers.smtp.password' => self::passwordSmtp($smtp['password'] ?? null),
         ]);
 
         app()->forgetInstance('mail.manager');
+    }
+
+    /** Saved passwords are encrypted; one saved before encryption existed is still read as-is. */
+    private static function passwordSmtp(?string $guardada): ?string
+    {
+        if ($guardada === null || $guardada === '') {
+            return null;
+        }
+
+        try {
+            return Crypt::decryptString($guardada);
+        } catch (DecryptException) {
+            return $guardada;
+        }
     }
 }

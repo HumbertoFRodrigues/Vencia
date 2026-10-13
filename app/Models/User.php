@@ -47,6 +47,10 @@ class User extends Authenticatable
 
         $expiraEmMinutos = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
 
+        // Same mailer as every other email (the SMTP saved in Configurações),
+        // never the log driver that would write the reset link to disk.
+        Configuracao::aplicarSmtpEmTempoDeExecucao();
+
         Mail::to($this->getEmailForPasswordReset())->send(new ResetPasswordMail($url, $expiraEmMinutos));
     }
 }

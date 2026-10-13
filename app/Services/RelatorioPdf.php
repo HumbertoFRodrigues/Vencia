@@ -59,19 +59,19 @@ class RelatorioPdf
             'empresa' => $empresa,
             'logoDataUri' => self::logoDataUri($empresa['logo_path'] ?? null),
             'geradoEm' => Carbon::now(),
-        ])
-            ->setPaper('a4')
-            // Scoped to this Dompdf instance only (Options::set() on the
-            // instance built inside loadView(), not a global config change) —
-            // needed so the footer's "Página X de Y" script (evaluated via
-            // Dompdf's own <script type="text/php"> mechanism) actually runs.
-            // The template itself is ours, never user-supplied HTML, so this
-            // carries none of the "untrusted document" risk the option's
-            // doc-block warns about.
-            ->setOption(['isPhpEnabled' => true]);
+        ])->setPaper('a4');
 
-        return response()->streamDownload(function () use ($pdf): void {
-            echo $pdf->output();
+        // "Página X de Y" is drawn on the canvas after rendering, so Dompdf
+        // never needs isPhpEnabled (inline PHP in templates stays switched off).
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+        $metricas = $dompdf->getFontMetrics();
+        $fonte = $metricas->getFont('Helvetica', 'normal');
+        $largura = $metricas->getTextWidth('Página 00 de 00', $fonte, 8.5);
+        $dompdf->getCanvas()->page_text(555 - $largura, 805, 'Página {PAGE_NUM} de {PAGE_COUNT}', $fonte, 8.5, [0.60, 0.63, 0.67]);
+
+        return response()->streamDownload(function () use ($dompdf): void {
+            echo $dompdf->output();
         }, $nomeArquivo, [
             'Content-Type' => 'application/pdf',
         ]);

@@ -147,17 +147,8 @@
 
     <div class="rodape">
         <div class="marca">Vencia</div>
-        <div class="pagina">
-            <script type="text/php">
-                if (isset($pdf)) {
-                    $font = $fontMetrics->getFont('Helvetica', 'normal');
-                    $size = 8.5;
-                    $texto = "Página {$PAGE_NUM} de {$PAGE_COUNT}";
-                    $largura = $fontMetrics->getTextWidth($texto, $font, $size);
-                    $pdf->page_text(555 - $largura, 805, $texto, $font, $size, array(0.60, 0.63, 0.67));
-                }
-            </script>
-        </div>
+        {{-- "Página X de Y" is drawn by App\Services\RelatorioPdf after rendering. --}}
+        <div class="pagina"></div>
     </div>
 </body>
 </html>

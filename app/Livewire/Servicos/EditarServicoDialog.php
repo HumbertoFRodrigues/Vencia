@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -56,6 +57,7 @@ class EditarServicoDialog extends Component
 
     public bool $show = false;
 
+    #[Locked]
     public ?int $servicoId = null;
 
     public string $nome = '';

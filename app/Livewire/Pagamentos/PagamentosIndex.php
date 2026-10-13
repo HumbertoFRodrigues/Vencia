@@ -270,26 +270,18 @@ class PagamentosIndex extends Component
 
         $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
 
-        return response()->streamDownload(function () use ($pagamentos): void {
-            $handle = fopen('php://output', 'w');
-            fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, ['Data', 'Cliente', 'Serviço', 'Período', 'Método', 'Valor'], ';');
-
-            foreach ($pagamentos as $p) {
-                fputcsv($handle, [
-                    $p->data->format('d/m/Y'),
-                    $p->cliente?->nome ?? '',
-                    $p->servico?->nome ?? '',
-                    $p->periodo,
-                    PaymentMethod::labelFor($p->metodo),
-                    number_format((float) $p->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
-                ], ';');
-            }
-
-            fclose($handle);
-        }, 'pagamentos_'.now()->format('Y-m-d_His').'.csv', [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
+        return \App\Support\Csv::download(
+            'pagamentos_'.now()->format('Y-m-d_His').'.csv',
+            ['Data', 'Cliente', 'Serviço', 'Período', 'Método', 'Valor'],
+            $pagamentos->map(fn ($p) => [
+                $p->data->format('d/m/Y'),
+                $p->cliente?->nome ?? '',
+                $p->servico?->nome ?? '',
+                $p->periodo,
+                PaymentMethod::labelFor($p->metodo),
+                number_format((float) $p->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
+            ]),
+        );
     }
 
     /**

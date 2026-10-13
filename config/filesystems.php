@@ -38,9 +38,12 @@ return [
             'report' => false,
         ],
 
+        // Uploads (logos) are written straight into public/storage, so shared
+        // hosting without SSH works with no `storage:link` symlink. Locally,
+        // where that symlink already exists, this resolves to the same files.
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            'root' => public_path('storage'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,

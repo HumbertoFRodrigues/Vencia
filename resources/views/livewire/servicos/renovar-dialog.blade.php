@@ -19,7 +19,7 @@
                     <span class="field__label">Método</span>
                     <div class="pill-picker">
                         @foreach($this->metodos as $m)
-                            <button type="button" wire:click="$set('metodo', '{{ $m }}')" class="pill-picker__item {{ $metodo === $m ? 'pill-picker__item--active' : '' }}">
+                            <button type="button" wire:click="$set('metodo', {{ \Illuminate\Support\Js::from($m) }})" class="pill-picker__item {{ $metodo === $m ? 'pill-picker__item--active' : '' }}">
                                 <x-ui.payment-method :method="$m" size="22" :show-label="false" />
                             </button>
                         @endforeach

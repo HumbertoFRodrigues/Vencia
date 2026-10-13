@@ -6,6 +6,7 @@ use App\Enums\ClienteStatus;
 use App\Models\Cliente;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -23,6 +24,7 @@ class ClienteForm extends Component
 {
     public bool $show = false;
 
+    #[Locked]
     public ?int $clienteId = null;
 
     public string $nome = '';
@@ -35,6 +37,7 @@ class ClienteForm extends Component
 
     public string $status = 'activo';
 
+    #[Locked]
     public string $savedEvent = 'cliente-guardado';
 
     #[On('cliente-form:abrir')]

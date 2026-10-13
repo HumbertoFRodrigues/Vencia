@@ -92,7 +92,7 @@
                     <span class="eyebrow">Como o cliente paga</span>
                     <div class="pill-picker">
                         @foreach($this->metodos as $m)
-                            <button type="button" wire:click="$set('metodoHabitual', '{{ $m }}')" class="pill-picker__item {{ $metodoHabitual === $m ? 'pill-picker__item--active' : '' }}">
+                            <button type="button" wire:click="$set('metodoHabitual', {{ \Illuminate\Support\Js::from($m) }})" class="pill-picker__item {{ $metodoHabitual === $m ? 'pill-picker__item--active' : '' }}">
                                 <x-ui.payment-method :method="$m" size="22" :show-label="false" />
                             </button>
                         @endforeach

@@ -34,7 +34,7 @@
 
     <div class="pill-picker">
         @foreach($this->metodosDisponiveis as $m)
-            <button type="button" wire:click="alternarMetodo('{{ $m }}')" class="pill-picker__item {{ in_array($m, $metodos, true) ? 'pill-picker__item--active' : '' }}">
+            <button type="button" wire:click="alternarMetodo({{ \Illuminate\Support\Js::from($m) }})" class="pill-picker__item {{ in_array($m, $metodos, true) ? 'pill-picker__item--active' : '' }}">
                 <x-ui.payment-method :method="$m" size="22" />
             </button>
         @endforeach

@@ -8,6 +8,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +27,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Links in emails (password reset, reminders) are built from APP_URL,
+        // never from the request's Host header, and always https in production.
+        if ($this->app->isProduction() && config('app.url')) {
+            URL::forceRootUrl(config('app.url'));
+
+            if (str_starts_with((string) config('app.url'), 'https://')) {
+                URL::forceScheme('https');
+            }
+        }
+
         // Coarse per-IP backstop for the login/forgot-password/reset-password
         // forms (see routes/web.php's `throttle:login` middleware). The
         // precise per-email+IP throttle that actually produces the friendly

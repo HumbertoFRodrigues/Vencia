@@ -5,6 +5,7 @@ namespace App\Livewire\Servicos;
 use App\Models\Servico;
 use App\Services\ServicoStatusService;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -26,6 +27,7 @@ class CancelarDialog extends Component
 {
     public bool $show = false;
 
+    #[Locked]
     public ?int $servicoId = null;
 
     public string $motivo = '';

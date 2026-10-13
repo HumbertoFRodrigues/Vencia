@@ -27,14 +27,21 @@ class ForgotPasswordController extends Controller
             'email' => ['required', 'string', 'email'],
         ]);
 
-        $status = Password::sendResetLink($request->only('email'));
+        try {
+            $status = Password::sendResetLink($request->only('email'));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Falha ao enviar o email de recuperação de password: '.$e->getMessage());
 
-        if ($status !== Password::RESET_LINK_SENT) {
             return back()
-                ->withErrors(['email' => trans($status)])
+                ->withErrors(['email' => 'Não foi possível enviar o email agora. Tente de novo dentro de alguns minutos.'])
                 ->onlyInput('email');
         }
 
-        return back()->with('status', trans($status));
+        if ($status === Password::RESET_THROTTLED) {
+            return back()->withErrors(['email' => trans($status)])->onlyInput('email');
+        }
+
+        // Same answer whether or not the email exists, so the form can't be used to discover accounts.
+        return back()->with('status', 'Se este email estiver registado, enviámos um link para redefinir a password.');
     }
 }

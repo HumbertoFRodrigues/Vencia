@@ -127,25 +127,17 @@ class FinancasIndex extends Component
 
         $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
 
-        return response()->streamDownload(function () use ($servicos): void {
-            $handle = fopen('php://output', 'w');
-            fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, ['Serviço', 'Cliente', 'Vencimento', 'Período', 'Valor'], ';');
-
-            foreach ($servicos as $s) {
-                fputcsv($handle, [
-                    $s->nome,
-                    $s->cliente?->nome ?? '',
-                    $s->vencimento?->format('d/m/Y') ?? '',
-                    $s->periodicidade->label(),
-                    number_format((float) $s->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
-                ], ';');
-            }
-
-            fclose($handle);
-        }, 'financas_'.now()->format('Y-m-d_His').'.csv', [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
+        return \App\Support\Csv::download(
+            'financas_'.now()->format('Y-m-d_His').'.csv',
+            ['Serviço', 'Cliente', 'Vencimento', 'Período', 'Valor'],
+            $servicos->map(fn (Servico $s) => [
+                $s->nome,
+                $s->cliente?->nome ?? '',
+                $s->vencimento?->format('d/m/Y') ?? '',
+                $s->periodicidade->label(),
+                number_format((float) $s->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
+            ]),
+        );
     }
 
     /**

@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -20,6 +21,7 @@ class SuspenderDialog extends Component
 {
     public bool $show = false;
 
+    #[Locked]
     public ?int $servicoId = null;
 
     public string $motivo = 'pagamento_nao_renovado';
@@ -70,7 +72,7 @@ class SuspenderDialog extends Component
     protected function rules(): array
     {
         return [
-            'motivo' => ['required', 'string'],
+            'motivo' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\SuspensaoMotivo::class)],
             'data' => ['required', 'date'],
             'observacao' => ['nullable', 'string'],
             'enviarEmail' => ['boolean'],

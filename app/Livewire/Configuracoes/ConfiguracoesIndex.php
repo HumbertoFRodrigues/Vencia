@@ -217,7 +217,7 @@ class ConfiguracoesIndex extends Component
             'novoNome' => ['required', 'string', 'max:255', Rule::unique('biblioteca_servicos', 'nome')->ignore($this->editandoId)],
             'novaCategoria' => ['required', Rule::enum(ServicoCategoria::class)],
             'novaDescricao' => ['nullable', 'string', 'max:500'],
-            'novoLogo' => ['nullable', 'image', 'max:2048'],
+            'novoLogo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,gif', 'max:2048'],
         ]);
 
         $payload = [
@@ -343,7 +343,7 @@ class ConfiguracoesIndex extends Component
 
         $data = $this->validate([
             'novoMetodoNome' => ['required', 'string', 'max:255', Rule::unique('metodos_pagamento', 'nome')->ignore($this->editandoMetodoId)],
-            'novoMetodoLogo' => ['nullable', 'image', 'max:2048'],
+            'novoMetodoLogo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,gif', 'max:2048'],
         ]);
 
         $payload = ['nome' => $data['novoMetodoNome']];
@@ -496,7 +496,7 @@ class ConfiguracoesIndex extends Component
             'empresaEmail' => ['required', 'email', 'max:255'],
             'empresaMoeda' => ['required', 'string', Rule::in(['MZN', 'USD', 'ZAR'])],
             'empresaFuso' => ['required', 'string', Rule::in(['Africa/Maputo', 'UTC'])],
-            'novoLogoEmpresa' => ['nullable', 'image', 'max:2048'],
+            'novoLogoEmpresa' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,gif', 'max:2048'],
         ]);
 
         $empresa = Configuracao::obter('empresa', []);
@@ -519,10 +519,13 @@ class ConfiguracoesIndex extends Component
     {
         $data = $this->validate([
             'smtpServidor' => ['nullable', 'string', 'max:255'],
-            'smtpPorta' => ['nullable', 'string', 'max:10'],
-            'smtpSeguranca' => ['required', 'string'],
+            'smtpPorta' => ['nullable', 'integer', 'between:1,65535'],
+            'smtpSeguranca' => ['required', \Illuminate\Validation\Rule::in(['STARTTLS', 'SSL', 'Nenhuma'])],
             'smtpUtilizador' => ['nullable', 'string', 'max:255'],
             'smtpPassword' => ['nullable', 'string', 'max:255'],
+        ], [
+            'smtpPorta.integer' => 'A porta tem de ser um número (normalmente 587 ou 465).',
+            'smtpPorta.between' => 'A porta tem de estar entre 1 e 65535.',
         ]);
 
         $existente = Configuracao::obter('smtp', []);
@@ -530,13 +533,17 @@ class ConfiguracoesIndex extends Component
         Configuracao::query()->updateOrCreate(['chave' => 'smtp'], [
             'valor' => [
                 'servidor' => $data['smtpServidor'],
-                'porta' => $data['smtpPorta'],
+                'porta' => (string) $data['smtpPorta'],
                 'seguranca' => $data['smtpSeguranca'],
                 'utilizador' => $data['smtpUtilizador'],
                 // Blank password field means "keep the one already saved" —
                 // the field is never pre-filled (see its property docblock),
                 // so an empty submit is not the admin asking to clear it.
-                'password' => $data['smtpPassword'] !== '' ? $data['smtpPassword'] : ($existente['password'] ?? null),
+                // Stored encrypted with APP_KEY: a database dump or backup
+                // never exposes the mailbox password.
+                'password' => $data['smtpPassword'] !== ''
+                    ? \Illuminate\Support\Facades\Crypt::encryptString($data['smtpPassword'])
+                    : ($existente['password'] ?? null),
             ],
         ]);
 
