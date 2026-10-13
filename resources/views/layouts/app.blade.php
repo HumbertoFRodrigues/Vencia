@@ -113,6 +113,22 @@
         })();
     </script>
 
+    {{-- Sidebar badges are rendered with the page; components dispatch
+         'nav-badge' {id, n} after an action so the count never lags behind. --}}
+    <script>
+        window.addEventListener('nav-badge', function (e) {
+            var item = document.querySelector('.sidebar-nav__item[data-nav-id="' + e.detail.id + '"]');
+            if (!item) return;
+            var badge = item.querySelector('.sidebar-nav__badge');
+            if (e.detail.n > 0) {
+                if (!badge) { badge = document.createElement('span'); badge.className = 'sidebar-nav__badge'; item.appendChild(badge); }
+                badge.textContent = e.detail.n;
+            } else if (badge) {
+                badge.remove();
+            }
+        });
+    </script>
+
     {{-- Generic dropdown mechanism: a data-dropdown-toggle button paired with
          a data-dropdown-panel by a shared data-dropdown-group value, so any
          number of independent dropdowns (today: the profile menu and the

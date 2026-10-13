@@ -34,6 +34,34 @@
 
     <div class="pessoal-grid">
         <div class="pessoal-grid__main">
+            @if($this->anteriores->isNotEmpty())
+                <x-ui.card title="Ficou para trás" subtitle="Fixos de meses anteriores que nunca foram confirmados nem ignorados" :padding="0" class="card--alerta">
+                    <ul class="fixo-list">
+                        @foreach($this->anteriores as $linha)
+                            @php
+                                $f = $linha['fixo'];
+                                $entrada = $f->tipo === \App\Enums\TipoMovimento::Entrada;
+                                $comp = $linha['competencia']->format('Y-m');
+                            @endphp
+                            <li class="fixo-list__item fixo-list__item--atraso" wire:key="ant-{{ $f->id }}-{{ $comp }}">
+                                <x-ui.cat-chip :categoria="$f->categoria" />
+                                <div class="fixo-list__text">
+                                    <span class="fixo-list__name">{{ $f->descricao }}</span>
+                                    <span class="fixo-list__meta">{{ $entrada ? 'Entrada' : 'Débito' }} de {{ ucfirst($linha['competencia']->locale('pt_PT')->translatedFormat('F')) }} · previsto a {{ $linha['data']->format('d/m') }}</span>
+                                </div>
+                                <span class="estado-pill estado-pill--atraso">{{ ucfirst($linha['competencia']->locale('pt_PT')->translatedFormat('M Y')) }}</span>
+                                <span class="fixo-list__valor"><x-ui.money-value :amount="$linha['valorPrevisto']" size="sm" tone="muted" /></span>
+                                <span class="fixo-list__actions">
+                                    <x-ui.button size="sm" variant="primary" icon="check" wire:click="confirmarFixo({{ $f->id }}, '{{ $comp }}')">{{ $entrada ? 'Recebi' : 'Paguei' }}</x-ui.button>
+                                    <x-ui.icon-button size="sm" icon="pencil" label="Confirmar com outro valor ou data" wire:click="$dispatch('movimento:abrir', { fixoId: {{ $f->id }}, competencia: '{{ $comp }}' })" />
+                                    <x-ui.icon-button size="sm" icon="circle-slash" label="Não houve neste mês" wire:click="ignorarFixo({{ $f->id }}, '{{ $comp }}')" />
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </x-ui.card>
+            @endif
+
             <x-ui.card title="Fixos do mês" :subtitle="$r['nFixos'] > 0 ? $r['nConfirmados'].' de '.$r['nFixos'].' confirmados'.($r['nAtraso'] > 0 ? ' · '.$r['nAtraso'].' em atraso' : '') : 'Entradas e débitos que se repetem todos os meses'" :padding="0">
                 <x-slot:action>
                     <a class="btn btn--ghost btn--sm" href="{{ route('pessoal.fixos') }}" wire:navigate>Gerir fixos <x-ui.icon name="arrow-right" size="15" /></a>

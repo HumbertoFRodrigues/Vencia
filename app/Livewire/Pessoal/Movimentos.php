@@ -7,6 +7,9 @@ use App\Livewire\Pessoal\Concerns\NavegaMeses;
 use App\Models\CategoriaPessoal;
 use App\Models\MovimentoPessoal;
 use App\Services\FinancasPessoais;
+use App\Services\RelatorioPdf;
+use App\Support\Csv;
+use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -14,6 +17,7 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[Layout('layouts.app')]
 #[Title('Movimentos pessoais')]
@@ -33,6 +37,15 @@ class Movimentos extends Component
     public function mount(FinancasPessoais $financas): void
     {
         $financas->garantirCategoriasPadrao();
+
+        // Filters arrive from the URL: anything unexpected falls back to "everything".
+        if (! in_array($this->tipo, ['todos', 'entrada', 'saida'], true)) {
+            $this->tipo = 'todos';
+        }
+        if ($this->categoria !== '' && ! ctype_digit($this->categoria)) {
+            $this->categoria = '';
+        }
+        $this->q = mb_substr($this->q, 0, 100);
     }
 
     public function setTab(string $tipo): void
@@ -93,6 +106,52 @@ class Movimentos extends Component
             ->all();
 
         return array_merge([['value' => '', 'label' => 'Todas as categorias']], $opcoes);
+    }
+
+    public function exportarCsv(): StreamedResponse
+    {
+        $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
+
+        return Csv::download(
+            'movimentos_'.$this->mesActual()->format('Y-m').'.csv',
+            ['Data', 'Tipo', 'Descrição', 'Categoria', 'Meio', 'Fixo', 'Valor', 'Nota'],
+            $this->movimentos->map(fn (MovimentoPessoal $m) => [
+                $m->data->format('d/m/Y'),
+                $m->tipo->label(),
+                $m->descricao,
+                $m->categoria?->nome ?? '',
+                $m->meio ? PaymentMethod::labelFor($m->meio) : '',
+                $m->fixo_pessoal_id ? 'Sim' : 'Não',
+                number_format((float) $m->valor, 2, ',', ''),
+                $m->notas ?? '',
+            ]),
+        );
+    }
+
+    public function exportarPdf(): StreamedResponse
+    {
+        $t = $this->totais;
+        $this->dispatch('toast', title: 'A exportar PDF', body: 'A transferência começa em breve.', tone: 'success');
+
+        return RelatorioPdf::gerar(
+            titulo: 'Movimentos pessoais',
+            subtitulo: $this->rotuloMes().($this->tipo !== 'todos' ? ' · '.TipoMovimento::from($this->tipo)->plural() : ''),
+            colunas: ['Data', 'Descrição', 'Categoria', 'Tipo', 'Valor'],
+            linhas: $this->movimentos->map(fn (MovimentoPessoal $m) => [
+                $m->data->format('d/m/Y'),
+                $m->descricao,
+                $m->categoria?->nome ?? '',
+                $m->tipo->label(),
+                ($m->tipo === TipoMovimento::Saida ? '-' : '').RelatorioPdf::moeda((float) $m->valor),
+            ])->all(),
+            nomeArquivo: 'movimentos_'.$this->mesActual()->format('Y-m').'.pdf',
+            colunasNumericas: [4],
+            resumo: [
+                'Entradas' => RelatorioPdf::moeda($t['entradas']),
+                'Saídas' => RelatorioPdf::moeda($t['saidas']),
+                'Saldo' => RelatorioPdf::moeda($t['saldo']),
+            ],
+        );
     }
 
     #[On('pessoal-actualizado')]

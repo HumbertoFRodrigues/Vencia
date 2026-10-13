@@ -7,9 +7,11 @@ use App\Models\CategoriaPessoal;
 use App\Models\FixoPessoal;
 use App\Models\MetodoPagamentoOpcao;
 use App\Services\FinancasPessoais;
+use App\Support\Valor;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -17,8 +19,10 @@ class FixoDialog extends Component
 {
     public bool $show = false;
 
+    #[Locked]
     public ?int $fixoId = null;
 
+    #[Locked]
     public string $tipo = 'saida';
 
     public string $descricao = '';
@@ -33,7 +37,7 @@ class FixoDialog extends Component
 
     public string $inicio = '';
 
-    public bool $activo = true;
+    public string $fim = '';
 
     public string $notas = '';
 
@@ -41,11 +45,10 @@ class FixoDialog extends Component
     public function abrir(?string $tipo = null, ?int $fixoId = null): void
     {
         $this->resetValidation();
-        $this->reset(['fixoId', 'descricao', 'categoriaId', 'valor', 'meio', 'notas']);
+        $this->reset(['fixoId', 'descricao', 'categoriaId', 'valor', 'meio', 'fim', 'notas']);
         $this->tipo = $tipo === 'entrada' ? 'entrada' : 'saida';
         $this->diaMes = (string) Carbon::today()->day;
         $this->inicio = Carbon::today()->format('Y-m');
-        $this->activo = true;
 
         if ($fixoId !== null) {
             $f = FixoPessoal::findOrFail($fixoId);
@@ -57,7 +60,7 @@ class FixoDialog extends Component
             $this->diaMes = (string) $f->dia_mes;
             $this->meio = (string) $f->meio;
             $this->inicio = $f->inicio->format('Y-m');
-            $this->activo = $f->activo;
+            $this->fim = $f->fim?->format('Y-m') ?? '';
             $this->notas = (string) $f->notas;
         } else {
             $this->categoriaId = $this->categoriaOptions[0]['value'] ?? '';
@@ -84,6 +87,12 @@ class FixoDialog extends Component
         $this->categoriaId = $this->categoriaOptions[0]['value'] ?? '';
     }
 
+    /** Shortcut: this month is the last one (stops it from next month on, keeps everything before). */
+    public function terminarEsteMes(): void
+    {
+        $this->fim = Carbon::today()->format('Y-m');
+    }
+
     #[Computed]
     public function categoriaOptions(): array
     {
@@ -103,6 +112,12 @@ class FixoDialog extends Component
         return collect(range(1, 31))->map(fn ($d) => ['value' => (string) $d, 'label' => 'Dia '.$d])->all();
     }
 
+    #[Computed]
+    public function temHistorico(): bool
+    {
+        return $this->fixoId !== null && FixoPessoal::findOrFail($this->fixoId)->movimentos()->where('ignorado', false)->exists();
+    }
+
     protected function rules(): array
     {
         return [
@@ -111,9 +126,9 @@ class FixoDialog extends Component
             'categoriaId' => ['required', Rule::exists('categorias_pessoais', 'id')->where('user_id', auth()->id())->where('tipo', $this->tipo)],
             'valor' => ['required', 'numeric', 'min:0.01', 'max:9999999999'],
             'diaMes' => ['required', 'integer', 'between:1,31'],
-            'meio' => ['nullable', 'string', 'max:60'],
+            'meio' => ['nullable', 'string', 'max:255'],
             'inicio' => ['required', 'date_format:Y-m'],
-            'activo' => ['boolean'],
+            'fim' => ['nullable', 'date_format:Y-m', 'after_or_equal:inicio'],
             'notas' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -122,16 +137,18 @@ class FixoDialog extends Component
     {
         return [
             'descricao.required' => 'Dá um nome a este fixo (ex: Renda de casa, Salário).',
+            'categoriaId.required' => 'Escolhe uma categoria.',
             'valor.required' => 'Indica o valor mensal.',
             'valor.min' => 'O valor tem de ser maior que zero.',
             'valor.numeric' => 'Usa só números (ex: 15000).',
             'inicio.required' => 'Indica a partir de que mês conta.',
+            'fim.after_or_equal' => 'O último mês não pode ser antes do primeiro.',
         ];
     }
 
     public function guardar(): void
     {
-        $this->valor = str_replace([' ', ','], ['', '.'], $this->valor);
+        $this->valor = Valor::normalizar($this->valor);
         $dados = $this->validate();
 
         $atributos = [
@@ -142,7 +159,7 @@ class FixoDialog extends Component
             'dia_mes' => (int) $dados['diaMes'],
             'meio' => $dados['meio'] ?: null,
             'inicio' => FinancasPessoais::mesDe($dados['inicio'])->toDateString(),
-            'activo' => $this->fixoId === null ? true : (bool) $dados['activo'],
+            'fim' => $dados['fim'] ? FinancasPessoais::mesDe($dados['fim'])->toDateString() : null,
             'notas' => $dados['notas'] ?: null,
         ];
 
@@ -156,10 +173,14 @@ class FixoDialog extends Component
 
         $this->dispatch('toast', title: $titulo, body: $atributos['descricao'].' — '.FinancasPessoais::mzn((float) $atributos['valor']).' / mês', tone: 'success');
         $this->dispatch('pessoal-actualizado');
+        $this->dispatch('nav-badge', id: 'resumo', n: app(FinancasPessoais::class)->nAtrasoHoje());
         $this->show = false;
     }
 
-    /** Confirmed months stay in the history as normal movimentos; only the recurrence goes away. */
+    /**
+     * Only a fixo with no confirmed month can be removed — otherwise its
+     * history would turn into "dia-a-dia" spending. Those get an end month.
+     */
     public function apagar(): void
     {
         if ($this->fixoId === null) {
@@ -167,10 +188,18 @@ class FixoDialog extends Component
         }
 
         $f = FixoPessoal::findOrFail($this->fixoId);
+
+        if ($f->movimentos()->where('ignorado', false)->exists()) {
+            $this->addError('fim', 'Este fixo já tem meses confirmados, por isso não pode ser apagado. Para deixar de o usar, define o último mês.');
+
+            return;
+        }
+
         $f->delete();
 
-        $this->dispatch('toast', title: 'Fixo removido', body: $f->descricao.' — os meses já confirmados continuam no histórico.', tone: 'success');
+        $this->dispatch('toast', title: 'Fixo removido', body: $f->descricao, tone: 'success');
         $this->dispatch('pessoal-actualizado');
+        $this->dispatch('nav-badge', id: 'resumo', n: app(FinancasPessoais::class)->nAtrasoHoje());
         $this->show = false;
     }
 

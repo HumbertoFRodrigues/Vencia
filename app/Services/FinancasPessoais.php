@@ -13,12 +13,18 @@ use Illuminate\Support\Collection;
 /**
  * Every number the personal panel shows comes from here, so Resumo, Fixos,
  * Orçamentos and Análise can never disagree with each other. All queries go
- * through the models' PertenceAoUtilizador scope (logged-in user only).
+ * through the models' PertenceAoUtilizador scope (logged-in user only), and
+ * money is always grouped by `competencia` — the month it belongs to.
  */
 class FinancasPessoais
 {
     /** Pending fixos due within this many days are flagged "a vencer". */
     private const DIAS_PROXIMO = 3;
+
+    /** How many earlier months the Resumo looks back for fixos left unconfirmed. */
+    private const MESES_EM_ATRASO = 3;
+
+    private const PENDENTES = ['atraso', 'proximo', 'previsto'];
 
     private const CATEGORIAS_PADRAO = [
         'saida' => [
@@ -47,23 +53,26 @@ class FinancasPessoais
     /** First visit to the personal panel: give the user a sensible starting set of categories. */
     public function garantirCategoriasPadrao(): void
     {
-        if (CategoriaPessoal::query()->exists()) {
+        if (! auth()->check() || CategoriaPessoal::query()->exists()) {
             return;
         }
 
         foreach (self::CATEGORIAS_PADRAO as $tipo => $linhas) {
             foreach ($linhas as $ordem => [$nome, $icone, $cor]) {
-                CategoriaPessoal::create([
-                    'nome' => $nome, 'tipo' => $tipo, 'icone' => $icone, 'cor' => $cor, 'ordem' => $ordem,
-                ]);
+                // createOrFirst: two personal pages opened at once on the first visit must not collide on the unique key.
+                CategoriaPessoal::createOrFirst(
+                    ['user_id' => auth()->id(), 'tipo' => $tipo, 'nome' => $nome],
+                    ['icone' => $icone, 'cor' => $cor, 'ordem' => $ordem],
+                );
             }
         }
     }
 
+    /** Parses ?mes=YYYY-MM; anything invalid (2026-13, abc) falls back to the current month. */
     public static function mesDe(?string $valor): Carbon
     {
-        if ($valor && preg_match('/^\d{4}-\d{2}$/', $valor)) {
-            return Carbon::createFromFormat('!Y-m', $valor)->startOfMonth();
+        if ($valor && preg_match('/^(\d{4})-(\d{2})$/', $valor, $m) && checkdate((int) $m[2], 1, (int) $m[1]) && (int) $m[1] >= 2000 && (int) $m[1] <= 2100) {
+            return Carbon::create((int) $m[1], (int) $m[2], 1)->startOfDay();
         }
 
         return Carbon::today()->startOfMonth();
@@ -76,9 +85,9 @@ class FinancasPessoais
 
     /**
      * The month's checklist of fixos: one row per fixo that applies to the
-     * month (or that was confirmed/ignored in it even if since deactivated).
+     * month, or that was confirmed/ignored in it even if it has since ended.
      *
-     * @return Collection<int, array{fixo: FixoPessoal, estado: string, data: Carbon, valorPrevisto: float, movimento: ?MovimentoPessoal}>
+     * @return Collection<int, array{fixo: FixoPessoal, estado: string, data: Carbon, competencia: Carbon, valorPrevisto: float, movimento: ?MovimentoPessoal}>
      */
     public function fixosDoMes(Carbon $mes): Collection
     {
@@ -87,43 +96,89 @@ class FinancasPessoais
 
         $registos = MovimentoPessoal::query()
             ->whereNotNull('fixo_pessoal_id')
-            ->whereDate('competencia', $inicio->toDateString())
+            ->noMes($inicio)
             ->get()
             ->keyBy('fixo_pessoal_id');
 
         $fixos = FixoPessoal::query()
             ->with('categoria')
-            ->where(function ($q) use ($inicio, $registos): void {
-                $q->where(fn ($q2) => $q2->where('activo', true)->whereDate('inicio', '<=', $inicio->copy()->endOfMonth()->toDateString()))
-                    ->orWhereIn('id', $registos->keys());
-            })
+            ->where(fn ($q) => $q->vigentesEm($inicio)->orWhereIn('id', $registos->keys()))
             ->get();
 
         $ordem = ['atraso' => 0, 'proximo' => 1, 'previsto' => 2, 'confirmado' => 3, 'ignorado' => 4];
 
         return $fixos
-            ->map(function (FixoPessoal $fixo) use ($inicio, $hoje, $registos): array {
-                $data = $fixo->dataPrevista($inicio);
-                $movimento = $registos->get($fixo->id);
-
-                $estado = match (true) {
-                    $movimento && $movimento->ignorado => 'ignorado',
-                    (bool) $movimento => 'confirmado',
-                    $data->lt($hoje) => 'atraso',
-                    $hoje->diffInDays($data, false) <= self::DIAS_PROXIMO => 'proximo',
-                    default => 'previsto',
-                };
-
-                return [
-                    'fixo' => $fixo,
-                    'estado' => $estado,
-                    'data' => $data,
-                    'valorPrevisto' => (float) $fixo->valor,
-                    'movimento' => $movimento,
-                ];
-            })
+            ->map(fn (FixoPessoal $fixo) => $this->linhaFixo($fixo, $inicio, $registos->get($fixo->id), $hoje))
             ->sortBy(fn (array $l) => sprintf('%d-%s', $ordem[$l['estado']], $l['data']->format('Ymd')))
             ->values();
+    }
+
+    /** @return array{fixo: FixoPessoal, estado: string, data: Carbon, competencia: Carbon, valorPrevisto: float, movimento: ?MovimentoPessoal} */
+    private function linhaFixo(FixoPessoal $fixo, Carbon $competencia, ?MovimentoPessoal $movimento, Carbon $hoje): array
+    {
+        $data = $fixo->dataPrevista($competencia);
+
+        $estado = match (true) {
+            $movimento && $movimento->ignorado => 'ignorado',
+            (bool) $movimento => 'confirmado',
+            $data->lt($hoje) => 'atraso',
+            (int) $hoje->diffInDays($data, false) <= self::DIAS_PROXIMO => 'proximo',
+            default => 'previsto',
+        };
+
+        return [
+            'fixo' => $fixo,
+            'estado' => $estado,
+            'data' => $data,
+            'competencia' => $competencia->copy(),
+            'valorPrevisto' => (float) $fixo->valor,
+            'movimento' => $movimento,
+        ];
+    }
+
+    /**
+     * Fixos from earlier months that were never confirmed nor ignored — so an
+     * unpaid October rent doesn't silently vanish on 1 November. Only looked
+     * up for the current month, a few months back.
+     *
+     * @return Collection<int, array{fixo: FixoPessoal, estado: string, data: Carbon, competencia: Carbon, valorPrevisto: float, movimento: null}>
+     */
+    public function pendentesAnteriores(Carbon $mes): Collection
+    {
+        $hoje = Carbon::today();
+        if (! $mes->isSameMonth($hoje)) {
+            return collect();
+        }
+
+        $de = $hoje->copy()->startOfMonth()->subMonthsNoOverflow(self::MESES_EM_ATRASO);
+        $ate = $hoje->copy()->startOfMonth()->subMonthNoOverflow();
+
+        $fixos = FixoPessoal::query()->with('categoria')
+            ->whereDate('inicio', '<=', $ate->toDateString())
+            ->where(fn ($q) => $q->whereNull('fim')->orWhereDate('fim', '>=', $de->toDateString()))
+            ->get();
+
+        if ($fixos->isEmpty()) {
+            return collect();
+        }
+
+        $registados = MovimentoPessoal::query()
+            ->whereIn('fixo_pessoal_id', $fixos->pluck('id'))
+            ->entreMeses($de, $ate)
+            ->get(['fixo_pessoal_id', 'competencia'])
+            ->map(fn ($m) => $m->fixo_pessoal_id.'|'.$m->competencia->format('Y-m'))
+            ->flip();
+
+        $linhas = collect();
+        for ($c = $de->copy(); $c->lte($ate); $c->addMonthNoOverflow()) {
+            foreach ($fixos as $fixo) {
+                if ($fixo->aplicaAoMes($c) && ! isset($registados[$fixo->id.'|'.$c->format('Y-m')])) {
+                    $linhas->push($this->linhaFixo($fixo, $c->copy(), null, $hoje));
+                }
+            }
+        }
+
+        return $linhas->sortBy(fn ($l) => $l['data']->format('Ymd'))->values();
     }
 
     /**
@@ -131,7 +186,7 @@ class FinancasPessoais
      *     entradas: float, saidas: float, saldo: float,
      *     entradasPendentes: float, saidasPendentes: float, saldoProjectado: float,
      *     taxaPoupanca: ?float, taxaProjectada: ?float, saidasFixas: float, saidasVariaveis: float,
-     *     nPendentes: int, nAtraso: int, nConfirmados: int, nFixos: int, nMovimentos: int,
+     *     nPendentes: int, nAtraso: int, nAtrasoAnteriores: int, nConfirmados: int, nFixos: int, nMovimentos: int,
      * }
      */
     public function resumoMes(Carbon $mes): array
@@ -143,12 +198,14 @@ class FinancasPessoais
         $saidasFixas = (float) $movimentos->where('tipo', TipoMovimento::Saida)->whereNotNull('fixo_pessoal_id')->sum('valor');
 
         $fixos = $this->fixosDoMes($mes);
-        $pendentes = $fixos->whereIn('estado', ['atraso', 'proximo', 'previsto']);
+        $pendentes = $fixos->whereIn('estado', self::PENDENTES);
 
         $entradasPendentes = (float) $pendentes->filter(fn ($l) => $l['fixo']->tipo === TipoMovimento::Entrada)->sum('valorPrevisto');
         $saidasPendentes = (float) $pendentes->filter(fn ($l) => $l['fixo']->tipo === TipoMovimento::Saida)->sum('valorPrevisto');
 
         $saldo = $entradas - $saidas;
+        $entradasPrevistas = $entradas + $entradasPendentes;
+        $saidasPrevistas = $saidas + $saidasPendentes;
 
         return [
             'entradas' => $entradas,
@@ -156,26 +213,37 @@ class FinancasPessoais
             'saldo' => $saldo,
             'entradasPendentes' => $entradasPendentes,
             'saidasPendentes' => $saidasPendentes,
-            'saldoProjectado' => ($entradas + $entradasPendentes) - ($saidas + $saidasPendentes),
+            'saldoProjectado' => $entradasPrevistas - $saidasPrevistas,
             'taxaPoupanca' => $entradas > 0 ? ($saldo / $entradas) * 100 : null,
-            'taxaProjectada' => ($entradas + $entradasPendentes) > 0
-                ? ((($entradas + $entradasPendentes) - ($saidas + $saidasPendentes)) / ($entradas + $entradasPendentes)) * 100
-                : null,
+            'taxaProjectada' => $entradasPrevistas > 0 ? (($entradasPrevistas - $saidasPrevistas) / $entradasPrevistas) * 100 : null,
             'saidasFixas' => $saidasFixas,
             'saidasVariaveis' => $saidas - $saidasFixas,
             'nPendentes' => $pendentes->count(),
             'nAtraso' => $fixos->where('estado', 'atraso')->count(),
+            'nAtrasoAnteriores' => $this->pendentesAnteriores($mes)->count(),
             'nConfirmados' => $fixos->where('estado', 'confirmado')->count(),
             'nFixos' => $fixos->count(),
             'nMovimentos' => $movimentos->count(),
         ];
     }
 
-    /** One-click confirm with the expected value; dated today for the current month, else on the due day. */
+    /** Overdue fixos right now (this month's plus earlier unconfirmed ones) — the sidebar badge. */
+    public function nAtrasoHoje(): int
+    {
+        $hoje = Carbon::today();
+
+        return $this->fixosDoMes($hoje)->where('estado', 'atraso')->count() + $this->pendentesAnteriores($hoje)->count();
+    }
+
+    /**
+     * One-click confirm with the expected value. Dated today (when the money
+     * actually moved) — a late payment of an earlier month still belongs to
+     * that month through `competencia`. A future month is dated on its due day.
+     */
     public function confirmarFixo(FixoPessoal $fixo, Carbon $mes): MovimentoPessoal
     {
         $mes = $mes->copy()->startOfMonth();
-        $data = $mes->isSameMonth(Carbon::today()) ? Carbon::today() : $fixo->dataPrevista($mes);
+        $data = $mes->gt(Carbon::today()->startOfMonth()) ? $fixo->dataPrevista($mes) : Carbon::today();
 
         return MovimentoPessoal::updateOrCreate(
             ['fixo_pessoal_id' => $fixo->id, 'competencia' => $mes->toDateString()],
@@ -205,14 +273,8 @@ class FinancasPessoais
     {
         MovimentoPessoal::query()
             ->where('fixo_pessoal_id', $fixo->id)
-            ->whereDate('competencia', $mes->copy()->startOfMonth()->toDateString())
+            ->noMes($mes)
             ->delete();
-    }
-
-    /** Count of this month's overdue fixos — the sidebar badge. */
-    public function nAtrasoHoje(): int
-    {
-        return $this->fixosDoMes(Carbon::today())->where('estado', 'atraso')->count();
     }
 
     /**
@@ -232,6 +294,7 @@ class FinancasPessoais
         $categorias = CategoriaPessoal::query()->whereIn('id', $somas->keys())->get()->keyBy('id');
 
         return $somas
+            ->filter(fn ($valor, $id) => $categorias->has($id))
             ->map(fn ($valor, $id) => [
                 'categoria' => $categorias[$id],
                 'total' => (float) $valor,
@@ -246,7 +309,7 @@ class FinancasPessoais
      * Budget status for every saída category with a monthly limit: what was
      * really spent, plus what is still committed through unpaid fixos.
      *
-     * @return list<array{categoria: CategoriaPessoal, gasto: float, pendente: float, limite: float, pct: float, pctPendente: float, estado: string}>
+     * @return list<array{categoria: CategoriaPessoal, gasto: float, pendente: float, limite: float, pct: float, pctComprometido: float, pctPendente: float, estado: string}>
      */
     public function orcamentos(Carbon $mes): array
     {
@@ -266,7 +329,7 @@ class FinancasPessoais
             ->pluck('total', 'categoria_pessoal_id');
 
         $pendentes = $this->fixosDoMes($mes)
-            ->whereIn('estado', ['atraso', 'proximo', 'previsto'])
+            ->whereIn('estado', self::PENDENTES)
             ->filter(fn ($l) => $l['fixo']->tipo === TipoMovimento::Saida)
             ->groupBy(fn ($l) => $l['fixo']->categoria_pessoal_id)
             ->map(fn ($linhas) => (float) $linhas->sum('valorPrevisto'));
@@ -275,8 +338,8 @@ class FinancasPessoais
             $limite = (float) $c->limite_mensal;
             $gasto = (float) ($gastos[$c->id] ?? 0);
             $pendente = (float) ($pendentes[$c->id] ?? 0);
-            $pct = $limite > 0 ? ($gasto / $limite) * 100 : 0;
-            $pctComprometido = $limite > 0 ? (($gasto + $pendente) / $limite) * 100 : 0;
+            $pct = ($gasto / $limite) * 100;
+            $pctComprometido = (($gasto + $pendente) / $limite) * 100;
 
             return [
                 'categoria' => $c,
@@ -284,6 +347,7 @@ class FinancasPessoais
                 'pendente' => $pendente,
                 'limite' => $limite,
                 'pct' => $pct,
+                'pctComprometido' => $pctComprometido,
                 'pctPendente' => max(0, min(100, $pctComprometido) - min(100, $pct)),
                 'estado' => match (true) {
                     $pct > 100 => 'excedido',
@@ -295,27 +359,26 @@ class FinancasPessoais
     }
 
     /**
-     * Twelve months of one year, January first.
+     * Twelve months of one year, January first. Grouped in PHP rather than
+     * with a SQL month function so it runs the same on MySQL and SQLite.
      *
      * @return list<array{mes: Carbon, label: string, entradas: float, saidas: float, saldo: float, taxa: ?float, futuro: bool}>
      */
     public function serieAnual(int $ano): array
     {
-        $inicio = Carbon::create($ano, 1, 1)->startOfDay();
-        $fim = $inicio->copy()->endOfYear();
-
-        $linhas = MovimentoPessoal::query()->contabilizados()
-            ->whereBetween('data', [$inicio->toDateString(), $fim->toDateString()])
-            ->selectRaw('MONTH(data) as m, tipo, sum(valor) as total')
-            ->groupByRaw('MONTH(data), tipo')
-            ->get();
+        $somas = MovimentoPessoal::query()->contabilizados()
+            ->entreMeses(Carbon::create($ano, 1, 1), Carbon::create($ano, 12, 1))
+            ->selectRaw('competencia, tipo, sum(valor) as total')
+            ->groupBy('competencia', 'tipo')
+            ->get()
+            ->mapWithKeys(fn ($l) => [$l->competencia->month.'|'.$l->tipo->value => (float) $l->total]);
 
         $hoje = Carbon::today();
         $serie = [];
 
         for ($m = 1; $m <= 12; $m++) {
-            $entradas = (float) $linhas->first(fn ($l) => (int) $l->m === $m && $l->tipo === TipoMovimento::Entrada)?->total;
-            $saidas = (float) $linhas->first(fn ($l) => (int) $l->m === $m && $l->tipo === TipoMovimento::Saida)?->total;
+            $entradas = $somas[$m.'|entrada'] ?? 0.0;
+            $saidas = $somas[$m.'|saida'] ?? 0.0;
             $mes = Carbon::create($ano, $m, 1);
 
             $serie[] = [
@@ -333,59 +396,73 @@ class FinancasPessoais
     }
 
     /**
-     * Year totals per category with the monthly average and the change versus the previous year.
+     * The months of $ano used for "média / mês": from the first month with
+     * data up to the last *complete* month — a half-finished month (salary
+     * not in yet) would drag the average down. Falls back to the current
+     * month when it is the only one with data. Null when the year is empty.
+     *
+     * @return array{de: Carbon, ate: Carbon, meses: int}|null
+     */
+    public function periodoMedia(int $ano): ?array
+    {
+        $primeiro = MovimentoPessoal::query()->contabilizados()
+            ->entreMeses(Carbon::create($ano, 1, 1), Carbon::create($ano, 12, 1))
+            ->min('competencia');
+
+        if (! $primeiro) {
+            return null;
+        }
+
+        $de = Carbon::parse($primeiro)->startOfMonth();
+        $hoje = Carbon::today()->startOfMonth();
+        $ate = $ano < $hoje->year ? Carbon::create($ano, 12, 1) : $hoje->copy()->subMonthNoOverflow();
+
+        if ($ate->lt($de)) {
+            $ate = $de->copy();
+        }
+
+        return ['de' => $de, 'ate' => $ate, 'meses' => (int) $de->diffInMonths($ate) + 1];
+    }
+
+    /**
+     * Year totals per category, the monthly average over complete months,
+     * and the same months of the previous year for a like-for-like comparison.
      *
      * @return list<array{categoria: CategoriaPessoal, total: float, media: float, pct: float, anterior: float}>
      */
     public function categoriasDoAno(int $ano, TipoMovimento $tipo): array
     {
-        $somar = function (int $a) use ($tipo) {
-            return MovimentoPessoal::query()->contabilizados()
-                ->where('tipo', $tipo->value)
-                ->whereBetween('data', [Carbon::create($a, 1, 1)->toDateString(), Carbon::create($a, 12, 31)->toDateString()])
-                ->selectRaw('categoria_pessoal_id, sum(valor) as total')
-                ->groupBy('categoria_pessoal_id')
-                ->pluck('total', 'categoria_pessoal_id');
-        };
+        $somar = fn (Carbon $de, Carbon $ate) => MovimentoPessoal::query()->contabilizados()
+            ->where('tipo', $tipo->value)
+            ->entreMeses($de, $ate)
+            ->selectRaw('categoria_pessoal_id, sum(valor) as total')
+            ->groupBy('categoria_pessoal_id')
+            ->pluck('total', 'categoria_pessoal_id');
 
-        $actual = $somar($ano);
-        $anterior = $somar($ano - 1);
+        $hoje = Carbon::today();
+        $ultimoMes = $ano === $hoje->year ? $hoje->month : 12;
+
+        $actual = $somar(Carbon::create($ano, 1, 1), Carbon::create($ano, 12, 1));
+        $anterior = $somar(Carbon::create($ano - 1, 1, 1), Carbon::create($ano - 1, $ultimoMes, 1));
+
+        $periodo = $this->periodoMedia($ano);
+        $paraMedia = $periodo ? $somar($periodo['de'], $periodo['ate']) : collect();
+
         $total = (float) $actual->sum();
-        $meses = $this->mesesActivos($ano);
         $categorias = CategoriaPessoal::query()->whereIn('id', $actual->keys())->get()->keyBy('id');
 
         return $actual
+            ->filter(fn ($valor, $id) => $categorias->has($id))
             ->map(fn ($valor, $id) => [
                 'categoria' => $categorias[$id],
                 'total' => (float) $valor,
-                'media' => (float) $valor / $meses,
+                'media' => $periodo ? (float) ($paraMedia[$id] ?? 0) / $periodo['meses'] : 0.0,
                 'pct' => $total > 0 ? ((float) $valor / $total) * 100 : 0,
                 'anterior' => (float) ($anterior[$id] ?? 0),
             ])
             ->sortByDesc('total')
             ->values()
             ->all();
-    }
-
-    /**
-     * Months of $ano the user has actually been tracking: from the first month
-     * with a movimento up to the last month that has started. Averages divide
-     * by this, so starting mid-year doesn't drag every "média / mês" down.
-     */
-    public function mesesActivos(int $ano): int
-    {
-        $primeiro = MovimentoPessoal::query()->contabilizados()
-            ->whereBetween('data', [Carbon::create($ano, 1, 1)->toDateString(), Carbon::create($ano, 12, 31)->toDateString()])
-            ->min('data');
-
-        if (! $primeiro) {
-            return 1;
-        }
-
-        $hoje = Carbon::today();
-        $ultimo = $ano < $hoje->year ? 12 : ($ano > $hoje->year ? 1 : $hoje->month);
-
-        return max(1, $ultimo - Carbon::parse($primeiro)->month + 1);
     }
 
     /**
@@ -412,11 +489,7 @@ class FinancasPessoais
 
         $n = $comDados->count();
         $movimentos = MovimentoPessoal::query()->contabilizados()
-            ->where(function ($q) use ($comDados): void {
-                foreach ($comDados as $m) {
-                    $q->orWhereBetween('data', [$m->copy()->startOfMonth()->toDateString(), $m->copy()->endOfMonth()->toDateString()]);
-                }
-            })
+            ->whereIn('competencia', $comDados->map(fn (Carbon $m) => $m->toDateString()))
             ->get(['tipo', 'valor', 'categoria_pessoal_id']);
 
         return [
@@ -427,6 +500,17 @@ class FinancasPessoais
                 ->groupBy('categoria_pessoal_id')
                 ->map(fn ($linhas) => (float) $linhas->sum('valor') / $n)
                 ->all(),
+        ];
+    }
+
+    /** Monthly fixed income and debits currently running (started, not ended). @return array{entradas: float, saidas: float} */
+    public function fixosEmCurso(): array
+    {
+        $fixos = FixoPessoal::query()->vigentesEm(Carbon::today())->get(['tipo', 'valor']);
+
+        return [
+            'entradas' => (float) $fixos->where('tipo', TipoMovimento::Entrada)->sum('valor'),
+            'saidas' => (float) $fixos->where('tipo', TipoMovimento::Saida)->sum('valor'),
         ];
     }
 
@@ -443,16 +527,23 @@ class FinancasPessoais
         $mesActual = $mes->isSameMonth($hoje);
         $insights = [];
 
-        if ($r['nMovimentos'] === 0 && $r['nFixos'] === 0) {
+        if ($r['nMovimentos'] === 0 && $r['nFixos'] === 0 && $r['nAtrasoAnteriores'] === 0) {
             return [[
                 'tom' => 'info', 'icone' => 'info',
                 'texto' => 'Ainda não há movimentos neste mês. Começa por registar as tuas entradas e débitos fixos — o resto passa a ser automático.',
             ]];
         }
 
+        if ($r['nAtrasoAnteriores'] > 0) {
+            $insights[] = ['tom' => 'perigo', 'icone' => 'history', 'texto' => sprintf(
+                '%d %s de meses anteriores %s por confirmar — vê «Ficou para trás» no topo.',
+                $r['nAtrasoAnteriores'], $r['nAtrasoAnteriores'] === 1 ? 'fixo' : 'fixos', $r['nAtrasoAnteriores'] === 1 ? 'ficou' : 'ficaram',
+            )];
+        }
+
         if ($r['nAtraso'] > 0) {
             $insights[] = ['tom' => 'perigo', 'icone' => 'circle-alert', 'texto' => sprintf(
-                '%d %s já %s o dia previsto sem estar confirmado.',
+                '%d %s deste mês já %s o dia previsto sem estar confirmado.',
                 $r['nAtraso'], $r['nAtraso'] === 1 ? 'fixo' : 'fixos', $r['nAtraso'] === 1 ? 'passou' : 'passaram',
             )];
         }
@@ -470,18 +561,25 @@ class FinancasPessoais
             )];
         }
 
+        $diasRestantes = $mesActual ? (int) $hoje->diffInDays($hoje->copy()->endOfMonth()) : null;
+        $restam = $diasRestantes !== null ? sprintf(' e faltam %d dias para o fim do mês', $diasRestantes) : '';
+
         foreach ($this->orcamentos($mes) as $o) {
             $nome = $o['categoria']->nome;
+
             if ($o['estado'] === 'excedido') {
                 $insights[] = ['tom' => 'perigo', 'icone' => 'target', 'texto' => sprintf(
                     'Passaste o limite de %s em %s (%s de %s).',
                     $nome, self::mzn($o['gasto'] - $o['limite']), self::mzn($o['gasto']), self::mzn($o['limite']),
                 )];
-            } elseif ($o['estado'] === 'alerta') {
-                $faltam = $mesActual ? $hoje->diffInDays($hoje->copy()->endOfMonth()) : null;
+            } elseif ($o['pct'] >= 80) {
                 $insights[] = ['tom' => 'alerta', 'icone' => 'target', 'texto' => sprintf(
-                    '%s já vai em %d%% do limite%s.',
-                    $nome, round($o['pct'] + $o['pctPendente']), $faltam !== null ? sprintf(' e faltam %d dias para o fim do mês', $faltam) : '',
+                    'Já gastaste %d%% do limite de %s%s.', round($o['pct']), $nome, $restam,
+                )];
+            } elseif ($o['estado'] === 'alerta') {
+                $insights[] = ['tom' => 'alerta', 'icone' => 'target', 'texto' => sprintf(
+                    'Com os fixos por pagar, %s vai passar o limite em %s (%d%% do limite).',
+                    $nome, self::mzn($o['gasto'] + $o['pendente'] - $o['limite']), round($o['pctComprometido']),
                 )];
             }
         }
@@ -493,11 +591,7 @@ class FinancasPessoais
         if ($anteriores->isNotEmpty()) {
             $mediaAnterior = MovimentoPessoal::query()->contabilizados()
                 ->where('tipo', TipoMovimento::Saida->value)
-                ->where(function ($q) use ($anteriores): void {
-                    foreach ($anteriores as $m) {
-                        $q->orWhereBetween('data', [$m->toDateString(), $m->copy()->endOfMonth()->toDateString()]);
-                    }
-                })
+                ->whereIn('competencia', $anteriores->map(fn (Carbon $m) => $m->toDateString()))
                 ->selectRaw('categoria_pessoal_id, sum(valor) as total')
                 ->groupBy('categoria_pessoal_id')
                 ->pluck('total', 'categoria_pessoal_id')
@@ -519,11 +613,10 @@ class FinancasPessoais
             }
         }
 
-        $fixosEntrada = (float) FixoPessoal::query()->where('activo', true)->where('tipo', TipoMovimento::Entrada->value)->sum('valor');
-        $fixosSaida = (float) FixoPessoal::query()->where('activo', true)->where('tipo', TipoMovimento::Saida->value)->sum('valor');
+        $fixos = $this->fixosEmCurso();
 
-        if ($fixosEntrada > 0 && $fixosSaida > 0) {
-            $peso = ($fixosSaida / $fixosEntrada) * 100;
+        if ($fixos['entradas'] > 0 && $fixos['saidas'] > 0) {
+            $peso = ($fixos['saidas'] / $fixos['entradas']) * 100;
             if ($peso >= 70) {
                 $insights[] = ['tom' => 'alerta', 'icone' => 'repeat', 'texto' => sprintf(
                     'Os débitos fixos levam %d%% da tua renda fixa — sobra pouca margem para imprevistos (o ideal é abaixo de 50%%).', round($peso),

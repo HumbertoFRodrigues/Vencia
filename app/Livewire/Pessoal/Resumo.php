@@ -42,6 +42,12 @@ class Resumo extends Component
     }
 
     #[Computed]
+    public function anteriores()
+    {
+        return $this->financas()->pendentesAnteriores($this->mesActual());
+    }
+
+    #[Computed]
     public function orcamentos(): array
     {
         return $this->financas()->orcamentos($this->mesActual());
@@ -68,10 +74,16 @@ class Resumo extends Component
             ->limit(8)->get();
     }
 
-    public function confirmarFixo(int $fixoId): void
+    /** $competencia (YYYY-MM) is given for an earlier month's fixo; otherwise the month on screen. */
+    private function competencia(?string $competencia): \Illuminate\Support\Carbon
+    {
+        return $competencia ? FinancasPessoais::mesDe($competencia) : $this->mesActual();
+    }
+
+    public function confirmarFixo(int $fixoId, ?string $competencia = null): void
     {
         $fixo = FixoPessoal::findOrFail($fixoId);
-        $this->financas()->confirmarFixo($fixo, $this->mesActual());
+        $this->financas()->confirmarFixo($fixo, $this->competencia($competencia));
 
         $this->dispatch('toast',
             title: $fixo->tipo === TipoMovimento::Entrada ? 'Recebimento confirmado' : 'Pagamento confirmado',
@@ -81,12 +93,13 @@ class Resumo extends Component
         $this->actualizar();
     }
 
-    public function ignorarFixo(int $fixoId): void
+    public function ignorarFixo(int $fixoId, ?string $competencia = null): void
     {
         $fixo = FixoPessoal::findOrFail($fixoId);
-        $this->financas()->ignorarFixo($fixo, $this->mesActual());
+        $mes = $this->competencia($competencia);
+        $this->financas()->ignorarFixo($fixo, $mes);
 
-        $this->dispatch('toast', title: 'Ignorado este mês', body: $fixo->descricao.' não conta para '.$this->rotuloMes().'.', tone: 'success');
+        $this->dispatch('toast', title: 'Ignorado nesse mês', body: $fixo->descricao.' não conta para '.ucfirst($mes->locale('pt_PT')->translatedFormat('F \d\e Y')).'.', tone: 'success');
         $this->actualizar();
     }
 
@@ -102,7 +115,8 @@ class Resumo extends Component
     #[On('pessoal-actualizado')]
     public function actualizar(): void
     {
-        unset($this->resumo, $this->fixos, $this->orcamentos, $this->gastosPorCategoria, $this->insights, $this->ultimos);
+        unset($this->resumo, $this->fixos, $this->anteriores, $this->orcamentos, $this->gastosPorCategoria, $this->insights, $this->ultimos);
+        $this->dispatch('nav-badge', id: 'resumo', n: $this->financas()->nAtrasoHoje());
     }
 
     public function render()

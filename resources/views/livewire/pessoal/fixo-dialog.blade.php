@@ -30,15 +30,18 @@
                 </div>
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                    <x-ui.select label="Categoria" wire:model="categoriaId" :options="$this->categoriaOptions" />
-                    <x-ui.input label="A partir de" type="month" wire:model="inicio" :error="$errors->first('inicio')" />
+                    <div class="field">
+                        <x-ui.select label="Categoria" wire:model="categoriaId" :options="$this->categoriaOptions" />
+                        @error('categoriaId')<span class="field__hint field__hint--error">{{ $message }}</span>@enderror
+                    </div>
+                    <x-ui.input label="Primeiro mês" type="month" wire:model="inicio" :error="$errors->first('inicio')" />
                 </div>
 
                 <div style="display:flex;flex-direction:column;gap:6px">
                     <span class="field__label">Meio <span style="color:var(--text-faint);font-weight:var(--weight-regular)">(opcional)</span></span>
                     <div class="pill-picker">
                         @foreach($this->meios as $m)
-                            <button type="button" wire:click="$set('meio', '{{ $meio === $m ? '' : $m }}')" class="pill-picker__item {{ $meio === $m ? 'pill-picker__item--active' : '' }}" aria-pressed="{{ $meio === $m ? 'true' : 'false' }}">
+                            <button type="button" wire:click="$set('meio', {{ \Illuminate\Support\Js::from($meio === $m ? '' : $m) }})" class="pill-picker__item {{ $meio === $m ? 'pill-picker__item--active' : '' }}" aria-pressed="{{ $meio === $m ? 'true' : 'false' }}">
                                 <x-ui.payment-method :method="$m" size="20" />
                             </button>
                         @endforeach
@@ -47,14 +50,19 @@
 
                 <x-ui.input label="Nota (opcional)" wire:model="notas" placeholder="Ex: contrato até Dezembro, referência do pagamento" />
 
-                @if($fixoId)
-                    <x-ui.switch label="Activo — continua a aparecer todos os meses" wire:model="activo" :checked="$activo" />
-                @endif
+                <div style="display:flex;align-items:flex-end;gap:8px">
+                    <div style="flex:1">
+                        <x-ui.input label="Último mês (opcional)" type="month" wire:model="fim" hint="Para prestações ou contratos com fim. Vazio = sem fim." :error="$errors->first('fim')" />
+                    </div>
+                    @if($fixoId && $fim === '')
+                        <x-ui.button size="md" variant="ghost" wire:click="terminarEsteMes" style="margin-bottom:22px">Termina este mês</x-ui.button>
+                    @endif
+                </div>
             </div>
 
             <x-slot:footer>
-                @if($fixoId)
-                    <x-ui.button variant="ghost" icon="trash-2" class="action-danger-quiet" style="margin-right:auto" wire:click="apagar" wire:confirm="Remover este fixo? Os meses já confirmados continuam no histórico.">Remover</x-ui.button>
+                @if($fixoId && ! $this->temHistorico)
+                    <x-ui.button variant="ghost" icon="trash-2" class="action-danger-quiet" style="margin-right:auto" wire:click="apagar" wire:confirm="Remover este fixo? Ainda não tem nenhum mês confirmado.">Remover</x-ui.button>
                 @endif
                 <x-ui.button wire:click="fechar">Cancelar</x-ui.button>
                 <x-ui.button variant="primary" icon="check" wire:click="guardar">Guardar</x-ui.button>

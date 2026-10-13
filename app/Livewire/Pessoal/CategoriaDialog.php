@@ -4,7 +4,9 @@ namespace App\Livewire\Pessoal;
 
 use App\Models\CategoriaPessoal;
 use App\Services\FinancasPessoais;
+use App\Support\Valor;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -12,8 +14,10 @@ class CategoriaDialog extends Component
 {
     public bool $show = false;
 
+    #[Locked]
     public ?int $categoriaId = null;
 
+    #[Locked]
     public string $tipo = 'saida';
 
     public string $nome = '';
@@ -83,7 +87,7 @@ class CategoriaDialog extends Component
 
     public function guardar(): void
     {
-        $this->limite = str_replace([' ', ','], ['', '.'], $this->limite);
+        $this->limite = Valor::normalizar($this->limite);
         $dados = $this->validate();
 
         $atributos = [

@@ -35,14 +35,15 @@ class Analise extends Component
         $this->simCategoria = $maior ? (string) $maior : '';
     }
 
+    /** 0 (the default) means the current year; anything outside 2000-2100 from the URL is ignored. */
     public function anoActual(): int
     {
-        return $this->ano > 2000 ? $this->ano : (int) Carbon::today()->year;
+        return $this->ano >= 2000 && $this->ano <= 2100 ? $this->ano : (int) Carbon::today()->year;
     }
 
     public function mudarAno(int $delta): void
     {
-        $alvo = $this->anoActual() + $delta;
+        $alvo = max(2000, min(2100, $this->anoActual() + $delta));
         $this->ano = $alvo === (int) Carbon::today()->year ? 0 : $alvo;
     }
 
@@ -67,13 +68,19 @@ class Analise extends Component
     {
         $ano = $this->anoActual();
         $serie = collect($this->serie);
-        $meses = $this->financas()->mesesActivos($ano);
         $entradas = (float) $serie->sum('entradas');
         $saidas = (float) $serie->sum('saidas');
 
+        // Averages use complete months only (see FinancasPessoais::periodoMedia).
+        $periodo = $this->financas()->periodoMedia($ano);
+        $paraMedia = $periodo
+            ? $serie->filter(fn ($m) => $m['mes']->between($periodo['de'], $periodo['ate']))
+            : collect();
+        $meses = $periodo['meses'] ?? 1;
+
         $saidasFixas = (float) MovimentoPessoal::query()->contabilizados()
             ->where('tipo', TipoMovimento::Saida->value)->whereNotNull('fixo_pessoal_id')
-            ->whereBetween('data', [Carbon::create($ano, 1, 1)->toDateString(), Carbon::create($ano, 12, 31)->toDateString()])
+            ->entreMeses(Carbon::create($ano, 1, 1), Carbon::create($ano, 12, 1))
             ->sum('valor');
 
         $comDados = $serie->filter(fn ($m) => $m['entradas'] > 0 || $m['saidas'] > 0);
@@ -83,8 +90,9 @@ class Analise extends Component
             'saidas' => $saidas,
             'saldo' => $entradas - $saidas,
             'taxa' => $entradas > 0 ? (($entradas - $saidas) / $entradas) * 100 : null,
-            'mediaEntradas' => $entradas / $meses,
-            'mediaSaidas' => $saidas / $meses,
+            'mediaEntradas' => (float) $paraMedia->sum('entradas') / $meses,
+            'mediaSaidas' => (float) $paraMedia->sum('saidas') / $meses,
+            'mesesMedia' => $periodo ? $meses : 0,
             'pctFixo' => $saidas > 0 ? ($saidasFixas / $saidas) * 100 : null,
             'melhor' => $comDados->sortByDesc('saldo')->first(),
             'pior' => $comDados->sortBy('saldo')->first(),

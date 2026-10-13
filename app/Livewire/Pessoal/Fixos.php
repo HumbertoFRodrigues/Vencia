@@ -23,18 +23,18 @@ class Fixos extends Component
     #[Computed]
     public function fixos()
     {
+        // Running ones first (by due day), then future ones, then the ones that already ended.
         return FixoPessoal::query()->with('categoria')
-            ->orderByDesc('activo')->orderBy('dia_mes')->orderBy('descricao')
+            ->orderBy('dia_mes')->orderBy('descricao')
             ->get()
+            ->sortBy(fn (FixoPessoal $f) => $f->emCurso() ? ($f->futuro() ? 1 : 0) : 2)
             ->groupBy(fn (FixoPessoal $f) => $f->tipo->value);
     }
 
     #[Computed]
     public function totais(): array
     {
-        $activos = FixoPessoal::query()->where('activo', true)->get(['tipo', 'valor']);
-        $entradas = (float) $activos->where('tipo', TipoMovimento::Entrada)->sum('valor');
-        $saidas = (float) $activos->where('tipo', TipoMovimento::Saida)->sum('valor');
+        ['entradas' => $entradas, 'saidas' => $saidas] = app(FinancasPessoais::class)->fixosEmCurso();
 
         return [
             'entradas' => $entradas,

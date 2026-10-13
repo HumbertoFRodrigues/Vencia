@@ -17,17 +17,18 @@ return new class extends Migration
             $table->decimal('valor', 12, 2);
             $table->date('data');
             $table->string('meio')->nullable();
-            // A confirmed (or skipped) occurrence of a fixo for one month.
-            // `competencia` is that month's first day; together with the fixo
-            // it is the "never confirm the same fixo twice in a month" key.
-            $table->foreignId('fixo_pessoal_id')->nullable()->constrained('fixos_pessoais')->nullOnDelete();
-            $table->date('competencia')->nullable();
+            // `competencia` is the month (its first day) the money belongs to — every
+            // total groups by it, so October's rent paid on 2 November still counts
+            // in October. For a day-to-day movimento it is simply the month of `data`.
+            // With fixo_pessoal_id it is also the "one confirmation per fixo per month" key.
+            $table->foreignId('fixo_pessoal_id')->nullable()->constrained('fixos_pessoais')->cascadeOnDelete();
+            $table->date('competencia');
             $table->boolean('ignorado')->default(false);
             $table->text('notas')->nullable();
             $table->timestamps();
 
             $table->unique(['fixo_pessoal_id', 'competencia']);
-            $table->index(['user_id', 'data']);
+            $table->index(['user_id', 'competencia']);
         });
     }
 

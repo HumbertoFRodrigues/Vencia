@@ -17,8 +17,10 @@ return new class extends Migration
             $table->decimal('valor', 12, 2);
             $table->unsignedTinyInteger('dia_mes');
             $table->string('meio')->nullable();
+            // First and (optional) last month the fixo applies to, both stored as the month's first day.
+            // An end month instead of an on/off flag: ending a fixo never rewrites the months before it.
             $table->date('inicio');
-            $table->boolean('activo')->default(true);
+            $table->date('fim')->nullable();
             $table->text('notas')->nullable();
             $table->timestamps();
         });

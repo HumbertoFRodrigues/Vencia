@@ -8,9 +8,11 @@ use App\Models\FixoPessoal;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\MovimentoPessoal;
 use App\Services\FinancasPessoais;
+use App\Support\Valor;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -24,12 +26,16 @@ class MovimentoDialog extends Component
 {
     public bool $show = false;
 
+    #[Locked]
     public ?int $movimentoId = null;
 
+    #[Locked]
     public ?int $fixoId = null;
 
+    #[Locked]
     public ?string $competencia = null;
 
+    #[Locked]
     public string $tipo = 'saida';
 
     public string $descricao = '';
@@ -136,7 +142,7 @@ class MovimentoDialog extends Component
             'categoriaId' => ['required', Rule::exists('categorias_pessoais', 'id')->where('user_id', auth()->id())->where('tipo', $this->tipo)],
             'valor' => ['required', 'numeric', 'min:0.01', 'max:9999999999'],
             'data' => ['required', 'date'],
-            'meio' => ['nullable', 'string', 'max:60'],
+            'meio' => ['nullable', 'string', 'max:255'],
             'notas' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -154,7 +160,7 @@ class MovimentoDialog extends Component
 
     public function guardar(): void
     {
-        $this->valor = str_replace([' ', ','], ['', '.'], $this->valor);
+        $this->valor = Valor::normalizar($this->valor);
         $dados = $this->validate();
 
         $atributos = [
@@ -172,9 +178,10 @@ class MovimentoDialog extends Component
             MovimentoPessoal::findOrFail($this->movimentoId)->update($atributos);
             $titulo = 'Movimento actualizado';
         } elseif ($this->fixoId !== null) {
+            $fixo = FixoPessoal::findOrFail($this->fixoId);
             // updateOrCreate: confirming a fixo that was "ignorado" this month replaces the marker row.
             MovimentoPessoal::updateOrCreate(
-                ['fixo_pessoal_id' => $this->fixoId, 'competencia' => FinancasPessoais::mesDe($this->competencia)->toDateString()],
+                ['fixo_pessoal_id' => $fixo->id, 'competencia' => FinancasPessoais::mesDe($this->competencia)->toDateString()],
                 $atributos,
             );
             $titulo = $this->tipoEnum() === TipoMovimento::Entrada ? 'Recebimento confirmado' : 'Pagamento confirmado';
@@ -185,6 +192,7 @@ class MovimentoDialog extends Component
 
         $this->dispatch('toast', title: $titulo, body: $atributos['descricao'].' — '.FinancasPessoais::mzn((float) $atributos['valor']), tone: 'success');
         $this->dispatch('pessoal-actualizado');
+        $this->dispatch('nav-badge', id: 'resumo', n: app(FinancasPessoais::class)->nAtrasoHoje());
         $this->show = false;
     }
 
@@ -199,6 +207,7 @@ class MovimentoDialog extends Component
 
         $this->dispatch('toast', title: 'Movimento apagado', body: $m->descricao, tone: 'success');
         $this->dispatch('pessoal-actualizado');
+        $this->dispatch('nav-badge', id: 'resumo', n: app(FinancasPessoais::class)->nAtrasoHoje());
         $this->show = false;
     }
 

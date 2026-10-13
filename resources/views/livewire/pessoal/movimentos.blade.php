@@ -7,6 +7,7 @@
     <x-ui.page-header eyebrow="Painel pessoal" title="Movimentos">
         <x-slot:actions>
             <x-ui.month-nav :label="$this->rotuloMes()" :atual="$mesAtual" />
+            @if($this->movimentos->isNotEmpty())<x-ui.export-menu />@endif
             <x-ui.button icon="arrow-down-to-line" wire:click="$dispatch('movimento:abrir', { tipo: 'entrada' })">Entrada</x-ui.button>
             <x-ui.button variant="primary" icon="plus" wire:click="$dispatch('movimento:abrir', { tipo: 'saida' })">Saída</x-ui.button>
         </x-slot:actions>

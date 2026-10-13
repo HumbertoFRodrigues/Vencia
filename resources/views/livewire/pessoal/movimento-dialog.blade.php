@@ -32,13 +32,16 @@
                 <div class="field">
                     <x-ui.select label="Categoria" wire:model="categoriaId" :options="$this->categoriaOptions" />
                     @error('categoriaId')<span class="field__hint field__hint--error">{{ $message }}</span>@enderror
+                    @if(empty($this->categoriaOptions))
+                        <span class="field__hint">Não tens categorias de {{ $tipo === 'entrada' ? 'entrada' : 'saída' }} activas. <a href="{{ route('pessoal.orcamentos') }}" wire:navigate>Criar ou reactivar em Orçamentos</a>.</span>
+                    @endif
                 </div>
 
                 <div style="display:flex;flex-direction:column;gap:6px">
                     <span class="field__label">Meio <span style="color:var(--text-faint);font-weight:var(--weight-regular)">(opcional)</span></span>
                     <div class="pill-picker">
                         @foreach($this->meios as $m)
-                            <button type="button" wire:click="$set('meio', '{{ $meio === $m ? '' : $m }}')" class="pill-picker__item {{ $meio === $m ? 'pill-picker__item--active' : '' }}" aria-pressed="{{ $meio === $m ? 'true' : 'false' }}">
+                            <button type="button" wire:click="$set('meio', {{ \Illuminate\Support\Js::from($meio === $m ? '' : $m) }})" class="pill-picker__item {{ $meio === $m ? 'pill-picker__item--active' : '' }}" aria-pressed="{{ $meio === $m ? 'true' : 'false' }}">
                                 <x-ui.payment-method :method="$m" size="20" />
                             </button>
                         @endforeach

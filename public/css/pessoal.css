@@ -24,6 +24,7 @@
 .pessoal-muted a, .link-like { color: var(--text-link); font-size: var(--text-xs); }
 .u-strike { text-decoration: line-through; opacity: .7; }
 .row--muted td { opacity: .55; }
+.card--alerta { border-color: color-mix(in srgb, var(--status-overdue-dot) 45%, var(--border-subtle)); }
 
 /* ---------- Month / year navigator ---------- */
 .month-nav { display: inline-flex; align-items: center; gap: 2px; height: var(--control-h-md); padding: 0 4px; background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); }

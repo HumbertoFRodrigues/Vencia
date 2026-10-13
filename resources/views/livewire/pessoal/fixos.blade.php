@@ -15,8 +15,8 @@
     </x-ui.page-header>
 
     <div class="tile-grid">
-        <x-ui.stat-card label="Renda fixa / mês" :value="$t['entradas']" :currency="\App\Models\Configuracao::moeda()" tone="in" icon="arrow-down-to-line" footnote="Soma das entradas fixas activas" />
-        <x-ui.stat-card label="Débitos fixos / mês" :value="$t['saidas']" :currency="\App\Models\Configuracao::moeda()" tone="out" icon="repeat" footnote="Soma dos débitos fixos activos" />
+        <x-ui.stat-card label="Renda fixa / mês" :value="$t['entradas']" :currency="\App\Models\Configuracao::moeda()" tone="in" icon="arrow-down-to-line" footnote="Entradas fixas em curso este mês" />
+        <x-ui.stat-card label="Débitos fixos / mês" :value="$t['saidas']" :currency="\App\Models\Configuracao::moeda()" tone="out" icon="repeat" footnote="Débitos fixos em curso este mês" />
         <x-ui.stat-card label="Sobra depois dos fixos" :value="$t['sobra']" :currency="\App\Models\Configuracao::moeda()" :tone="$t['sobra'] >= 0 ? 'in' : 'out'" icon="wallet" footnote="Para o dia-a-dia e poupança" />
         <x-ui.stat-card label="Peso dos fixos" :value="$t['peso'] === null ? '—' : round($t['peso']).'%'" :tone="$t['peso'] !== null && $t['peso'] >= 70 ? 'out' : ($t['peso'] !== null && $t['peso'] <= 50 ? 'in' : 'neutral')" icon="target"
             :footnote="$t['peso'] === null ? 'Regista a tua renda fixa' : ($t['peso'] >= 70 ? 'Alto — pouca margem' : ($t['peso'] <= 50 ? 'Saudável (abaixo de 50%)' : 'Razoável — ideal abaixo de 50%'))" />
@@ -41,7 +41,7 @@
                 :empty="$lista->isEmpty()"
             >
                 @foreach($lista as $f)
-                    <tr data-clickable wire:key="fx-{{ $f->id }}" wire:click="$dispatch('fixo:abrir', { fixoId: {{ $f->id }} })" tabindex="0" onkeydown="if (event.key === 'Enter') this.click()" @class(['row--muted' => ! $f->activo])>
+                    <tr data-clickable wire:key="fx-{{ $f->id }}" wire:click="$dispatch('fixo:abrir', { fixoId: {{ $f->id }} })" tabindex="0" onkeydown="if (event.key === 'Enter') this.click()" @class(['row--muted' => ! $f->emCurso()])>
                         <td>
                             <span style="color:var(--text-strong);font-weight:var(--weight-medium)">{{ $f->descricao }}</span>
                             @if($f->notas)<span style="display:block;font-size:var(--text-xs);color:var(--text-muted);margin-top:2px">{{ $f->notas }}</span>@endif
@@ -56,10 +56,14 @@
                             @endif
                         </td>
                         <td>
-                            @if($f->activo)
-                                <span class="estado-pill estado-pill--confirmado">Activo</span>
+                            @if(! $f->emCurso())
+                                <span class="estado-pill estado-pill--ignorado">Terminou em {{ $f->fim->format('m/Y') }}</span>
+                            @elseif($f->futuro())
+                                <span class="estado-pill estado-pill--previsto">Começa em {{ $f->inicio->format('m/Y') }}</span>
+                            @elseif($f->fim)
+                                <span class="estado-pill estado-pill--proximo">Até {{ $f->fim->format('m/Y') }}</span>
                             @else
-                                <span class="estado-pill estado-pill--ignorado">Pausado</span>
+                                <span class="estado-pill estado-pill--confirmado">Em curso</span>
                             @endif
                         </td>
                         <td class="u-text-right"><x-ui.money-value :amount="$f->valor" size="sm" :tone="$tipo === 'entrada' ? 'in' : 'out'" /></td>

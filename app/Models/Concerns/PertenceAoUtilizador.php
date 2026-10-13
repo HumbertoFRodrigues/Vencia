@@ -15,10 +15,10 @@ trait PertenceAoUtilizador
 {
     protected static function bootPertenceAoUtilizador(): void
     {
+        // Fails closed: without a logged-in user nothing matches, so a future
+        // command or job can never read everybody's rows by accident.
         static::addGlobalScope('utilizador', function (Builder $query): void {
-            if (auth()->check()) {
-                $query->where($query->getModel()->getTable().'.user_id', auth()->id());
-            }
+            $query->where($query->getModel()->getTable().'.user_id', auth()->id() ?? 0);
         });
 
         static::creating(function ($model): void {

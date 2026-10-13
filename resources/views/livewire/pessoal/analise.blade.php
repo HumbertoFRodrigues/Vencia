@@ -13,6 +13,8 @@
         };
     };
     $sim = $this->simulacao;
+    $baseMedia = $t['mesesMedia'] > 0 ? ' / mês ('.$t['mesesMedia'].' '.($t['mesesMedia'] === 1 ? 'mês' : 'meses completos').')' : ' / mês';
+    $comparacao = $ano === (int) now()->year ? 'Jan–'.ucfirst(now()->locale('pt_PT')->translatedFormat('M')).' '.($ano - 1) : (string) ($ano - 1);
     $temDados = $t['entradas'] > 0 || $t['saidas'] > 0;
 @endphp
 
@@ -24,8 +26,8 @@
     </x-ui.page-header>
 
     <div class="tile-grid">
-        <x-ui.stat-card label="Entradas no ano" :value="$t['entradas']" :currency="\App\Models\Configuracao::moeda()" tone="in" icon="arrow-down-to-line" :footnote="'Média '.FP::mzn($t['mediaEntradas']).' / mês'" />
-        <x-ui.stat-card label="Saídas no ano" :value="$t['saidas']" :currency="\App\Models\Configuracao::moeda()" tone="out" icon="arrow-up" :footnote="'Média '.FP::mzn($t['mediaSaidas']).' / mês'" />
+        <x-ui.stat-card label="Entradas no ano" :value="$t['entradas']" :currency="\App\Models\Configuracao::moeda()" tone="in" icon="arrow-down-to-line" :footnote="'Média '.FP::mzn($t['mediaEntradas']).$baseMedia" />
+        <x-ui.stat-card label="Saídas no ano" :value="$t['saidas']" :currency="\App\Models\Configuracao::moeda()" tone="out" icon="arrow-up" :footnote="'Média '.FP::mzn($t['mediaSaidas']).$baseMedia" />
         <x-ui.stat-card label="Guardado no ano" :value="$t['saldo']" :currency="\App\Models\Configuracao::moeda()" :tone="$t['saldo'] >= 0 ? 'in' : 'out'" icon="piggy-bank" :footnote="$t['taxa'] === null ? 'Sem entradas registadas' : round($t['taxa']).'% do que entrou'" />
         <x-ui.stat-card label="Peso dos fixos nas saídas" :value="$t['pctFixo'] === null ? '—' : round($t['pctFixo']).'%'" icon="repeat" :footnote="$t['pctFixo'] === null ? 'Sem saídas registadas' : 'O resto ('.round(100 - $t['pctFixo']).'%) é dia-a-dia'" />
     </div>
@@ -72,13 +74,13 @@
 
     <div class="pessoal-grid">
         <div class="pessoal-grid__main">
-            <x-ui.card title="Onde gastas" :subtitle="'Saídas por categoria em '.$ano.', comparadas com '.($ano - 1)" :padding="0">
+            <x-ui.card title="Onde gastas" :subtitle="'Saídas por categoria em '.$ano.', comparadas com o mesmo período de '.$comparacao" :padding="0">
                 <x-ui.data-table :columns="[
                     ['key' => 'cat', 'header' => 'Categoria'],
                     ['key' => 'total', 'header' => 'Total', 'align' => 'right'],
                     ['key' => 'media', 'header' => 'Média / mês', 'align' => 'right'],
                     ['key' => 'pct', 'header' => '% das saídas', 'align' => 'right'],
-                    ['key' => 'vs', 'header' => 'vs '.($ano - 1), 'align' => 'right'],
+                    ['key' => 'vs', 'header' => 'vs '.$comparacao, 'align' => 'right'],
                 ]" :empty="empty($this->categoriasSaida)">
                     @foreach($this->categoriasSaida as $c)
                         @php($delta = $c['anterior'] > 0 ? (($c['total'] - $c['anterior']) / $c['anterior']) * 100 : null)
