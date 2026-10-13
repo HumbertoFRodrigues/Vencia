@@ -30,7 +30,7 @@ class GlobalSearch extends Component
     private function clientes(): Collection
     {
         $term = trim($this->q);
-        $like = '%'.$term.'%';
+        $like = \App\Support\Pesquisa::contem($term);
 
         return Cliente::query()
             ->when($term === '', fn ($query) => $query->whereRaw('1 = 0'))
@@ -46,7 +46,7 @@ class GlobalSearch extends Component
     private function servicos(): Collection
     {
         $term = trim($this->q);
-        $like = '%'.$term.'%';
+        $like = \App\Support\Pesquisa::contem($term);
 
         return Servico::query()
             ->with('cliente')

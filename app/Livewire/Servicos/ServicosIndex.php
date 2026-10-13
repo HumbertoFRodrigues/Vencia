@@ -84,7 +84,7 @@ class ServicosIndex extends Component
             ->when($this->tab !== 'todos', fn ($query) => $query->where('status', $this->tab))
             ->when($this->categoria !== 'todas', fn ($query) => $query->where('categoria', $this->categoria))
             ->when(trim($this->q) !== '', function ($query): void {
-                $term = '%'.trim($this->q).'%';
+                $term = \App\Support\Pesquisa::contem($this->q);
                 $query->where(function ($inner) use ($term): void {
                     $inner->where('nome', 'like', $term)
                         ->orWhere('plano', 'like', $term)

@@ -42,13 +42,7 @@ class Totais
 
         $servicosActivos = Servico::whereNotIn('status', [ServicoStatus::Cancelado, ServicoStatus::Suspenso])->get();
 
-        $mrr = round($servicosActivos->sum(fn (Servico $s) => match ($s->periodicidade) {
-            Periodicidade::Mensal => (float) $s->valor,
-            Periodicidade::Trimestral => (float) $s->valor / 3,
-            Periodicidade::Semestral => (float) $s->valor / 6,
-            Periodicidade::Anual => (float) $s->valor / 12,
-            Periodicidade::Unica, Periodicidade::Personalizada => 0.0,
-        }));
+        $mrr = round($servicosActivos->sum(fn (Servico $s) => $s->valorMensal()));
 
         $entradas = (float) $pagamentosMes->sum(fn (Pagamento $p) => (float) $p->valor);
         $aReceber = (float) $aReceberServicos->sum(fn (Servico $s) => (float) $s->valor);

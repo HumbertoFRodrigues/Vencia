@@ -7,7 +7,7 @@
 
 <div class="top-bar__bell-wrap dropdown">
     <x-ui.icon-button icon="bell" label="Notificações" data-dropdown-toggle data-dropdown-group="notificacoes" aria-haspopup="true" aria-expanded="false" />
-    @if($alertas->isNotEmpty())<span class="top-bar__badge">{{ $alertas->count() }}</span>@endif
+    @if($this->total > 0)<span class="top-bar__badge">{{ $this->total > 99 ? '99+' : $this->total }}</span>@endif
 
     <div class="dropdown-panel notification-panel" data-dropdown-panel data-dropdown-group="notificacoes" hidden>
         <div class="notification-panel__header">Alertas</div>

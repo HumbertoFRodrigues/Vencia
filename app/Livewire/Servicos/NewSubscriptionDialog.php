@@ -167,8 +167,15 @@ class NewSubscriptionDialog extends Component
 
         $duracaoDias = $this->duracaoDias !== null && $this->duracaoDias !== '' ? (int) $this->duracaoDias : null;
 
+        // Runs on every render, before validation: a malformed date must not crash the dialog.
+        try {
+            $inicio = Carbon::createFromFormat('!Y-m-d', $this->inicio);
+        } catch (\Throwable) {
+            return null;
+        }
+
         return app(ServicoStatusService::class)->calcularVencimentoInicial(
-            Carbon::parse($this->inicio),
+            $inicio,
             Periodicidade::from($this->periodicidade),
             $duracaoDias,
         );
@@ -182,13 +189,13 @@ class NewSubscriptionDialog extends Component
         $rules = [
             'bibliotecaServicoId' => ['required', 'integer', Rule::exists('biblioteca_servicos', 'id')],
             'clienteSelecionado' => ['required', 'string'],
-            'valor' => ['required', 'numeric', 'min:0.01'],
+            'valor' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
             'periodicidade' => ['required', Rule::enum(Periodicidade::class)],
-            'inicio' => ['required', 'date'],
-            'vencimentoManual' => ['nullable', 'date'],
-            'duracaoDias' => [$this->periodicidade === 'personalizada' ? 'required' : 'nullable', 'integer', 'min:1'],
-            'descricao' => ['nullable', 'string'],
-            'metodoHabitual' => ['required', 'string'],
+            'inicio' => ['required', 'date_format:Y-m-d'],
+            'vencimentoManual' => ['nullable', 'date_format:Y-m-d'],
+            'duracaoDias' => [$this->periodicidade === 'personalizada' ? 'required' : 'nullable', 'integer', 'min:1', 'max:3650'],
+            'descricao' => ['nullable', 'string', 'max:2000'],
+            'metodoHabitual' => ['required', 'string', Rule::in(MetodoPagamentoOpcao::nomesActivos())],
         ];
 
         if ($this->novoCliente) {
@@ -218,9 +225,12 @@ class NewSubscriptionDialog extends Component
             $bibliotecaServico = BibliotecaServico::findOrFail($this->bibliotecaServicoId);
             $periodicidade = Periodicidade::from($this->periodicidade);
             $duracaoDias = $periodicidade === Periodicidade::Personalizada ? (int) $this->duracaoDias : null;
-            $vencimento = trim($this->vencimentoManual) !== ''
-                ? Carbon::parse($this->vencimentoManual)
-                : $this->vencimentoCalculado;
+            // "Única" is a one-off: never a vencimento, even if one was typed before switching to it.
+            $vencimento = match (true) {
+                $periodicidade === Periodicidade::Unica => null,
+                trim($this->vencimentoManual) !== '' => Carbon::parse($this->vencimentoManual),
+                default => $this->vencimentoCalculado,
+            };
 
             $servico = Servico::create([
                 'cliente_id' => $cliente->id,
@@ -239,6 +249,11 @@ class NewSubscriptionDialog extends Component
             ]);
 
             ServicoLembreteConfig::create(['servico_id' => $servico->id]);
+
+            // A migrated client whose vencimento already passed starts as vencido, not activo.
+            $servico->load('lembreteConfig');
+            $servico->status = app(ServicoStatusService::class)->avaliar($servico);
+            $servico->save();
 
             Historico::create([
                 'cliente_id' => $cliente->id,

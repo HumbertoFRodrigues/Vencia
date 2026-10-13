@@ -10,7 +10,9 @@ use App\Models\Configuracao;
 use App\Models\Historico;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
+use App\Services\ServicoStatusService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -134,15 +136,15 @@ class EditarServicoDialog extends Component
     {
         return [
             'nome' => ['required', 'string', 'max:255'],
-            'descricao' => ['nullable', 'string'],
+            'descricao' => ['nullable', 'string', 'max:2000'],
             'plano' => ['nullable', 'string', 'max:255'],
             'categoria' => ['required', Rule::enum(ServicoCategoria::class)],
-            'valor' => ['required', 'numeric', 'min:0.01'],
+            'valor' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
             'periodicidade' => ['required', Rule::enum(Periodicidade::class)],
-            'duracaoDias' => [$this->periodicidade === 'personalizada' ? 'required' : 'nullable', 'integer', 'min:1'],
-            'inicio' => ['required', 'date'],
-            'vencimento' => ['nullable', 'date'],
-            'metodoHabitual' => ['required', 'string'],
+            'duracaoDias' => [$this->periodicidade === 'personalizada' ? 'required' : 'nullable', 'integer', 'min:1', 'max:3650'],
+            'inicio' => ['required', 'date_format:Y-m-d'],
+            'vencimento' => ['nullable', 'date_format:Y-m-d'],
+            'metodoHabitual' => ['required', 'string', 'max:255'],
         ];
     }
 
@@ -168,24 +170,29 @@ class EditarServicoDialog extends Component
             'periodicidade' => $periodicidade->value,
             'duracao_dias' => $duracaoDias,
             'inicio' => $data['inicio'],
-            'vencimento' => $data['vencimento'] !== null && $data['vencimento'] !== '' ? $data['vencimento'] : null,
+            'vencimento' => $periodicidade !== Periodicidade::Unica && $data['vencimento'] !== null && $data['vencimento'] !== '' ? $data['vencimento'] : null,
             'metodo_habitual' => $data['metodoHabitual'],
         ];
 
         $alteracoes = $this->descreverAlteracoes($servico, $novosValores);
 
-        $servico->update($novosValores);
+        DB::transaction(function () use ($servico, $novosValores, $alteracoes): void {
+            $servico->update($novosValores);
 
-        if ($alteracoes !== []) {
-            Historico::create([
-                'cliente_id' => $servico->cliente_id,
-                'servico_id' => $servico->id,
-                'occurred_at' => Carbon::now(),
-                'title' => 'Serviço editado',
-                'description' => implode('; ', $alteracoes),
-                'kind' => HistoricoKind::Alterado,
-            ]);
-        }
+            if ($alteracoes !== []) {
+                Historico::create([
+                    'cliente_id' => $servico->cliente_id,
+                    'servico_id' => $servico->id,
+                    'occurred_at' => Carbon::now(),
+                    'title' => 'Serviço editado',
+                    'description' => implode('; ', $alteracoes),
+                    'kind' => HistoricoKind::Alterado,
+                ]);
+            }
+
+            // A new vencimento (or periodicidade) can move the servico in or out of vencido/a_vencer right away.
+            app(ServicoStatusService::class)->sincronizarEstado($servico->fresh('lembreteConfig'));
+        });
 
         $this->show = false;
         $this->dispatch('servico-actualizado', servicoId: $servico->id);

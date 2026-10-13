@@ -89,14 +89,14 @@ class LembreteVencimentoMail extends Mailable
      */
     private function comContextoIntervalo(string $corpo): string
     {
-        $contexto = match ($this->intervalo) {
-            IntervaloLembrete::D30 => 'Faltam 30 dias para o vencimento.',
-            IntervaloLembrete::D15 => 'Faltam 15 dias para o vencimento.',
-            IntervaloLembrete::D7 => 'Faltam 7 dias para o vencimento.',
-            IntervaloLembrete::D3 => 'Faltam 3 dias para o vencimento.',
-            IntervaloLembrete::D1 => 'Falta 1 dia para o vencimento.',
-            IntervaloLembrete::NoDia => 'O vencimento é hoje.',
-            IntervaloLembrete::AposVencimento => 'O vencimento já passou.',
+        // From the real countdown, not the interval's nominal offset: a
+        // reminder caught up a day late must not say "Faltam 7 dias" on day 6.
+        $dias = $this->servico->dias ?? 0;
+        $contexto = match (true) {
+            $this->intervalo === IntervaloLembrete::AposVencimento || $dias < 0 => 'O vencimento já passou.',
+            $dias === 0 => 'O vencimento é hoje.',
+            $dias === 1 => 'Falta 1 dia para o vencimento.',
+            default => "Faltam {$dias} dias para o vencimento.",
         };
 
         $partes = explode("\n\n", $corpo, 2);

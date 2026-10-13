@@ -8,7 +8,9 @@ use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
 use App\Services\ServicoStatusService;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -30,6 +32,7 @@ class RenovarDialog extends Component
 
     public bool $show = false;
 
+    #[Locked]
     public ?int $servicoId = null;
 
     public string $valorPago = '';
@@ -122,11 +125,12 @@ class RenovarDialog extends Component
     protected function rules(): array
     {
         return [
-            'valorPago' => ['required', 'numeric', 'min:0.01'],
-            'dataPagamento' => ['required', 'date'],
-            'periodoPagamento' => ['required', 'string'],
-            'metodo' => ['required', 'string'],
-            'observacoes' => ['nullable', 'string'],
+            'valorPago' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
+            'dataPagamento' => ['required', 'date_format:Y-m-d'],
+            'periodoPagamento' => ['required', Rule::in(array_column(self::PERIODO_PAGAMENTO_OPTIONS, 'value'))],
+            // An archived método still on this servico stays valid, so reopening never fails on its own default.
+            'metodo' => ['required', Rule::in([...MetodoPagamentoOpcao::nomesActivos(), $this->servico?->metodo_habitual])],
+            'observacoes' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -135,13 +139,19 @@ class RenovarDialog extends Component
         $data = $this->validate();
         $servico = $this->servico;
 
-        app(ServicoStatusService::class)->renovar($servico, [
-            'data' => $data['dataPagamento'],
-            'valor' => $data['valorPago'],
-            'metodo' => $data['metodo'],
-            'periodo' => $data['periodoPagamento'],
-            'observacoes' => $data['observacoes'],
-        ]);
+        try {
+            app(ServicoStatusService::class)->renovar($servico, [
+                'data' => $data['dataPagamento'],
+                'valor' => $data['valorPago'],
+                'metodo' => $data['metodo'],
+                'periodo' => $data['periodoPagamento'],
+                'observacoes' => $data['observacoes'],
+            ]);
+        } catch (\RuntimeException $e) {
+            $this->addError('valorPago', $e->getMessage());
+
+            return;
+        }
 
         $valorFormatado = number_format((float) $data['valorPago'], 0, ',', '.');
 

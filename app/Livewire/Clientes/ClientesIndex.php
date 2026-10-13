@@ -63,7 +63,7 @@ class ClientesIndex extends Component
             ->when($this->tab === 'activo', fn ($query) => $query->where('status', ClienteStatus::Activo))
             ->when($this->tab === 'inactivo', fn ($query) => $query->where('status', ClienteStatus::Inactivo))
             ->when(trim($this->q) !== '', function ($query): void {
-                $term = '%'.trim($this->q).'%';
+                $term = \App\Support\Pesquisa::contem($this->q);
                 $query->where(function ($inner) use ($term): void {
                     $inner->where('nome', 'like', $term)
                         ->orWhere('email', 'like', $term)
@@ -94,13 +94,7 @@ class ClientesIndex extends Component
      */
     public function mrrDe(Cliente $cliente): float
     {
-        return round($cliente->servicos->sum(fn (Servico $s) => match ($s->periodicidade) {
-            Periodicidade::Mensal => (float) $s->valor,
-            Periodicidade::Trimestral => (float) $s->valor / 3,
-            Periodicidade::Semestral => (float) $s->valor / 6,
-            Periodicidade::Anual => (float) $s->valor / 12,
-            Periodicidade::Unica, Periodicidade::Personalizada => 0.0,
-        }));
+        return round($cliente->servicos->sum(fn (Servico $s) => $s->valorMensal()));
     }
 
     #[On('cliente-guardado')]

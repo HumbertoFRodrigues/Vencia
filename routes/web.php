@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ReciboController;
+use App\Http\Middleware\ActualizarEstadosDoDia;
 use App\Livewire\Clientes\ClienteDetail;
 use App\Livewire\Clientes\ClientesIndex;
 use App\Livewire\Configuracoes\ConfiguracoesIndex;
@@ -39,7 +40,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [ResetPasswordController::class, 'store'])->middleware('throttle:login')->name('password.update');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', ActualizarEstadosDoDia::class])->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
     Route::get('/', Dashboard::class)->name('dashboard');

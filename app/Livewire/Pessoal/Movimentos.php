@@ -58,8 +58,8 @@ class Movimentos extends Component
     {
         return MovimentoPessoal::query()->contabilizados()->noMes($this->mesActual())
             ->when(trim($this->q) !== '', fn (Builder $b) => $b->where(fn (Builder $w) => $w
-                ->where('descricao', 'like', '%'.trim($this->q).'%')
-                ->orWhere('notas', 'like', '%'.trim($this->q).'%')))
+                ->where('descricao', 'like', \App\Support\Pesquisa::contem($this->q))
+                ->orWhere('notas', 'like', \App\Support\Pesquisa::contem($this->q))))
             ->when($this->categoria !== '', fn (Builder $b) => $b->where('categoria_pessoal_id', (int) $this->categoria));
     }
 

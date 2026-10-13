@@ -119,7 +119,7 @@ class PagamentosIndex extends Component
             })
             ->when($this->cliente !== 'todos', fn ($query) => $query->where('cliente_id', (int) $this->cliente))
             ->when(trim($this->q) !== '', function ($query): void {
-                $term = '%'.trim($this->q).'%';
+                $term = \App\Support\Pesquisa::contem($this->q);
                 $query->where(function ($inner) use ($term): void {
                     $inner->whereHas('cliente', fn ($c) => $c->where('nome', 'like', $term))
                         ->orWhereHas('servico', fn ($s) => $s->where('nome', 'like', $term));

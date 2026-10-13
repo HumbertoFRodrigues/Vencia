@@ -60,12 +60,13 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | will be used by the PHP date and date-time functions. Vencia runs on
+    | Maputo time so "today", due dates and history timestamps match the
+    | local calendar (UTC would still be "yesterday" until 02:00).
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Africa/Maputo'),
 
     /*
     |--------------------------------------------------------------------------

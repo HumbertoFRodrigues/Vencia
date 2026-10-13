@@ -92,4 +92,24 @@ class Servico extends Model
             return (int) Carbon::today()->diffInDays($vencimento, false);
         });
     }
+
+    /**
+     * The servico's value normalised to one month — the single MRR formula
+     * used by Totais, the Clientes list and Cliente detalhe. "Personalizada"
+     * spreads its value over its duration (90 days at 9 000 ≈ 3 000/month);
+     * "Única" is a one-off and is not recurring revenue.
+     */
+    public function valorMensal(): float
+    {
+        $valor = (float) $this->valor;
+
+        return match ($this->periodicidade) {
+            Periodicidade::Mensal => $valor,
+            Periodicidade::Trimestral => $valor / 3,
+            Periodicidade::Semestral => $valor / 6,
+            Periodicidade::Anual => $valor / 12,
+            Periodicidade::Personalizada => $this->duracao_dias > 0 ? $valor * 30 / $this->duracao_dias : 0.0,
+            Periodicidade::Unica => 0.0,
+        };
+    }
 }

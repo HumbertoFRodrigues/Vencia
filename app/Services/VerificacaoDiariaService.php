@@ -50,57 +50,35 @@ class VerificacaoDiariaService
         ];
 
         $globais = Configuracao::obter('lembretes', []);
+        $enviarEmails = (bool) ($globais['verificacao_diaria'] ?? false);
 
-        if (! ($globais['verificacao_diaria'] ?? false)) {
-            Log::info('Verificação diária de vencimentos ignorada: desligada em Configurações → Lembretes.');
-
-            $resumo['executado'] = false;
-            $resumo['nota'] = 'Verificação diária automática está desligada em Configurações → Lembretes.';
-
-            return $resumo;
+        // The switch in Configurações only stops the emails: statuses must
+        // stay right regardless, or every total in the app goes stale.
+        if (! $enviarEmails) {
+            Log::info('Verificação diária: lembretes por email desligados em Configurações → Lembretes; só os estados foram actualizados.');
+            $resumo['nota'] = 'Os lembretes por email estão desligados em Configurações → Lembretes — só os estados foram actualizados.';
+        } else {
+            // Switches the mailer to the admin's UI-configured SMTP settings
+            // for the rest of this run (a no-op when none is set).
+            Configuracao::aplicarSmtpEmTempoDeExecucao();
         }
 
-        // Switches the mailer to the admin's UI-configured SMTP settings for
-        // the rest of this run, when one is set — a no-op (keeps .env's
-        // MAIL_MAILER) otherwise. Called once here rather than per servico:
-        // SMTP config doesn't change mid-run, and every send below goes
-        // through the one mailer this selects.
-        Configuracao::aplicarSmtpEmTempoDeExecucao();
-
         Servico::query()
+            ->with(['cliente', 'lembreteConfig'])
             ->whereNotIn('status', [ServicoStatus::Suspenso, ServicoStatus::Cancelado])
-            ->cursor()
-            ->each(function (Servico $servico) use (&$resumo): void {
+            ->each(function (Servico $servico) use (&$resumo, $enviarEmails): void {
                 $resumo['servicos_avaliados']++;
 
-                $this->avaliarEstado($servico, $resumo);
-                $this->enviarLembretesDevidos($servico, $resumo);
+                if ($this->statusService->sincronizarEstado($servico)) {
+                    $resumo['estados_alterados']++;
+                }
+
+                if ($enviarEmails) {
+                    $this->enviarLembretesDevidos($servico, $resumo);
+                }
             });
 
         return $resumo;
-    }
-
-    /** @param array<string, mixed> $resumo */
-    private function avaliarEstado(Servico $servico, array &$resumo): void
-    {
-        $novoStatus = $this->statusService->avaliar($servico);
-
-        if ($novoStatus === $servico->status) {
-            return;
-        }
-
-        $servico->status = $novoStatus;
-        $servico->save();
-        $resumo['estados_alterados']++;
-
-        Historico::create([
-            'cliente_id' => $servico->cliente_id,
-            'servico_id' => $servico->id,
-            'occurred_at' => Carbon::now(),
-            'title' => 'Estado alterado para '.$this->statusLabel($novoStatus),
-            'description' => null,
-            'kind' => $novoStatus === ServicoStatus::Vencido ? HistoricoKind::Vencido : HistoricoKind::Alterado,
-        ]);
     }
 
     /** @param array<string, mixed> $resumo */
@@ -117,56 +95,84 @@ class VerificacaoDiariaService
             return;
         }
 
-        $dias = $servico->dias;
+        $intervalo = $this->intervaloEmVigor($servico, $servico->dias);
+
+        if ($intervalo === null) {
+            return;
+        }
+
+        $jaEnviado = LembreteEnviado::query()
+            ->where('servico_id', $servico->id)
+            ->where('intervalo', $intervalo->value)
+            ->whereDate('vencimento_referencia', $servico->vencimento->toDateString())
+            ->exists();
+
+        if (! $jaEnviado) {
+            $this->enviarLembrete($servico, $intervalo, $resumo);
+        }
+    }
+
+    /**
+     * The reminder that applies today: the closest enabled interval the
+     * countdown has already reached — not only on its exact day. If the job
+     * didn't run on day 7 (server or PC off), day 6 still sends the 7-day
+     * reminder; once day 3 is reached it is the 3-day one that applies, so
+     * missed reminders are never sent in a burst. After the due date only
+     * "após vencimento" applies. Each one is still sent once per vencimento.
+     */
+    private function intervaloEmVigor(Servico $servico, int $dias): ?IntervaloLembrete
+    {
+        if ($dias < 0) {
+            return $this->statusService->intervaloActivo($servico, IntervaloLembrete::AposVencimento)
+                ? IntervaloLembrete::AposVencimento
+                : null;
+        }
+
+        $emVigor = null;
 
         foreach (IntervaloLembrete::ordenadas() as $intervalo) {
             $offset = $intervalo->diasOffset();
 
-            // apos_vencimento has no fixed offset: it means "any day strictly
-            // after vencimento", sent at most once per vencimento — the
-            // dedup check below (keyed by vencimento_referencia) is what
-            // actually caps it to one send per cycle, not a day comparison.
-            $devidoHoje = $offset !== null ? $dias === $offset : $dias < 0;
-
-            if (! $devidoHoje) {
+            if ($offset === null || $dias > $offset || ! $this->statusService->intervaloActivo($servico, $intervalo)) {
                 continue;
             }
 
-            if (! $this->statusService->intervaloActivo($servico, $intervalo)) {
-                continue;
+            if ($emVigor === null || $offset < $emVigor->diasOffset()) {
+                $emVigor = $intervalo;
             }
-
-            $jaEnviado = LembreteEnviado::query()
-                ->where('servico_id', $servico->id)
-                ->where('intervalo', $intervalo->value)
-                ->where('vencimento_referencia', $servico->vencimento->toDateString())
-                ->exists();
-
-            if ($jaEnviado) {
-                continue;
-            }
-
-            $this->enviarLembrete($servico, $intervalo, $resumo);
         }
+
+        return $emVigor;
     }
 
     /** @param array<string, mixed> $resumo */
     private function enviarLembrete(Servico $servico, IntervaloLembrete $intervalo, array &$resumo): void
     {
+        $emailCliente = $servico->cliente?->email;
+        $admin = Configuracao::emailBccAdmin($emailCliente);
+
+        // No client email: the empresa still gets the reminder so someone
+        // follows up by phone; with nobody to send to, nothing is recorded
+        // and the reminder is retried on the next run.
+        if (! $emailCliente && $admin === []) {
+            Log::warning(sprintf('Lembrete "%s" do serviço #%d não enviado: o cliente não tem email e a empresa também não.', $intervalo->value, $servico->id));
+            $resumo['lembretes_falhados']++;
+
+            return;
+        }
+
         try {
-            DB::transaction(function () use ($servico, $intervalo): void {
-                if ($servico->cliente?->email) {
-                    Mail::to($servico->cliente->email)
-                        ->bcc(Configuracao::emailBccAdmin($servico->cliente->email))
-                        ->send(new LembreteVencimentoMail($servico, $intervalo));
-                }
+            DB::transaction(function () use ($servico, $intervalo, $emailCliente, $admin): void {
+                $mail = $emailCliente ? Mail::to($emailCliente)->bcc($admin) : Mail::to($admin);
+                $mail->send(new LembreteVencimentoMail($servico, $intervalo));
 
                 Historico::create([
                     'cliente_id' => $servico->cliente_id,
                     'servico_id' => $servico->id,
                     'occurred_at' => Carbon::now(),
-                    'title' => 'Lembrete de vencimento enviado',
-                    'description' => $this->intervaloLabel($intervalo).' — vencimento em '.$servico->vencimento->format('d/m/Y'),
+                    'title' => $emailCliente ? 'Lembrete de vencimento enviado' : 'Lembrete enviado só à empresa',
+                    'description' => $this->intervaloLabel($intervalo).' — vencimento em '.$servico->vencimento->format('d/m/Y')
+                        .($emailCliente ? '' : ' — o cliente não tem email registado'),
                     'kind' => HistoricoKind::Lembrete,
                 ]);
 
@@ -192,16 +198,6 @@ class VerificacaoDiariaService
         }
     }
 
-    private function statusLabel(ServicoStatus $status): string
-    {
-        return match ($status) {
-            ServicoStatus::Activo => 'activo',
-            ServicoStatus::AVencer => 'a vencer',
-            ServicoStatus::Vencido => 'vencido',
-            ServicoStatus::Suspenso => 'suspenso',
-            ServicoStatus::Cancelado => 'cancelado',
-        };
-    }
 
     private function intervaloLabel(IntervaloLembrete $intervalo): string
     {

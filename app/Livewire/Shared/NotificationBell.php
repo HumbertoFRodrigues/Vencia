@@ -13,9 +13,7 @@ use Livewire\Component;
  * replacing what used to be a static, non-functional <x-ui.icon-button
  * icon="bell">. Same overdue/due-soon list as Dashboard::alertas(), just
  * rendered in a dropdown (via the shared data-dropdown-toggle/-panel
- * mechanism in layouts/app.blade.php) instead of a full card, so the count
- * shown here and on the sidebar/top-bar badge (AppServiceProvider's
- * "a vencer" composer value) never drift apart.
+ * mechanism in layouts/app.blade.php) instead of a full card.
  */
 class NotificationBell extends Component
 {
@@ -29,6 +27,13 @@ class NotificationBell extends Component
             ->orderByRaw('vencimento IS NULL, vencimento ASC')
             ->limit(8)
             ->get();
+    }
+
+    /** The real count for the badge — the list above stops at 8. */
+    #[Computed]
+    public function total(): int
+    {
+        return Servico::query()->whereIn('status', [ServicoStatus::Vencido, ServicoStatus::AVencer])->count();
     }
 
     public function render()

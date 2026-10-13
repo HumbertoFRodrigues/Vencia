@@ -9,6 +9,7 @@ use App\Services\Totais;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -137,6 +138,13 @@ class Dashboard extends Component
             ServicoStatus::Suspenso => 'Suspenso',
             ServicoStatus::Cancelado => 'Cancelado',
         };
+    }
+
+    #[On('servico-criado')]
+    #[On('servico-actualizado')]
+    public function actualizar(): void
+    {
+        unset($this->totais, $this->proximosVencimentos, $this->alertas);
     }
 
     public function render()

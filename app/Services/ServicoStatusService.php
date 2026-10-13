@@ -15,6 +15,9 @@ use RuntimeException;
 
 class ServicoStatusService
 {
+    /** Global reminder settings, read once per instance instead of per servico × interval. */
+    private ?array $globais = null;
+
     /**
      * Recalculates what a servico's status *should* be today, comparing
      * vencimento with the earliest enabled reminder interval (a_vencer) and
@@ -27,6 +30,11 @@ class ServicoStatusService
     {
         if (in_array($servico->status, [ServicoStatus::Suspenso, ServicoStatus::Cancelado], true)) {
             return $servico->status;
+        }
+
+        // A one-off purchase has no cycle to fall behind on.
+        if ($servico->periodicidade === Periodicidade::Unica) {
+            return ServicoStatus::Activo;
         }
 
         if ($servico->vencimento === null) {
@@ -103,7 +111,7 @@ class ServicoStatusService
     public function intervaloActivo(Servico $servico, IntervaloLembrete $intervalo): bool
     {
         $config = $servico->lembreteConfig;
-        $globais = Configuracao::obter('lembretes', []);
+        $globais = $this->globais ??= Configuracao::obter('lembretes', []);
 
         return $config?->{$intervalo->value} ?? (bool) ($globais[$intervalo->value] ?? false);
     }
@@ -122,11 +130,19 @@ class ServicoStatusService
             throw new RuntimeException('Serviços com periodicidade "única" não têm ciclo de renovação.');
         }
 
+        if ($servico->status === ServicoStatus::Cancelado) {
+            throw new RuntimeException('Um serviço cancelado não pode ser renovado.');
+        }
+
         DB::transaction(function () use ($servico, $dadosPagamento): void {
             $novoVencimento = $this->calcularProximoVencimento($servico);
 
+            // Renewing reactivates a suspended servico, but the new status
+            // still follows the new vencimento: a long-overdue servico renewed
+            // by one period can still be vencido or a_vencer.
             $servico->vencimento = $novoVencimento;
             $servico->status = ServicoStatus::Activo;
+            $servico->status = $this->avaliar($servico);
             $servico->save();
 
             $valor = $dadosPagamento['valor'] ?? $servico->valor;
@@ -174,7 +190,15 @@ class ServicoStatusService
         /** @var Carbon $base */
         $base = $servico->vencimento ?? Carbon::today();
 
-        return $this->somarPeriodicidade($base, $servico->periodicidade, $servico->duracao_dias);
+        // Keep the billing day: a vencimento pushed back to the end of a
+        // short month (31 Jan → 28 Feb) returns to the original day
+        // (→ 31 Mar) instead of drifting to the 28th for good.
+        $dia = $base->day;
+        if ($servico->inicio && $base->day === $base->daysInMonth && $servico->inicio->day > $base->day) {
+            $dia = $servico->inicio->day;
+        }
+
+        return $this->somarPeriodicidade($base, $servico->periodicidade, $servico->duracao_dias, $dia);
     }
 
     /**
@@ -190,19 +214,71 @@ class ServicoStatusService
             return null;
         }
 
-        return $this->somarPeriodicidade($inicio, $periodicidade, $duracaoDias);
+        return $this->somarPeriodicidade($inicio, $periodicidade, $duracaoDias, $inicio->day);
     }
 
-    private function somarPeriodicidade(Carbon $base, Periodicidade $periodicidade, ?int $duracaoDias): Carbon
+    private function somarPeriodicidade(Carbon $base, Periodicidade $periodicidade, ?int $duracaoDias, int $dia): Carbon
     {
-        return match ($periodicidade) {
-            Periodicidade::Mensal => $base->copy()->addMonthNoOverflow(),
-            Periodicidade::Trimestral => $base->copy()->addMonthsNoOverflow(3),
-            Periodicidade::Semestral => $base->copy()->addMonthsNoOverflow(6),
-            Periodicidade::Anual => $base->copy()->addYearNoOverflow(),
-            Periodicidade::Personalizada => $base->copy()->addDays((int) ($duracaoDias ?? 0)),
+        $meses = match ($periodicidade) {
+            Periodicidade::Mensal => 1,
+            Periodicidade::Trimestral => 3,
+            Periodicidade::Semestral => 6,
+            Periodicidade::Anual => 12,
+            Periodicidade::Personalizada => null,
             Periodicidade::Unica => throw new RuntimeException('Serviços com periodicidade "única" não têm ciclo de renovação.'),
         };
+
+        if ($meses === null) {
+            return $base->copy()->addDays((int) ($duracaoDias ?? 0));
+        }
+
+        $alvo = $base->copy()->startOfMonth()->addMonthsNoOverflow($meses);
+
+        return $alvo->day(min($dia, $alvo->daysInMonth));
+    }
+
+    /**
+     * Brings one servico's stored status in line with today, logging the
+     * change in Historico. Returns whether anything changed. Shared by the
+     * daily job and the once-a-day refresh on first page load
+     * (AppServiceProvider), so status is right even on a day the job didn't run.
+     */
+    public function sincronizarEstado(Servico $servico): bool
+    {
+        $novo = $this->avaliar($servico);
+
+        if ($novo === $servico->status) {
+            return false;
+        }
+
+        $servico->status = $novo;
+        $servico->save();
+
+        Historico::create([
+            'cliente_id' => $servico->cliente_id,
+            'servico_id' => $servico->id,
+            'occurred_at' => Carbon::now(),
+            'title' => 'Estado alterado para '.$novo->label(),
+            'description' => null,
+            'kind' => $novo === ServicoStatus::Vencido ? HistoricoKind::Vencido : HistoricoKind::Alterado,
+        ]);
+
+        return true;
+    }
+
+    /** @return int how many servicos changed status */
+    public function sincronizarTodos(): int
+    {
+        $alterados = 0;
+
+        Servico::query()
+            ->with('lembreteConfig')
+            ->whereNotIn('status', [ServicoStatus::Suspenso, ServicoStatus::Cancelado])
+            ->each(function (Servico $servico) use (&$alterados): void {
+                $alterados += (int) $this->sincronizarEstado($servico);
+            });
+
+        return $alterados;
     }
 
     /**

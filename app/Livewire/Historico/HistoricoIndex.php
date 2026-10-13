@@ -71,7 +71,7 @@ class HistoricoIndex extends Component
             ->with(['cliente', 'servico'])
             ->when($this->tab !== 'todos', fn ($query) => $query->whereIn('kind', self::GRUPOS[$this->tab] ?? []))
             ->when(trim($this->q) !== '', function ($query): void {
-                $term = '%'.trim($this->q).'%';
+                $term = \App\Support\Pesquisa::contem($this->q);
                 $query->where(function ($inner) use ($term): void {
                     $inner->where('title', 'like', $term)
                         ->orWhere('description', 'like', $term)
