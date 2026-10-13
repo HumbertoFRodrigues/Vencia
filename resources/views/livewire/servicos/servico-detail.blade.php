@@ -129,7 +129,8 @@
                 </div>
             </x-ui.card>
 
-            <x-ui.card title="Lembretes" subtitle="Intervalos activos para este serviço">
+            @php($antecedencia = app(\App\Services\ServicoStatusService::class)->antecedencia($s))
+            <x-ui.card title="Lembretes" :subtitle="$antecedencia ? 'Intervalos activos para este serviço — por omissão, o primeiro aviso é '.$antecedencia.' '.($antecedencia === 1 ? 'dia' : 'dias').' antes (Configurações → Lembretes)' : 'Serviço único: não há lembretes de vencimento'">
                 <div style="display:flex;gap:16px;flex-wrap:wrap">
                     @foreach($labels as $key => $label)
                         <x-ui.checkbox :label="$label" :checked="$lembretes[$key]" wire:click.prevent="alternarLembrete('{{ $key }}')" />

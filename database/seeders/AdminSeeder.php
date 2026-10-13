@@ -7,6 +7,7 @@ use App\Models\BibliotecaServico;
 use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\User;
+use App\Services\ServicoStatusService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use RuntimeException;
@@ -61,6 +62,7 @@ class AdminSeeder extends Seeder
                 'verificacao_diaria' => true,
                 'd30' => true, 'd15' => true, 'd7' => true, 'd3' => true, 'd1' => true,
                 'no_dia' => true, 'apos_vencimento' => true,
+                'antecedencia' => ServicoStatusService::ANTECEDENCIA_PADRAO,
             ],
             // Never says "será renovado": there is no automatic billing, the
             // client pays and the admin clicks "Renovar". The before/on/after

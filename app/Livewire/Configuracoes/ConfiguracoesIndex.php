@@ -7,6 +7,7 @@ use App\Enums\ServicoCategoria;
 use App\Models\BibliotecaServico;
 use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
+use App\Services\ServicoStatusService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -123,8 +124,15 @@ class ConfiguracoesIndex extends Component
      */
     public string $smtpPassword = '';
 
+    /** Days before the due date the reminders start, per billing cycle (see ServicoStatusService::ANTECEDENCIA_PADRAO). */
+    public array $antecedencias = [];
+
     public function mount(): void
     {
+        $this->antecedencias = array_merge(
+            ServicoStatusService::ANTECEDENCIA_PADRAO,
+            array_intersect_key(Configuracao::obter('lembretes', [])['antecedencia'] ?? [], ServicoStatusService::ANTECEDENCIA_PADRAO),
+        );
         $empresa = Configuracao::obter('empresa', []);
         $this->empresaNome = $empresa['nome'] ?? '';
         $this->empresaEmail = $empresa['email'] ?? '';
@@ -411,6 +419,36 @@ class ConfiguracoesIndex extends Component
         }
 
         $this->atualizarLembretes($intervalo, ! (bool) ($this->lembretesGlobais[$intervalo] ?? false));
+    }
+
+    public function updatedAntecedencias(mixed $valor, string $ciclo): void
+    {
+        if (! array_key_exists($ciclo, ServicoStatusService::ANTECEDENCIA_PADRAO) || ! in_array((int) $valor, ServicoStatusService::ANTECEDENCIA_OPCOES, true)) {
+            $this->antecedencias = array_merge(ServicoStatusService::ANTECEDENCIA_PADRAO, Configuracao::obter('lembretes', [])['antecedencia'] ?? []);
+
+            return;
+        }
+
+        $lembretes = Configuracao::obter('lembretes', []);
+        $lembretes['antecedencia'] = array_merge(ServicoStatusService::ANTECEDENCIA_PADRAO, $lembretes['antecedencia'] ?? [], [$ciclo => (int) $valor]);
+        Configuracao::query()->updateOrCreate(['chave' => 'lembretes'], ['valor' => $lembretes]);
+
+        // "A vencer" starts at the same lead time, so statuses follow straight away.
+        app(ServicoStatusService::class)->sincronizarTodos();
+
+        unset($this->lembretesGlobais);
+        $plural = ['mensal' => 'mensais', 'trimestral' => 'trimestrais', 'semestral' => 'semestrais', 'anual' => 'anuais'][$ciclo];
+        $this->dispatch('toast', title: 'Aviso actualizado', body: sprintf('Serviços %s: o primeiro aviso passa a ser %d %s antes.', $plural, (int) $valor, (int) $valor === 1 ? 'dia' : 'dias'), tone: 'success');
+    }
+
+    /** @return list<array{value: string, label: string}> */
+    #[Computed]
+    public function antecedenciaOpcoes(): array
+    {
+        return array_map(
+            fn (int $d) => ['value' => (string) $d, 'label' => $d === 1 ? '1 dia antes' : "{$d} dias antes"],
+            ServicoStatusService::ANTECEDENCIA_OPCOES,
+        );
     }
 
     private function atualizarLembretes(string $chave, bool $valor): void

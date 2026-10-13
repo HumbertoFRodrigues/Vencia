@@ -3,7 +3,6 @@
 namespace App\Livewire\Servicos;
 
 use App\Enums\IntervaloLembrete;
-use App\Models\Configuracao;
 use App\Models\Historico;
 use App\Models\Servico;
 use App\Models\Suspensao;
@@ -76,12 +75,11 @@ class ServicoDetail extends Component
     #[Computed]
     public function lembretesEfetivos(): array
     {
-        $config = $this->servico->lembreteConfig;
-        $globais = Configuracao::obter('lembretes', []);
+        $status = app(ServicoStatusService::class);
         $efetivos = [];
 
         foreach (IntervaloLembrete::cases() as $intervalo) {
-            $efetivos[$intervalo->value] = $config?->{$intervalo->value} ?? (bool) ($globais[$intervalo->value] ?? false);
+            $efetivos[$intervalo->value] = $status->intervaloActivo($this->servico, $intervalo);
         }
 
         return $efetivos;
@@ -110,8 +108,10 @@ class ServicoDetail extends Component
 
         $config->update([$intervalo => ! $efetivoActual]);
 
+        // The earliest reminder is also where "a vencer" starts, so the status may move.
         $this->servico->load('lembreteConfig');
-        unset($this->lembretesEfetivos);
+        app(ServicoStatusService::class)->sincronizarEstado($this->servico);
+        unset($this->lembretesEfetivos, $this->proximoAvisoDias);
     }
 
     #[On('servico-actualizado')]

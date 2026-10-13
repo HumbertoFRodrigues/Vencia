@@ -15,8 +15,43 @@ use RuntimeException;
 
 class ServicoStatusService
 {
+    /**
+     * How many days before the due date reminders (and the "a vencer" state)
+     * start, per billing cycle. A monthly servico warned 30 days ahead would
+     * be warned the day after it was paid. Editable in Configurações → Lembretes.
+     */
+    public const ANTECEDENCIA_PADRAO = ['mensal' => 7, 'trimestral' => 15, 'semestral' => 30, 'anual' => 30];
+
+    public const ANTECEDENCIA_OPCOES = [1, 3, 7, 15, 30];
+
     /** Global reminder settings, read once per instance instead of per servico × interval. */
     private ?array $globais = null;
+
+    /**
+     * Lead time (days) for this servico's cycle. "Personalizada" follows the
+     * closest standard cycle to its duration; "Única" has no reminders (null).
+     */
+    public function antecedencia(Servico $servico): ?int
+    {
+        $ciclo = match ($servico->periodicidade) {
+            Periodicidade::Unica => null,
+            Periodicidade::Personalizada => match (true) {
+                (int) $servico->duracao_dias <= 45 => 'mensal',
+                (int) $servico->duracao_dias <= 120 => 'trimestral',
+                (int) $servico->duracao_dias <= 270 => 'semestral',
+                default => 'anual',
+            },
+            default => $servico->periodicidade->value,
+        };
+
+        if ($ciclo === null) {
+            return null;
+        }
+
+        $configurada = ($this->globais ??= Configuracao::obter('lembretes', []))['antecedencia'][$ciclo] ?? null;
+
+        return in_array((int) $configurada, self::ANTECEDENCIA_OPCOES, true) ? (int) $configurada : self::ANTECEDENCIA_PADRAO[$ciclo];
+    }
 
     /**
      * Recalculates what a servico's status *should* be today, comparing
@@ -110,10 +145,22 @@ class ServicoStatusService
      */
     public function intervaloActivo(Servico $servico, IntervaloLembrete $intervalo): bool
     {
-        $config = $servico->lembreteConfig;
-        $globais = $this->globais ??= Configuracao::obter('lembretes', []);
+        // A choice made on this servico's own screen always wins.
+        $explicito = $servico->lembreteConfig?->{$intervalo->value};
+        if ($explicito !== null) {
+            return (bool) $explicito;
+        }
 
-        return $config?->{$intervalo->value} ?? (bool) ($globais[$intervalo->value] ?? false);
+        $globais = $this->globais ??= Configuracao::obter('lembretes', []);
+        if (! ($globais[$intervalo->value] ?? false)) {
+            return false;
+        }
+
+        // Global defaults only start at the cycle's lead time (monthly: 7 days, annual: 30).
+        $offset = $intervalo->diasOffset();
+        $limite = $this->antecedencia($servico);
+
+        return $offset === null || $limite === null || $offset <= $limite;
     }
 
     /**

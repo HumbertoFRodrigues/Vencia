@@ -233,6 +233,18 @@
                 </div>
             </x-ui.card>
 
+            <x-ui.card title="Primeiro aviso" subtitle="Quando os avisos começam, conforme o ciclo do serviço. Os intervalos mais próximos continuam a ser enviados.">
+                <div style="display:flex;flex-direction:column;gap:12px">
+                    @foreach(['mensal' => 'Serviços mensais', 'trimestral' => 'Serviços trimestrais', 'semestral' => 'Serviços semestrais', 'anual' => 'Serviços anuais'] as $ciclo => $rotulo)
+                        <div style="display:grid;grid-template-columns:1fr 170px;align-items:center;gap:12px">
+                            <span class="field__label" style="font-weight:var(--weight-regular)">{{ $rotulo }}</span>
+                            <x-ui.select wire:model.live="antecedencias.{{ $ciclo }}" :options="$this->antecedenciaOpcoes" :aria-label="'Primeiro aviso para '.mb_strtolower($rotulo)" />
+                        </div>
+                    @endforeach
+                    <span class="field__hint">Ex.: com «7 dias antes», um serviço mensal recebe avisos a 7, 3 e 1 dia(s), no dia e depois — e só passa a «a vencer» na última semana. Um serviço com duração personalizada segue o ciclo mais próximo. Num serviço concreto podes sempre ligar outros intervalos no seu próprio ecrã.</span>
+                </div>
+            </x-ui.card>
+
             <x-ui.card title="Template — Aviso de renovação">
                 <x-slot:action>
                     @if($editandoTemplate === 'renovacao')
