@@ -3,9 +3,11 @@
 namespace App\Livewire;
 
 use App\Enums\ServicoStatus;
+use App\Models\Configuracao;
 use App\Models\Servico;
 use App\Services\RelatorioPdf;
 use App\Services\Totais;
+use App\Support\Csv;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -80,14 +82,14 @@ class Dashboard extends Component
 
         $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
 
-        return \App\Support\Csv::download(
+        return Csv::download(
             'proximos_vencimentos_'.now()->format('Y-m-d_His').'.csv',
             ['Serviço', 'Cliente', 'Vencimento', 'Valor', 'Estado'],
             $servicos->map(fn ($s) => [
                 $s->nome,
                 $s->cliente?->nome ?? '',
                 $s->vencimento?->format('d/m/Y') ?? '',
-                number_format((float) $s->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
+                number_format((float) $s->valor, 0, ',', '.').' '.Configuracao::moeda(),
                 $this->statusLabel($s->status),
             ]),
         );

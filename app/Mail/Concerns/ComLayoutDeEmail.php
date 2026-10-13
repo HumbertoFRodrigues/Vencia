@@ -22,8 +22,8 @@ trait ComLayoutDeEmail
 {
     /**
      * @param  array<string, string>  $resumo  Label => already-formatted value, shown as a small bordered summary
-     *                                          card — built from real model data (servico/valor/data), never parsed
-     *                                          out of the free-text corpo, so it can't drift from what the corpo says.
+     *                                         card — built from real model data (servico/valor/data), never parsed
+     *                                         out of the free-text corpo, so it can't drift from what the corpo says.
      */
     protected function contentComLayout(string $kicker, string $corpo, array $resumo): Content
     {

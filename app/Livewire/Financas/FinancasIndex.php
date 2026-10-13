@@ -3,11 +3,13 @@
 namespace App\Livewire\Financas;
 
 use App\Enums\ServicoStatus;
+use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Models\Servico;
 use App\Services\RelatorioPdf;
 use App\Services\Totais;
+use App\Support\Csv;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
@@ -127,7 +129,7 @@ class FinancasIndex extends Component
 
         $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
 
-        return \App\Support\Csv::download(
+        return Csv::download(
             'financas_'.now()->format('Y-m-d_His').'.csv',
             ['Serviço', 'Cliente', 'Vencimento', 'Período', 'Valor'],
             $servicos->map(fn (Servico $s) => [
@@ -135,7 +137,7 @@ class FinancasIndex extends Component
                 $s->cliente?->nome ?? '',
                 $s->vencimento?->format('d/m/Y') ?? '',
                 $s->periodicidade->label(),
-                number_format((float) $s->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
+                number_format((float) $s->valor, 0, ',', '.').' '.Configuracao::moeda(),
             ]),
         );
     }

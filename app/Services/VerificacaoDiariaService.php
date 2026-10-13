@@ -198,7 +198,6 @@ class VerificacaoDiariaService
         }
     }
 
-
     private function intervaloLabel(IntervaloLembrete $intervalo): string
     {
         return match ($intervalo) {
@@ -211,5 +210,4 @@ class VerificacaoDiariaService
             IntervaloLembrete::AposVencimento => 'após vencimento',
         };
     }
-
 }

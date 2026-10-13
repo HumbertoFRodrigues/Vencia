@@ -9,6 +9,7 @@ use App\Models\MovimentoPessoal;
 use App\Services\FinancasPessoais;
 use App\Services\RelatorioPdf;
 use App\Support\Csv;
+use App\Support\Pesquisa;
 use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Computed;
@@ -58,8 +59,8 @@ class Movimentos extends Component
     {
         return MovimentoPessoal::query()->contabilizados()->noMes($this->mesActual())
             ->when(trim($this->q) !== '', fn (Builder $b) => $b->where(fn (Builder $w) => $w
-                ->where('descricao', 'like', \App\Support\Pesquisa::contem($this->q))
-                ->orWhere('notas', 'like', \App\Support\Pesquisa::contem($this->q))))
+                ->where('descricao', 'like', Pesquisa::contem($this->q))
+                ->orWhere('notas', 'like', Pesquisa::contem($this->q))))
             ->when($this->categoria !== '', fn (Builder $b) => $b->where('categoria_pessoal_id', (int) $this->categoria));
     }
 

@@ -122,7 +122,7 @@ class ServicoStatusService
      * activo and logs a Historico entry. Not applicable to periodicidade
      * "unica", which has no renewal cycle.
      *
-     * @param array{data?: string, valor?: float|string, metodo: string, periodo?: string, observacoes?: string|null, user_id?: int|null} $dadosPagamento
+     * @param  array{data?: string, valor?: float|string, metodo: string, periodo?: string, observacoes?: string|null, user_id?: int|null}  $dadosPagamento
      */
     public function renovar(Servico $servico, array $dadosPagamento): void
     {
@@ -287,7 +287,7 @@ class ServicoStatusService
      * terminado" email is out of scope here (Phase 6's mail engine) — this
      * only records whether the caller asked for one to be sent.
      *
-     * @param array{data?: string, motivo: string, observacao?: string|null, enviou_email?: bool, user_id?: int|null} $dados
+     * @param  array{data?: string, motivo: string, observacao?: string|null, enviou_email?: bool, user_id?: int|null}  $dados
      */
     public function suspender(Servico $servico, array $dados): void
     {
@@ -332,7 +332,7 @@ class ServicoStatusService
      * no per-servico reminder override left to clear — clearing one would be
      * a no-op that only adds a schema-touching illusion of "extra safety".
      *
-     * @param array{motivo: string} $dados
+     * @param  array{motivo: string}  $dados
      */
     public function cancelar(Servico $servico, array $dados): void
     {

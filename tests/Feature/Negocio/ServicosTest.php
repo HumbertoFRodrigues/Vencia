@@ -3,6 +3,7 @@
 namespace Tests\Feature\Negocio;
 
 use App\Enums\ServicoStatus;
+use App\Mail\LembreteVencimentoMail;
 use App\Models\Cliente;
 use App\Models\Configuracao;
 use App\Models\Historico;
@@ -146,7 +147,7 @@ class ServicosTest extends TestCase
 
         app(VerificacaoDiariaService::class)->executar();
 
-        Mail::assertSent(\App\Mail\LembreteVencimentoMail::class, fn ($m) => $m->hasTo('empresa@teste.mz'));
+        Mail::assertSent(LembreteVencimentoMail::class, fn ($m) => $m->hasTo('empresa@teste.mz'));
         $this->assertSame('Lembrete enviado só à empresa', Historico::where('kind', 'lembrete')->value('title'));
     }
 

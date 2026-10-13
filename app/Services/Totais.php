@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\ClienteStatus;
-use App\Enums\Periodicidade;
 use App\Enums\ServicoStatus;
 use App\Models\Cliente;
 use App\Models\Pagamento;

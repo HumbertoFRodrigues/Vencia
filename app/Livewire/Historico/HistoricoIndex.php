@@ -5,6 +5,7 @@ namespace App\Livewire\Historico;
 use App\Enums\HistoricoKind;
 use App\Models\Historico;
 use App\Models\Pagamento;
+use App\Support\Pesquisa;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
@@ -71,7 +72,7 @@ class HistoricoIndex extends Component
             ->with(['cliente', 'servico'])
             ->when($this->tab !== 'todos', fn ($query) => $query->whereIn('kind', self::GRUPOS[$this->tab] ?? []))
             ->when(trim($this->q) !== '', function ($query): void {
-                $term = \App\Support\Pesquisa::contem($this->q);
+                $term = Pesquisa::contem($this->q);
                 $query->where(function ($inner) use ($term): void {
                     $inner->where('title', 'like', $term)
                         ->orWhere('description', 'like', $term)

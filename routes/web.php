@@ -20,11 +20,13 @@ use App\Livewire\Pessoal\Resumo as PessoalResumo;
 use App\Livewire\Servicos\ServicoDetail;
 use App\Livewire\Servicos\ServicosIndex;
 use App\Livewire\Vencimentos\VencimentosIndex;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 if (app()->environment('local')) {
     Route::get('/__test-login', function () {
-        auth()->login(\App\Models\User::first());
+        auth()->login(User::first());
+
         return redirect('/');
     });
 }

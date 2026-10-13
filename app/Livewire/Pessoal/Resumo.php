@@ -7,6 +7,7 @@ use App\Livewire\Pessoal\Concerns\NavegaMeses;
 use App\Models\FixoPessoal;
 use App\Models\MovimentoPessoal;
 use App\Services\FinancasPessoais;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -75,7 +76,7 @@ class Resumo extends Component
     }
 
     /** $competencia (YYYY-MM) is given for an earlier month's fixo; otherwise the month on screen. */
-    private function competencia(?string $competencia): \Illuminate\Support\Carbon
+    private function competencia(?string $competencia): Carbon
     {
         return $competencia ? FinancasPessoais::mesDe($competencia) : $this->mesActual();
     }

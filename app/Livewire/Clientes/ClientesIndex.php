@@ -3,10 +3,10 @@
 namespace App\Livewire\Clientes;
 
 use App\Enums\ClienteStatus;
-use App\Enums\Periodicidade;
 use App\Enums\ServicoStatus;
 use App\Models\Cliente;
 use App\Models\Servico;
+use App\Support\Pesquisa;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -63,7 +63,7 @@ class ClientesIndex extends Component
             ->when($this->tab === 'activo', fn ($query) => $query->where('status', ClienteStatus::Activo))
             ->when($this->tab === 'inactivo', fn ($query) => $query->where('status', ClienteStatus::Inactivo))
             ->when(trim($this->q) !== '', function ($query): void {
-                $term = \App\Support\Pesquisa::contem($this->q);
+                $term = Pesquisa::contem($this->q);
                 $query->where(function ($inner) use ($term): void {
                     $inner->where('nome', 'like', $term)
                         ->orWhere('email', 'like', $term)

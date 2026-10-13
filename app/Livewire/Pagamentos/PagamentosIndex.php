@@ -4,11 +4,14 @@ namespace App\Livewire\Pagamentos;
 
 use App\Enums\HistoricoKind;
 use App\Models\Cliente;
+use App\Models\Configuracao;
 use App\Models\Historico;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Services\RelatorioPdf;
 use App\Services\Totais;
+use App\Support\Csv;
+use App\Support\Pesquisa;
 use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -119,7 +122,7 @@ class PagamentosIndex extends Component
             })
             ->when($this->cliente !== 'todos', fn ($query) => $query->where('cliente_id', (int) $this->cliente))
             ->when(trim($this->q) !== '', function ($query): void {
-                $term = \App\Support\Pesquisa::contem($this->q);
+                $term = Pesquisa::contem($this->q);
                 $query->where(function ($inner) use ($term): void {
                     $inner->whereHas('cliente', fn ($c) => $c->where('nome', 'like', $term))
                         ->orWhereHas('servico', fn ($s) => $s->where('nome', 'like', $term));
@@ -243,7 +246,7 @@ class PagamentosIndex extends Component
                 'title' => 'Pagamento apagado',
                 'description' => sprintf(
                     '%s — %s — %s',
-                    number_format((float) $pagamento->valor, 2, ',', '.').' '.\App\Models\Configuracao::moeda(),
+                    number_format((float) $pagamento->valor, 2, ',', '.').' '.Configuracao::moeda(),
                     $pagamento->data->format('d/m/Y'),
                     PaymentMethod::labelFor($pagamento->metodo),
                 ),
@@ -270,7 +273,7 @@ class PagamentosIndex extends Component
 
         $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
 
-        return \App\Support\Csv::download(
+        return Csv::download(
             'pagamentos_'.now()->format('Y-m-d_His').'.csv',
             ['Data', 'Cliente', 'Serviço', 'Período', 'Método', 'Valor'],
             $pagamentos->map(fn ($p) => [
@@ -279,7 +282,7 @@ class PagamentosIndex extends Component
                 $p->servico?->nome ?? '',
                 $p->periodo,
                 PaymentMethod::labelFor($p->metodo),
-                number_format((float) $p->valor, 0, ',', '.').' '.\App\Models\Configuracao::moeda(),
+                number_format((float) $p->valor, 0, ',', '.').' '.Configuracao::moeda(),
             ]),
         );
     }

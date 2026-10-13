@@ -217,8 +217,8 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * @param array<string, Cliente> $clientes
-     * @param array<string, BibliotecaServico> $biblioteca
+     * @param  array<string, Cliente>  $clientes
+     * @param  array<string, BibliotecaServico>  $biblioteca
      * @return array<string, Servico> keyed by the data.js id (s1..s11)
      */
     private function seedServicos(array $clientes, array $biblioteca): array
@@ -298,8 +298,8 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * @param array<string, Cliente> $clientes
-     * @param array<string, Servico> $servicos
+     * @param  array<string, Cliente>  $clientes
+     * @param  array<string, Servico>  $servicos
      */
     private function seedPagamentos(array $clientes, array $servicos): void
     {
@@ -330,8 +330,8 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * @param array<string, Cliente> $clientes
-     * @param array<string, Servico> $servicos
+     * @param  array<string, Cliente>  $clientes
+     * @param  array<string, Servico>  $servicos
      */
     private function seedHistoricoExemplo(array $clientes, array $servicos): void
     {

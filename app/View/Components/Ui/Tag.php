@@ -11,8 +11,7 @@ class Tag extends Component
     public function __construct(
         public string $tone = 'neutral',
         public ?string $icon = null,
-    ) {
-    }
+    ) {}
 
     public function render(): View
     {

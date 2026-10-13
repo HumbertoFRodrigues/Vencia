@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Clientes;
 
-use App\Enums\Periodicidade;
 use App\Enums\ServicoStatus;
 use App\Models\Cliente;
 use App\Models\Historico;

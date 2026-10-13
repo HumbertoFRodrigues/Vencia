@@ -302,7 +302,7 @@ class RegistrarPagamentoDialog extends Component
      * advanced vencimento independently at the time, and correcting the
      * ledger row afterwards must not retroactively re-run that.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     private function guardarEdicao(Servico $servico, array $data): void
     {

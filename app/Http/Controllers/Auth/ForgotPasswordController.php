@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
 
@@ -30,7 +31,7 @@ class ForgotPasswordController extends Controller
         try {
             $status = Password::sendResetLink($request->only('email'));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Falha ao enviar o email de recuperação de password: '.$e->getMessage());
+            Log::error('Falha ao enviar o email de recuperação de password: '.$e->getMessage());
 
             return back()
                 ->withErrors(['email' => 'Não foi possível enviar o email agora. Tente de novo dentro de alguns minutos.'])

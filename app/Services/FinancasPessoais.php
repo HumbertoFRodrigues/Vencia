@@ -600,7 +600,7 @@ class FinancasPessoais
             $minimo = max(500, $r['entradas'] * 0.03);
             $maiorSubida = collect($this->porCategoria($mes, TipoMovimento::Saida))
                 ->map(fn ($l) => $l + ['media' => (float) ($mediaAnterior[$l['categoria']->id] ?? 0)])
-                ->filter(fn ($l) => $l['media'] > 0 && $l['total'] - $l['media'] >= $minimo && $l['total'] >= $l['media'] * 1.25)
+                ->filter(fn ($l) => $l['media'] > 0 && $minimo <= $l['total'] - $l['media'] && $l['total'] >= $l['media'] * 1.25)
                 ->sortByDesc(fn ($l) => $l['total'] - $l['media'])
                 ->first();
 

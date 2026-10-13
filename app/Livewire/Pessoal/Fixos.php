@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Pessoal;
 
-use App\Enums\TipoMovimento;
 use App\Models\FixoPessoal;
 use App\Services\FinancasPessoais;
 use Livewire\Attributes\Computed;

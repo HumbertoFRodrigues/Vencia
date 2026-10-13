@@ -12,6 +12,7 @@ use App\Services\ServicoStatusService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
@@ -72,7 +73,7 @@ class SuspenderDialog extends Component
     protected function rules(): array
     {
         return [
-            'motivo' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\SuspensaoMotivo::class)],
+            'motivo' => ['required', Rule::enum(SuspensaoMotivo::class)],
             'data' => ['required', 'date'],
             'observacao' => ['nullable', 'string'],
             'enviarEmail' => ['boolean'],

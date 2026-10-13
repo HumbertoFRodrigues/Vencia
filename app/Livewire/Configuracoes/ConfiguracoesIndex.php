@@ -2,13 +2,13 @@
 
 namespace App\Livewire\Configuracoes;
 
-use App\Enums\IntervaloLembrete;
 use App\Enums\MetodoPagamento;
 use App\Enums\ServicoCategoria;
 use App\Models\BibliotecaServico;
 use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
@@ -17,6 +17,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 
 /**
@@ -64,7 +65,7 @@ class ConfiguracoesIndex extends Component
 
     public ?string $novaDescricao = null;
 
-    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
+    /** @var TemporaryUploadedFile|null */
     public $novoLogo = null;
 
     // ---- Métodos de pagamento ----
@@ -72,7 +73,7 @@ class ConfiguracoesIndex extends Component
 
     public string $novoMetodoNome = '';
 
-    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
+    /** @var TemporaryUploadedFile|null */
     public $novoMetodoLogo = null;
 
     // ---- Lembretes ----
@@ -101,7 +102,7 @@ class ConfiguracoesIndex extends Component
 
     public string $empresaFuso = 'Africa/Maputo';
 
-    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
+    /** @var TemporaryUploadedFile|null */
     public $novoLogoEmpresa = null;
 
     public string $smtpServidor = '';
@@ -520,7 +521,7 @@ class ConfiguracoesIndex extends Component
         $data = $this->validate([
             'smtpServidor' => ['nullable', 'string', 'max:255'],
             'smtpPorta' => ['nullable', 'integer', 'between:1,65535'],
-            'smtpSeguranca' => ['required', \Illuminate\Validation\Rule::in(['STARTTLS', 'SSL', 'Nenhuma'])],
+            'smtpSeguranca' => ['required', Rule::in(['STARTTLS', 'SSL', 'Nenhuma'])],
             'smtpUtilizador' => ['nullable', 'string', 'max:255'],
             'smtpPassword' => ['nullable', 'string', 'max:255'],
         ], [
@@ -542,7 +543,7 @@ class ConfiguracoesIndex extends Component
                 // Stored encrypted with APP_KEY: a database dump or backup
                 // never exposes the mailbox password.
                 'password' => $data['smtpPassword'] !== ''
-                    ? \Illuminate\Support\Facades\Crypt::encryptString($data['smtpPassword'])
+                    ? Crypt::encryptString($data['smtpPassword'])
                     : ($existente['password'] ?? null),
             ],
         ]);
