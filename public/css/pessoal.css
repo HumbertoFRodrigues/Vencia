@@ -1,7 +1,5 @@
 /* Painel pessoal — personal finance pages and the Empresa/Pessoal switch.
-   Built only on the design-system tokens, so both themes follow automatically.
-   Linked separately from app.css (with an mtime version) so updates are never
-   hidden behind a stale cached components.css. */
+   Built only on the design-system tokens, so both themes follow automatically. */
 
 :root { --chart-in: #12805c; --chart-out: #c4342b; }
 [data-theme="dark"] { --chart-in: #2f9e72; --chart-out: #e05c52; }
@@ -12,8 +10,10 @@
 .panel-switch__item:hover { color: var(--text-strong); }
 .panel-switch__item:focus-visible { outline: none; box-shadow: var(--ring); }
 .panel-switch__item--active { background: var(--surface-card); color: var(--text-strong); font-weight: var(--weight-medium); box-shadow: var(--shadow-sm); }
-[data-sidebar-collapsed] .panel-switch { grid-template-columns: 1fr; }
-[data-sidebar-collapsed] .panel-switch__label { display: none; }
+@media (min-width: 861px) {
+  [data-sidebar-collapsed] .panel-switch { grid-template-columns: 1fr; }
+  [data-sidebar-collapsed] .panel-switch__label { display: none; }
+}
 
 /* ---------- Page scaffolding ---------- */
 .pessoal-page { display: flex; flex-direction: column; gap: 16px; }

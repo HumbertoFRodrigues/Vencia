@@ -556,18 +556,45 @@
 .sidebar-nav__toggle-icon--collapsed { display: none; }
 
 /* Collapsed state: the attribute lives on <html> (see sidebar-nav.blade.php's
-   comment) so it survives wire:navigate morphs without a per-page init script. */
-[data-sidebar-collapsed] .sidebar-nav { width: var(--sidebar-w-collapsed, 60px); padding: 14px 8px; }
-[data-sidebar-collapsed] .sidebar-nav__brand { justify-content: center; padding: 4px 0; }
-[data-sidebar-collapsed] .sidebar-nav__brand-name,
-[data-sidebar-collapsed] .sidebar-nav__label,
-[data-sidebar-collapsed] .sidebar-nav__badge,
-[data-sidebar-collapsed] .sidebar-nav__footer,
-[data-sidebar-collapsed] .sidebar-nav__toggle-label { display: none; }
-[data-sidebar-collapsed] .sidebar-nav__item { justify-content: center; padding: 0; }
-[data-sidebar-collapsed] .sidebar-nav__toggle { justify-content: center; padding: 0; }
-[data-sidebar-collapsed] .sidebar-nav__toggle-icon--expanded { display: none; }
-[data-sidebar-collapsed] .sidebar-nav__toggle-icon--collapsed { display: inline-block; }
+   comment) so it survives wire:navigate morphs without a per-page init script.
+   Desktop only — on phones the sidebar is an off-canvas drawer (see below). */
+@media (min-width: 861px) {
+  [data-sidebar-collapsed] .sidebar-nav { width: var(--sidebar-w-collapsed, 60px); padding: 14px 8px; }
+  [data-sidebar-collapsed] .sidebar-nav__brand { justify-content: center; padding: 4px 0; }
+  [data-sidebar-collapsed] .sidebar-nav__brand-name,
+  [data-sidebar-collapsed] .sidebar-nav__label,
+  [data-sidebar-collapsed] .sidebar-nav__badge,
+  [data-sidebar-collapsed] .sidebar-nav__footer,
+  [data-sidebar-collapsed] .sidebar-nav__toggle-label { display: none; }
+  [data-sidebar-collapsed] .sidebar-nav__item { justify-content: center; padding: 0; }
+  [data-sidebar-collapsed] .sidebar-nav__toggle { justify-content: center; padding: 0; }
+  [data-sidebar-collapsed] .sidebar-nav__toggle-icon--expanded { display: none; }
+  [data-sidebar-collapsed] .sidebar-nav__toggle-icon--collapsed { display: inline-block; }
+}
+
+/* Phone/tablet: the sidebar becomes a drawer opened from the top bar's menu
+   button (html[data-nav-open], same survive-the-morph idea as above). */
+.top-bar__menu { display: none; }
+.top-bar__search { flex: 0 0 auto; }
+.nav-scrim { display: none; }
+@media (max-width: 860px) {
+  :root { --gutter: 14px; }
+  .sidebar-nav { position: fixed; top: 0; bottom: 0; left: 0; z-index: 70; width: min(280px, 86vw); height: 100dvh; transform: translateX(-100%); visibility: hidden; transition: transform var(--dur-base) var(--ease-standard), visibility 0s linear var(--dur-base); box-shadow: var(--shadow-overlay); }
+  [data-nav-open] .sidebar-nav { transform: none; visibility: visible; transition: transform var(--dur-base) var(--ease-standard); }
+  [data-nav-open] .nav-scrim { display: block; position: fixed; inset: 0; z-index: 65; background: var(--scrim); }
+  [data-nav-open] body { overflow: hidden; }
+  .sidebar-nav__item { height: 40px; }
+  .sidebar-nav__toggle { display: none; }
+  .top-bar { gap: 8px; }
+  .top-bar__menu { display: inline-flex; }
+  .top-bar__search { flex: 1 1 auto; min-width: 0; }
+  .global-search { width: 100%; }
+  .top-bar__search .search-input { width: 100% !important; } /* overrides the component's inline desktop width */
+  .top-bar__actions { flex: 0 0 auto; gap: 2px; }
+  .search-input__kbd { display: none; }
+  .app-shell__content { padding-top: 16px; }
+  .page-header__main { min-width: 0; flex-basis: 100%; }
+}
 
 /* ---------- TopBar (components/navigation/TopBar.jsx) ---------- */
 .top-bar { display: flex; align-items: center; gap: 12px; height: var(--topbar-h); flex: 0 0 auto; padding: 0 var(--gutter); background: var(--topbar-bg); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border-subtle); position: sticky; top: 0; z-index: 40; }

@@ -8,9 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ isset($title) ? $title.' · Vencia' : 'Vencia' }}</title>
 
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    {{-- Versioned by mtime so a changed file is never served from a stale browser cache. --}}
-    <link rel="stylesheet" href="{{ asset('css/pessoal.css') }}?v={{ @filemtime(public_path('css/pessoal.css')) }}">
+    @include('partials.estilos')
 
     {{-- Applied before paint to avoid a flash of the wrong theme. --}}
     <script>
@@ -40,10 +38,11 @@
 </head>
 <body>
     <div class="app-shell">
-        <x-ui.sidebar-nav :items="$navItems" :active="$navActive">
+        <x-ui.sidebar-nav id="menu-principal" :items="$navItems" :active="$navActive">
             <x-slot:switcher><x-ui.panel-switch :active="$painel" /></x-slot:switcher>
             <x-slot:footer>{{ $painel === 'pessoal' ? 'Painel privado — só tu vês' : 'Verificação diária às 07:00' }}</x-slot:footer>
         </x-ui.sidebar-nav>
+        <div class="nav-scrim" data-nav-close aria-hidden="true"></div>
 
         <div class="app-shell__main">
             <x-ui.top-bar :search="$painel === 'empresa'" :bell="$painel === 'empresa'" />
@@ -94,6 +93,24 @@
             }
             try { window.localStorage.setItem('sm-sidebar-collapsed', collapsed ? '0' : '1'); } catch (e) {}
         });
+    </script>
+
+    {{-- Phone drawer: the menu button opens the sidebar; the scrim, Escape or
+         any page navigation closes it. State lives on <html> like the theme. --}}
+    <script>
+        (function () {
+            var root = document.documentElement;
+            function setOpen(open) {
+                if (open) { root.setAttribute('data-nav-open', ''); } else { root.removeAttribute('data-nav-open'); }
+                document.querySelectorAll('[data-nav-toggle]').forEach(function (b) { b.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+            }
+            document.addEventListener('click', function (e) {
+                if (e.target.closest('[data-nav-toggle]')) { setOpen(!root.hasAttribute('data-nav-open')); return; }
+                if (e.target.closest('[data-nav-close]')) { setOpen(false); }
+            });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && root.hasAttribute('data-nav-open')) { setOpen(false); } });
+            document.addEventListener('livewire:navigate', function () { setOpen(false); });
+        })();
     </script>
 
     {{-- Generic dropdown mechanism: a data-dropdown-toggle button paired with
