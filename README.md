@@ -98,7 +98,7 @@ database/
 
 ## Como correr localmente
 
-Pré-requisitos: PHP 8.3+, Composer, MySQL.
+Pré-requisitos: PHP 8.4+, Composer, MySQL.
 
 ```bash
 composer install

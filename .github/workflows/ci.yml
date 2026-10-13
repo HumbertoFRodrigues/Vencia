@@ -9,8 +9,9 @@ jobs:
   testes:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        php: ['8.3', '8.4']
+        php: ['8.4', '8.5']
     name: PHP ${{ matrix.php }}
 
     steps:
@@ -29,6 +30,9 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
+
+      - name: Vulnerabilidades conhecidas nas dependências
+        run: composer audit
 
       - name: Estilo de código (Pint)
         run: vendor/bin/pint --test

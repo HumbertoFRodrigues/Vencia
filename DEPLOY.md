@@ -4,7 +4,7 @@ Guia passo-a-passo para colocar a aplicação online num alojamento partilhado n
 
 ## 1. Confirmar com o fornecedor de hospedagem
 
-- [ ] **PHP 8.3 ou mais recente** — normalmente activável no "MultiPHP Manager" do cPanel, com as extensões `mbstring`, `intl`, `gd`, `pdo_mysql`.
+- [ ] **PHP 8.4 ou mais recente** (obrigatório — as dependências não instalam em 8.3) — normalmente activável no "MultiPHP Manager" do cPanel, com as extensões `mbstring`, `intl`, `gd`, `pdo_mysql`.
 - [ ] **Base de dados MySQL** — o cPanel cria isto em "Bases de Dados MySQL".
 - [ ] **Cron Jobs** — existe em praticamente todos os cPanel e é o que permite correr comandos `php artisan` mesmo **sem SSH** (ver passo 6).
 
