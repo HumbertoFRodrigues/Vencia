@@ -2,17 +2,14 @@
 
 namespace Database\Seeders;
 
-use App\Enums\MetodoPagamento;
 use App\Models\BibliotecaServico;
 use App\Models\Cliente;
 use App\Models\Configuracao;
 use App\Models\Historico;
-use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Models\Servico;
 use App\Models\ServicoLembreteConfig;
 use App\Models\Suspensao;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
@@ -37,10 +34,9 @@ class DatabaseSeeder extends Seeder
         $referenciaFicticia = Carbon::create(2026, 8, 30);
         $this->shiftDays = (int) $referenciaFicticia->diffInDays(Carbon::today(), false);
 
-        $this->seedAdmin();
-        $this->seedConfiguracoes();
-        $this->seedMetodosPagamento();
-        $biblioteca = $this->seedBiblioteca();
+        $this->call(AdminSeeder::class);
+        $this->seedEmpresaDemo();
+        $biblioteca = BibliotecaServico::all()->keyBy('nome')->all();
         $clientes = $this->seedClientes();
         $servicos = $this->seedServicos($clientes, $biblioteca);
         $this->seedLembreteConfig($servicos);
@@ -56,19 +52,8 @@ class DatabaseSeeder extends Seeder
         return Carbon::createFromFormat('d/m/Y', $original)->addDays($this->shiftDays)->toDateString();
     }
 
-    private function seedAdmin(): void
-    {
-        User::query()->updateOrCreate(
-            ['email' => env('ADMIN_EMAIL')],
-            [
-                'name' => 'Administrador',
-                'password' => env('ADMIN_PASSWORD'), // the model's 'hashed' cast hashes this on save
-                'email_verified_at' => Carbon::now(),
-            ],
-        );
-    }
-
-    private function seedConfiguracoes(): void
+    /** The fictitious company shown in the README screenshots (a real install keeps AdminSeeder's defaults). */
+    private function seedEmpresaDemo(): void
     {
         Configuracao::query()->updateOrCreate(['chave' => 'empresa'], [
             'valor' => [
@@ -79,112 +64,6 @@ class DatabaseSeeder extends Seeder
                 'logo_path' => null,
             ],
         ]);
-
-        Configuracao::query()->updateOrCreate(['chave' => 'lembretes'], [
-            'valor' => [
-                'verificacao_diaria' => true,
-                'd30' => true,
-                'd15' => true,
-                'd7' => true,
-                'd3' => true,
-                'd1' => true,
-                'no_dia' => true,
-                'apos_vencimento' => true,
-            ],
-        ]);
-
-        Configuracao::query()->updateOrCreate(['chave' => 'email_template_renovacao'], [
-            // Deliberately never asserts "será renovado" (will be renewed) — this
-            // app has no automatic billing, the client has to actually pay and
-            // the admin manually clicks "Renovar". "Vence em [DATA]" states the
-            // due date as a plain fact that stays true before, on, and after the
-            // date; LembreteVencimentoMail::comContextoIntervalo() inserts the
-            // before/on/after nuance ("Faltam N dias" / "hoje" / "já passou") as
-            // its own paragraph right after the greeting, so this body never
-            // needs its own tense to match every interval.
-            'valor' => [
-                'assunto' => 'O seu serviço [SERVIÇO] — vencimento a [DATA]',
-                'corpo' => "Olá, [NOME].\n\nO seu serviço [SERVIÇO] vence em [DATA].\n\nO acesso é suspenso caso o pagamento não seja renovado. Para renovar, contacte-nos e efectue o pagamento de [VALOR].\n\nAtenciosamente,\n[NOME DA EMPRESA]",
-            ],
-        ]);
-
-        Configuracao::query()->updateOrCreate(['chave' => 'email_template_servico_terminado'], [
-            'valor' => [
-                'assunto' => 'O seu serviço [SERVIÇO] foi suspenso',
-                'corpo' => "Olá, [NOME].\n\nO seu serviço [SERVIÇO] foi suspenso em [DATA] por falta de renovação do pagamento.\n\nO acesso fica indisponível até regularização. Para reactivar, contacte-nos e efectue o pagamento de [VALOR].\n\nAtenciosamente,\n[NOME DA EMPRESA]",
-            ],
-        ]);
-    }
-
-    /**
-     * Seeds the 5 well-known métodos (see App\Enums\MetodoPagamento) as real,
-     * manageable MetodoPagamentoOpcao rows, so they show up in Configurações
-     * alongside any custom método the admin adds — even though their actual
-     * icon/logo still comes from the enum lookup (App\View\Components\Ui\
-     * PaymentMethod), not from this row. `nome` is set to the enum's exact
-     * code (mpesa/emola/...), never a display label, since that's the literal
-     * string every existing pagamentos.metodo/servicos.metodo_habitual row
-     * already holds — see the metodos_pagamento migration's docblock.
-     */
-    private function seedMetodosPagamento(): void
-    {
-        foreach (MetodoPagamento::cases() as $case) {
-            MetodoPagamentoOpcao::query()->updateOrCreate(
-                ['nome' => $case->value],
-                ['arquivado' => false],
-            );
-        }
-    }
-
-    /** @return array<string, BibliotecaServico> keyed by nome */
-    private function seedBiblioteca(): array
-    {
-        $descricoes = [
-            'ChatGPT' => 'Acesso a conta de equipe ou individual, cobrado mensalmente.',
-            'Claude' => 'Acesso individual, cobrado mensalmente.',
-            'Canva' => 'Licença Pro para materiais gráficos.',
-            'Google Workspace' => 'Email profissional e Drive por utilizador.',
-            'Microsoft 365' => 'Office e email corporativo por utilizador.',
-            'GitHub' => 'Repositórios privados e CI.',
-            'Adobe' => 'Creative Cloud, licença única ou equipe.',
-            'Dropbox' => 'Armazenamento partilhado com o cliente.',
-            'Zoom' => 'Reuniões sem limite de tempo.',
-            'Domínio .co.mz' => 'Registo e renovação anual, DNS gerido.',
-            'Hospedagem Business' => 'Alojamento SSD com backups semanais.',
-            'Email corporativo' => 'Contas de email no domínio do cliente.',
-            'Manutenção de site' => 'Actualizações, backups e horas de alteração por mês.',
-        ];
-
-        $categorias = [
-            'ChatGPT' => 'ia',
-            'Claude' => 'ia',
-            'Canva' => 'software',
-            'Google Workspace' => 'email',
-            'Microsoft 365' => 'software',
-            'GitHub' => 'software',
-            'Adobe' => 'software',
-            'Dropbox' => 'software',
-            'Zoom' => 'software',
-            'Domínio .co.mz' => 'dominio',
-            'Hospedagem Business' => 'hospedagem',
-            'Email corporativo' => 'email',
-            'Manutenção de site' => 'manutencao',
-        ];
-
-        $porNome = [];
-
-        foreach ($categorias as $nome => $categoria) {
-            $porNome[$nome] = BibliotecaServico::query()->updateOrCreate(
-                ['nome' => $nome],
-                [
-                    'categoria' => $categoria,
-                    'descricao_padrao' => $descricoes[$nome],
-                    'arquivado' => false,
-                ],
-            );
-        }
-
-        return $porNome;
     }
 
     /** @return array<string, Cliente> keyed by the data.js id (c1..c5) */

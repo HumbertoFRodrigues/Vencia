@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.3', '8.4']
+    name: PHP ${{ matrix.php }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl, gd, pdo_sqlite
+          coverage: none
+
+      - name: Dependências
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Ambiente
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Estilo de código (Pint)
+        run: vendor/bin/pint --test
+
+      - name: Testes
+        run: php artisan test

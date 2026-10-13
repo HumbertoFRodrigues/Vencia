@@ -4,30 +4,38 @@ Guia passo-a-passo para colocar a aplicação online num alojamento partilhado n
 
 ## 1. Confirmar com o fornecedor de hospedagem
 
-- [ ] **PHP 8.3 ou mais recente** — normalmente activável no "MultiPHP Manager" do cPanel.
-- [ ] **Acesso SSH ou "Terminal"** no cPanel — precisas de correr `composer` e `php artisan`. Sem isto ainda é possível (upload manual da pasta `vendor/` já instalada + importar `database/vencia.sql` via phpMyAdmin), mas dá mais trabalho.
+- [ ] **PHP 8.3 ou mais recente** — normalmente activável no "MultiPHP Manager" do cPanel, com as extensões `mbstring`, `intl`, `gd`, `pdo_mysql`.
 - [ ] **Base de dados MySQL** — o cPanel cria isto em "Bases de Dados MySQL".
+- [ ] **Cron Jobs** — existe em praticamente todos os cPanel e é o que permite correr comandos `php artisan` mesmo **sem SSH** (ver passo 6).
 
-## 2. Enviar os ficheiros
+## 2. Preparar os ficheiros (no teu computador)
 
-Por Git (se o cPanel tiver "Git Version Control", o mais simples: aponta directamente para `https://github.com/HumbertoFRodrigues/Vencia.git`) ou por upload/FTP de tudo **excepto** `vendor/` e `.env` — esses ficam de fora do repositório de propósito e têm de ser gerados/enviados à parte.
+```bash
+composer install --no-dev --optimize-autoloader
+```
+
+Envia tudo **excepto** `.env`, `node_modules/`, `.git/` e os ficheiros `bootstrap/cache/*.php` (gera-os o próprio servidor; uma cópia feita no teu PC pode referir pacotes de desenvolvimento que não existem em produção e partir todos os pedidos). Por Git ("Git Version Control" do cPanel, a apontar para `https://github.com/HumbertoFRodrigues/Vencia.git`) ou num `.zip` enviado pelo File Manager e extraído lá.
+
+Põe a aplicação numa pasta **fora** de `public_html` (ex.: `~/vencia_app`), para o código não ficar ao alcance da web.
 
 ## 3. Apontar o domínio para `public/`
 
-No cPanel, ao criar o domínio ou subdomínio, o campo **"Document Root"** deve apontar para a pasta `public/` do projecto — nunca para a raiz. Este é o erro mais comum; se apontares para a raiz, o site mostra uma listagem de ficheiros em vez da aplicação.
+No cPanel, ao criar o domínio ou subdomínio, o **Document Root** deve ser a pasta `public/` do projecto (ex.: `vencia_app/public`) — nunca a raiz. Se por engano apontar para a raiz, o `.htaccess` que está lá encaminha tudo para `public/`, por isso o `.env` e o código continuam inacessíveis — mas o correcto é `public/`.
 
 ## 4. Criar a base de dados
 
-Em "Bases de Dados MySQL": criar a base, um utilizador, e associar o utilizador à base com todos os privilégios. Anota os três nomes (base, utilizador, password) — precisas deles no passo seguinte.
+Em "Bases de Dados MySQL": criar a base, um utilizador, e associar o utilizador à base com todos os privilégios. Anota os três nomes (base, utilizador, password).
 
 ## 5. Configurar o `.env` de produção
 
-Copiar `.env.example` para `.env` e preencher a sério. **Não copiar o `.env` do teu computador** — os valores têm de ser os do servidor:
+Copiar `.env.example` para `.env` e preencher com os valores **do servidor** (nunca copiar o `.env` do teu computador):
 
 ```env
 APP_ENV=production
 APP_DEBUG=false
+APP_KEY=base64:...            # gera no teu PC com: php artisan key:generate --show
 APP_URL=https://oteudominio.com
+APP_TIMEZONE=Africa/Maputo
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -35,53 +43,59 @@ DB_DATABASE=nome_da_base_do_cpanel
 DB_USERNAME=utilizador_do_cpanel
 DB_PASSWORD=password_do_cpanel
 
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.oteudominio.com
-MAIL_PORT=587
-MAIL_USERNAME=cobrancas@oteudominio.com
-MAIL_PASSWORD=a_password_do_email
+SESSION_SECURE_COOKIE=true
+LOG_LEVEL=error
 
 ADMIN_EMAIL=o-teu-email-de-administrador
 ADMIN_PASSWORD=uma-password-forte-nova
 ```
 
-## 6. Correr os comandos (via Terminal/SSH, dentro da pasta do projecto)
+O SMTP não precisa de ir para o `.env`: preenche-se depois em **Configurações → Empresa** (fica guardado encriptado).
+
+## 6. Correr os comandos — com ou sem SSH
+
+**Com SSH/Terminal**, dentro da pasta do projecto:
 
 ```bash
-composer install --no-dev --optimize-autoloader
-php artisan key:generate
-php artisan migrate --force        # sem --seed em produção, a não ser que queiras os dados de demonstração
-php artisan storage:link
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+php artisan migrate --force
+php artisan db:seed --class=AdminSeeder --force   # conta de admin + configurações, sem dados de demonstração
+php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 
-**Sem acesso SSH?** Em vez do `migrate`, gera um dump local (`mysqldump -u root vencia --no-tablespaces --skip-comments > vencia.sql`, depois de correres `php artisan migrate:fresh --seed` no teu computador) e importa esse ficheiro directamente via phpMyAdmin no servidor — fica com a estrutura e os dados de demonstração de uma vez. Os comandos `cache` do passo 6 ficam por fazer; a aplicação funciona igual, só um pouco mais lenta.
+**Sem SSH**: em **Cron Jobs**, cria uma tarefa "a cada minuto" com o comando abaixo (ajusta o caminho — o cPanel mostra-o no File Manager), espera 2 minutos e **apaga a tarefa**:
+
+```
+cd /home/utilizador/vencia_app && php artisan migrate --force && php artisan db:seed --class=AdminSeeder --force && php artisan config:cache && php artisan route:cache
+```
+
+A saída fica no email do cPanel. O mesmo truque serve para cada actualização futura que traga migrações novas (só o `migrate --force` e o `config:cache`).
+
+Não é preciso `storage:link`: os logótipos carregados são gravados directamente em `public/storage`.
 
 ## 7. Agendar a verificação diária
 
-Em **"Cron Jobs"** no cPanel:
+Em **Cron Jobs**, uma vez por dia às 07:00:
 
 ```
-0 7 * * * php /home/utilizador/oteudominio.com/artisan vencia:verificar-vencimentos
+0 7 * * * cd /home/utilizador/vencia_app && php artisan vencia:verificar-vencimentos
 ```
 
-(ajusta o caminho para onde o cPanel realmente colocou os ficheiros — confirma com `pwd` no Terminal).
+É ela que envia os lembretes por email. Os **estados** dos serviços (activo / a vencer / vencido) acertam-se também sozinhos no primeiro acesso de cada dia, por isso os totais nunca ficam errados mesmo num dia em que a tarefa falhe — e um lembrete que falhe num dia é recuperado no seguinte.
 
 ## 8. Depois de publicar
 
-- [ ] Entra com o `ADMIN_EMAIL`/`ADMIN_PASSWORD` que definiste no `.env` de produção.
-- [ ] Em Configurações → Empresa, confirma que o SMTP está preenchido e usa o botão **Enviar email de teste**.
-- [ ] Corre a tarefa cron uma vez à mão para confirmar que funciona, antes de confiares no agendamento: `php artisan vencia:verificar-vencimentos`.
+- [ ] Entra com o `ADMIN_EMAIL`/`ADMIN_PASSWORD` do `.env` de produção.
+- [ ] Em Configurações → Empresa, preenche nome, email, logótipo e o SMTP; usa **Enviar email de teste**.
+- [ ] Corre a verificação uma vez à mão (Terminal, ou o truque do Cron do passo 6) para confirmar que funciona.
 
-> ⚠️ Nunca publiques o `.env` de desenvolvimento por cima do de produção — tem a password da tua base de dados local e a chave da app antigas.
+> ⚠️ Nunca publiques o `.env` de desenvolvimento por cima do de produção — tem a password da tua base de dados local e a chave da app antiga. Mudar a `APP_KEY` depois de configurado o SMTP obriga a reintroduzir a password SMTP.
 
 ## Se algo correr mal
 
 | Sintoma | Onde olhar primeiro |
 |---|---|
-| Página em branco ou erro genérico | `storage/logs/laravel.log`; confirma `APP_DEBUG=false` só depois de resolver — enquanto testas, muda temporariamente para `true` para ver o erro real. |
-| "500 Internal Server Error" logo à entrada | Permissões das pastas `storage/` e `bootstrap/cache/` — têm de ser graváveis pelo servidor. |
-| Site mostra a lista de ficheiros em vez da app | O Document Root do domínio não está a apontar para `public/`. |
-| Emails não chegam | Confirmar `MAIL_MAILER=smtp` (não `log`) e testar com o botão de email de teste em Configurações. |
+| Página "Algo correu mal do nosso lado" | `storage/logs/laravel.log`. Enquanto investigas podes pôr `APP_DEBUG=true` por momentos — volta a `false` logo a seguir. |
+| "500 Internal Server Error" logo à entrada | Permissões de `storage/` e `bootstrap/cache/` (graváveis pelo servidor) ou ficheiros antigos em `bootstrap/cache/*.php` — apaga-os. |
+| Site mostra a lista de ficheiros ou o código | O Document Root não está a apontar para `public/`. |
+| Emails não chegam | Configurações → Empresa → SMTP e o botão de email de teste. |
+| Logótipo não aparece | Confirmar que `public/storage/` existe e é gravável. |

@@ -69,6 +69,15 @@ return [
     'timezone' => env('APP_TIMEZONE', 'Africa/Maputo'),
 
     /*
+    | The single administrator account created by the seeders. Read through
+    | config (not env()) so seeding still works after `config:cache`.
+    */
+
+    'admin_email' => env('ADMIN_EMAIL'),
+
+    'admin_password' => env('ADMIN_PASSWORD'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
