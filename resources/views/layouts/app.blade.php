@@ -60,6 +60,11 @@
 
     @livewireScripts
 
+    {{-- Every script below carries data-navigate-once. wire:navigate re-runs
+         body scripts on each visit, which stacked one more copy of every
+         document listener per page: a dropdown then toggled several times per
+         click (opening and closing again) and each toast appeared N times. --}}
+
     {{-- Branded wire:navigate loading indicator (replaces Livewire's default
          progress bar, disabled above via data-no-progress-bar). A small pill
          with the pulsing logo mark — not a blocking overlay — shown only
@@ -71,7 +76,7 @@
 
     <livewire:shared.toast-host />
 
-    <script>
+    <script data-navigate-once>
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('[data-theme-toggle]');
             if (!btn) return;
@@ -85,7 +90,7 @@
     {{-- Sidebar collapse toggle: same click-toggle-and-persist pattern as the
          theme toggle. The attribute lives on <html>, not on .sidebar-nav
          itself, precisely so it survives wire:navigate's body morphing. --}}
-    <script>
+    <script data-navigate-once>
         document.addEventListener('click', function (e) {
             if (!e.target.closest('[data-sidebar-toggle]')) return;
             var collapsed = document.documentElement.hasAttribute('data-sidebar-collapsed');
@@ -99,7 +104,7 @@
     </script>
 
     {{-- Session expired mid-action: Livewire's own prompt is in English. --}}
-    <script>
+    <script data-navigate-once>
         document.addEventListener('livewire:init', function () {
             var avisado = false;
             Livewire.interceptRequest(function (pedido) {
@@ -119,7 +124,7 @@
          on a phone it opens the sidebar as a drawer that the scrim, Escape or
          any navigation closes. Both states live on <html>, so they survive
          wire:navigate's body morphing. --}}
-    <script>
+    <script data-navigate-once>
         (function () {
             var root = document.documentElement;
             var telemovel = window.matchMedia('(max-width: 860px)');
@@ -163,7 +168,7 @@
 
     {{-- Sidebar badges are rendered with the page; components dispatch
          'nav-badge' {id, n} after an action so the count never lags behind. --}}
-    <script>
+    <script data-navigate-once>
         window.addEventListener('nav-badge', function (e) {
             var item = document.querySelector('.sidebar-nav__item[data-nav-id="' + e.detail.id + '"]');
             if (!item) return;
@@ -183,7 +188,7 @@
          export menu) can coexist on one page without interfering with each
          other. Same plain click-toggle pattern as the theme toggle above, no
          Alpine/Livewire involved. --}}
-    <script>
+    <script data-navigate-once>
         document.addEventListener('click', function (e) {
             var toggle = e.target.closest('[data-dropdown-toggle]');
 
@@ -227,18 +232,15 @@
          after a short delay so a fast local navigation barely flashes it —
          only slower transitions (or the artificially-throttled ones we test
          with) actually reveal the pill. --}}
-    <script>
+    <script data-navigate-once>
         (function () {
-            var el = document.getElementById('nav-loading');
-            if (!el) return;
-
+            // Looked up on each use: the pill is part of the body that every navigation replaces.
             var showTimer = null;
-            var visible = false;
 
             function show() {
                 showTimer = window.setTimeout(function () {
-                    el.classList.add('nav-loading--visible');
-                    visible = true;
+                    var el = document.getElementById('nav-loading');
+                    if (el) el.classList.add('nav-loading--visible');
                 }, 150);
             }
 
@@ -247,10 +249,8 @@
                     window.clearTimeout(showTimer);
                     showTimer = null;
                 }
-                if (visible) {
-                    el.classList.remove('nav-loading--visible');
-                    visible = false;
-                }
+                var el = document.getElementById('nav-loading');
+                if (el) el.classList.remove('nav-loading--visible');
             }
 
             document.addEventListener('livewire:navigate', show);
