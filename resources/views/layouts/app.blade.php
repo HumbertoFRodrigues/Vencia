@@ -10,30 +10,33 @@
 
     @include('partials.estilos')
 
-    {{-- Applied before paint to avoid a flash of the wrong theme. --}}
+    {{-- Viewer preferences (theme, hidden/compact sidebar) live on <html>,
+         applied before paint to avoid a flash. wire:navigate copies the new
+         page's <html> attributes and REMOVES any it doesn't have, so they are
+         re-applied at the moment each navigation swaps the page — otherwise
+         dark mode turned back to light on every menu click. --}}
     <script>
         (function () {
-            try {
-                var saved = window.localStorage.getItem('sm-theme');
-                var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-                document.documentElement.setAttribute('data-theme', theme);
-            } catch (e) {}
-        })();
-    </script>
+            function aplicarPreferencias() {
+                var root = document.documentElement;
+                try {
+                    var saved = window.localStorage.getItem('sm-theme');
+                    var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                    root.setAttribute('data-theme', theme);
+                    root.toggleAttribute('data-sidebar-collapsed', window.localStorage.getItem('sm-sidebar-collapsed') === '1');
+                    root.toggleAttribute('data-sidebar-hidden', window.localStorage.getItem('sm-sidebar-hidden') === '1');
+                } catch (e) {}
+            }
 
-    {{-- Same idea for the sidebar collapse state: set on <html> before paint,
-         and (unlike a class on the sidebar itself) untouched by wire:navigate's
-         body-morphing, so it survives every navigation with no re-init. --}}
-    <script>
-        (function () {
-            try {
-                if (window.localStorage.getItem('sm-sidebar-collapsed') === '1') {
-                    document.documentElement.setAttribute('data-sidebar-collapsed', '');
-                }
-                if (window.localStorage.getItem('sm-sidebar-hidden') === '1') {
-                    document.documentElement.setAttribute('data-sidebar-hidden', '');
-                }
-            } catch (e) {}
+            aplicarPreferencias();
+
+            if (!window.__venciaPreferencias) {
+                window.__venciaPreferencias = true;
+                document.addEventListener('livewire:navigating', function (e) {
+                    if (e.detail && e.detail.onSwap) e.detail.onSwap(aplicarPreferencias);
+                });
+                document.addEventListener('livewire:navigated', aplicarPreferencias);
+            }
         })();
     </script>
 
