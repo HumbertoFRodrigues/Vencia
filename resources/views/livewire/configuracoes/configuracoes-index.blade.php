@@ -357,6 +357,27 @@
                     </div>
                 </div>
             </x-ui.card>
+
+            <x-ui.card title="Cópias de segurança" subtitle="Toda a base de dados num ficheiro. Criadas todos os dias pela tarefa agendada e enviadas por email à empresa; o servidor guarda as últimas 14.">
+                <x-slot:action>
+                    <x-ui.button size="sm" icon="download" wire:click="criarCopia">Criar e descarregar</x-ui.button>
+                </x-slot:action>
+                @php($copias = $this->copias)
+                @if(empty($copias))
+                    <p class="pessoal-muted">Ainda não há cópias. Cria uma agora ou agenda <code>php artisan vencia:copia-seguranca</code> (ver DEPLOY.md).</p>
+                @else
+                    <ul class="copias-list">
+                        @foreach($copias as $c)
+                            <li wire:key="copia-{{ $c['nome'] }}">
+                                <span class="num">{{ $c['data']->format('d/m/Y H:i') }}</span>
+                                <span class="copias-list__tamanho">{{ number_format($c['bytes'] / 1024, 0, ',', '.') }} KB</span>
+                                <x-ui.icon-button size="sm" icon="download" label="Descarregar esta cópia" wire:click="descarregarCopia({{ \Illuminate\Support\Js::from($c['nome']) }})" />
+                            </li>
+                        @endforeach
+                    </ul>
+                    <p class="field__hint" style="margin-top:10px">Para restaurar: phpMyAdmin → base de dados vazia → Importar o ficheiro.</p>
+                @endif
+            </x-ui.card>
         </div>
     @endif
 </div>

@@ -75,6 +75,9 @@ return [
 
     'admin_email' => env('ADMIN_EMAIL'),
 
+    // Email the empresa when an unexpected error happens (App\Support\AlertaErro). On by default in production only.
+    'alertas_erro' => (bool) env('ALERTAS_ERRO', env('APP_ENV') === 'production'),
+
     'admin_password' => env('ADMIN_PASSWORD'),
 
     /*

@@ -80,7 +80,17 @@ Em **Cron Jobs**, uma vez por dia às 07:00:
 0 7 * * * cd /home/utilizador/vencia_app && php artisan vencia:verificar-vencimentos
 ```
 
-É ela que envia os lembretes por email. Os **estados** dos serviços (activo / a vencer / vencido) acertam-se também sozinhos no primeiro acesso de cada dia, por isso os totais nunca ficam errados mesmo num dia em que a tarefa falhe — e um lembrete que falhe num dia é recuperado no seguinte.
+E uma segunda tarefa, às 03:00, para a **cópia de segurança diária** (guarda as últimas 14 em `storage/app/copias` e envia a nova por email para o email da empresa):
+
+```
+0 3 * * * cd /home/utilizador/vencia_app && php artisan vencia:copia-seguranca
+```
+
+Também podes criar e descarregar uma cópia a qualquer momento em Configurações → Empresa → Cópias de segurança. Para restaurar: phpMyAdmin → base de dados vazia → Importar o ficheiro `.sql.gz`.
+
+Em produção, qualquer erro inesperado é enviado por email para o email da empresa (no máximo uma vez por hora para o mesmo erro). Desliga-se com `ALERTAS_ERRO=false` no `.env`.
+
+A primeira tarefa, `vencia:verificar-vencimentos`, é a que envia os lembretes por email. Os **estados** dos serviços (activo / a vencer / vencido) acertam-se também sozinhos no primeiro acesso de cada dia, por isso os totais nunca ficam errados mesmo num dia em que a tarefa falhe — e um lembrete que falhe num dia é recuperado no seguinte.
 
 ## 8. Depois de publicar
 

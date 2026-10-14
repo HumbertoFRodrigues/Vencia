@@ -7,6 +7,7 @@ use App\Enums\ServicoCategoria;
 use App\Models\BibliotecaServico;
 use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
+use App\Services\CopiaSeguranca;
 use App\Services\ServicoStatusService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Crypt;
@@ -20,6 +21,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Three independent tabs (Biblioteca de Serviços / Lembretes / Empresa),
@@ -419,6 +421,35 @@ class ConfiguracoesIndex extends Component
         }
 
         $this->atualizarLembretes($intervalo, ! (bool) ($this->lembretesGlobais[$intervalo] ?? false));
+    }
+
+    // ================= Cópias de segurança =================
+
+    #[Computed]
+    public function copias(): array
+    {
+        return app(CopiaSeguranca::class)->existentes();
+    }
+
+    public function criarCopia(): BinaryFileResponse
+    {
+        $ficheiro = app(CopiaSeguranca::class)->criar();
+        unset($this->copias);
+        $this->dispatch('toast', title: 'Cópia criada', body: basename($ficheiro), tone: 'success');
+
+        return response()->download($ficheiro);
+    }
+
+    public function descarregarCopia(string $nome): ?BinaryFileResponse
+    {
+        // Only a file name from our own listing — never a path.
+        if (! preg_match('/^vencia-\d{4}-\d{2}-\d{2}_\d{6}\.sql\.gz$/', $nome)) {
+            return null;
+        }
+
+        $ficheiro = app(CopiaSeguranca::class)->pasta().'/'.$nome;
+
+        return is_file($ficheiro) ? response()->download($ficheiro) : null;
     }
 
     public function updatedAntecedencias(mixed $valor, string $ciclo): void
