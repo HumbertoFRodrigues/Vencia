@@ -6,8 +6,11 @@ use App\Enums\ServicoStatus;
 use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
+use App\Models\Retirada;
 use App\Models\Servico;
+use App\Services\FinancasPessoais;
 use App\Services\RelatorioPdf;
+use App\Services\Retiradas;
 use App\Services\Totais;
 use App\Support\Csv;
 use Illuminate\Database\Eloquent\Collection;
@@ -116,10 +119,36 @@ class FinancasIndex extends Component
             ->get();
     }
 
+    /** @return array{disponivel: float, mes: float} */
+    #[Computed]
+    public function retiradasTotais(): array
+    {
+        $retiradas = app(Retiradas::class);
+
+        return ['disponivel' => $retiradas->disponivel(), 'mes' => $retiradas->totalNoMes(Carbon::today())];
+    }
+
+    /** @return Collection<int, Retirada> */
+    #[Computed]
+    public function retiradas(): Collection
+    {
+        return Retirada::query()->with('user')->orderByDesc('data')->orderByDesc('id')->limit(10)->get();
+    }
+
+    public function anularRetirada(int $retiradaId): void
+    {
+        $retirada = Retirada::findOrFail($retiradaId);
+        app(Retiradas::class)->anular($retirada);
+
+        $this->dispatch('toast', title: 'Retirada anulada', body: FinancasPessoais::mzn((float) $retirada->valor).' — também saiu do painel pessoal.', tone: 'success');
+        $this->actualizar();
+    }
+
     #[On('servico-actualizado')]
+    #[On('retirada-feita')]
     public function actualizar(): void
     {
-        unset($this->totais, $this->porMetodo, $this->entradasPorMes, $this->aReceber);
+        unset($this->totais, $this->porMetodo, $this->entradasPorMes, $this->aReceber, $this->retiradasTotais, $this->retiradas);
     }
 
     /** Streams the "A receber" table currently shown (vencido/a_vencer serviços) as a pt-PT-formatted CSV. */

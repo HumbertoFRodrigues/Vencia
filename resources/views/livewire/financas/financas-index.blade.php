@@ -13,6 +13,7 @@
     <x-ui.page-header :eyebrow="$mesLabel" title="Finanças">
         <x-slot:actions>
             <x-ui.export-menu />
+            <x-ui.button variant="primary" icon="wallet" wire:click="$dispatch('retirada:abrir')">Retirar para pessoal</x-ui.button>
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -33,7 +34,46 @@
         />
         <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" icon="repeat" />
         <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" icon="chart-line" />
+        <x-ui.stat-card label="Disponível na empresa" :value="$this->retiradasTotais['disponivel']" :currency="\App\Models\Configuracao::moeda()" :tone="$this->retiradasTotais['disponivel'] >= 0 ? 'in' : 'out'" icon="landmark" footnote="Tudo o que os clientes pagaram menos as retiradas" />
+        <x-ui.stat-card label="Retirado este mês" :value="$this->retiradasTotais['mes']" :currency="\App\Models\Configuracao::moeda()" icon="wallet" footnote="Passado para o painel pessoal" />
     </div>
+
+    <x-ui.card title="Retiradas para conta pessoal" subtitle="Cada retirada entra automaticamente como entrada no painel Pessoal" :padding="0">
+        <x-slot:action>
+            <x-ui.button size="sm" variant="ghost" icon="plus" wire:click="$dispatch('retirada:abrir')">Retirar</x-ui.button>
+        </x-slot:action>
+
+        <x-ui.data-table :columns="[
+            ['key' => 'data', 'header' => 'Data'],
+            ['key' => 'meio', 'header' => 'Para onde'],
+            ['key' => 'nota', 'header' => 'Nota'],
+            ['key' => 'valor', 'header' => 'Valor', 'align' => 'right'],
+            ['key' => 'accoes', 'header' => '', 'align' => 'right'],
+        ]" :empty="$this->retiradas->isEmpty()">
+            @foreach($this->retiradas as $r)
+                <tr wire:key="ret-{{ $r->id }}">
+                    <td><span class="num" style="font-size:var(--text-xs)">{{ $r->data->format('d/m/Y') }}</span></td>
+                    <td>
+                        @if($r->meio)
+                            <x-ui.payment-method :method="$r->meio" size="20" />
+                        @else
+                            <span style="color:var(--text-faint)">—</span>
+                        @endif
+                    </td>
+                    <td style="color:var(--text-muted)">{{ $r->nota ?? '—' }}</td>
+                    <td class="u-text-right"><x-ui.money-value :amount="$r->valor" size="sm" tone="out" /></td>
+                    <td class="u-text-right">
+                        <x-ui.icon-button size="sm" icon="trash-2" label="Anular retirada" class="action-danger-quiet"
+                            wire:click="anularRetirada({{ $r->id }})"
+                            wire:confirm="Anular esta retirada? A entrada correspondente também sai do painel pessoal." />
+                    </td>
+                </tr>
+            @endforeach
+            <x-slot:emptyState>
+                <x-ui.empty-state icon="wallet" title="Ainda não fizeste retiradas" description="Quando tirares dinheiro da empresa para ti, regista aqui — fica logo como entrada no teu painel pessoal." />
+            </x-slot:emptyState>
+        </x-ui.data-table>
+    </x-ui.card>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">
         <x-ui.card title="Como o dinheiro entrou" :subtitle="$mesLabel.', por método de pagamento'">
@@ -100,4 +140,6 @@
             </x-slot:emptyState>
         </x-ui.data-table>
     </x-ui.card>
+
+    <livewire:financas.retirar-dialog />
 </div>

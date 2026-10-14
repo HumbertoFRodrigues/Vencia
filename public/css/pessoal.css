@@ -182,3 +182,7 @@
 /* ---------- Movimentos filter bar ---------- */
 .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid var(--border-subtle); }
 .filter-bar__controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Retirada da empresa (Finanças) ---------- */
+.retirada-disponivel { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface-sunken); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--text-muted); }
+.field__hint--aviso { margin: 0; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--status-due-bg); color: var(--status-due-fg); }

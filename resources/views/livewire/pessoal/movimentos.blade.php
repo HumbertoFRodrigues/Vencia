@@ -50,6 +50,7 @@
                         <span style="display:flex;align-items:center;gap:8px">
                             <span style="color:var(--text-strong);font-weight:var(--weight-medium)">{{ $m->descricao }}</span>
                             @if($m->fixo_pessoal_id)<x-ui.tag tone="outline">Fixo</x-ui.tag>@endif
+                            @if($m->retirada_id)<x-ui.tag tone="accent">Da empresa</x-ui.tag>@endif
                         </span>
                         @if($m->notas)<span style="display:block;font-size:var(--text-xs);color:var(--text-muted);margin-top:2px">{{ $m->notas }}</span>@endif
                     </td>

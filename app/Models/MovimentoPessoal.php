@@ -18,7 +18,7 @@ class MovimentoPessoal extends Model
 
     protected $fillable = [
         'tipo', 'descricao', 'categoria_pessoal_id', 'valor', 'data', 'meio',
-        'fixo_pessoal_id', 'competencia', 'ignorado', 'notas', 'user_id',
+        'fixo_pessoal_id', 'retirada_id', 'competencia', 'ignorado', 'notas', 'user_id',
     ];
 
     protected $casts = [
@@ -59,6 +59,12 @@ class MovimentoPessoal extends Model
     public function fixo(): BelongsTo
     {
         return $this->belongsTo(FixoPessoal::class, 'fixo_pessoal_id');
+    }
+
+    /** Set when this entrada was created by a withdrawal from the business (managed there, not here). */
+    public function retirada(): BelongsTo
+    {
+        return $this->belongsTo(Retirada::class);
     }
 
     /** Real money only — a fixo "ignored" for one month is a marker row, not money. */

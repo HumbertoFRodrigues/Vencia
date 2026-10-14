@@ -11,7 +11,10 @@
             </x-slot:close>
 
             <div style="display:flex;flex-direction:column;gap:12px">
-                @unless($fixoId)
+                @if($daEmpresa)
+                    <p class="field__hint field__hint--aviso" style="margin:0">Esta entrada veio de uma retirada da empresa. Para a alterar ou anular, vai a Empresa → Finanças → Retiradas.</p>
+                @endif
+                @unless($fixoId || $daEmpresa)
                     <div class="seg" role="radiogroup" aria-label="Tipo de movimento">
                         <button type="button" role="radio" aria-checked="{{ $tipo === 'saida' ? 'true' : 'false' }}" wire:click="setTipo('saida')" class="seg__item {{ $tipo === 'saida' ? 'seg__item--saida' : '' }}">
                             <x-ui.icon name="arrow-up" size="14" /> Saída
@@ -52,11 +55,11 @@
             </div>
 
             <x-slot:footer>
-                @if($movimentoId)
+                @if($movimentoId && ! $daEmpresa)
                     <x-ui.button variant="ghost" icon="trash-2" class="action-danger-quiet" style="margin-right:auto" wire:click="apagar" wire:confirm="Apagar este movimento? Esta acção não pode ser desfeita.">Apagar</x-ui.button>
                 @endif
                 <x-ui.button wire:click="fechar">Cancelar</x-ui.button>
-                <x-ui.button variant="primary" icon="check" wire:click="guardar">
+                <x-ui.button variant="primary" icon="check" wire:click="guardar" :disabled="$daEmpresa">
                     {{ $fixoId && ! $movimentoId ? 'Confirmar' : 'Guardar' }}
                 </x-ui.button>
             </x-slot:footer>

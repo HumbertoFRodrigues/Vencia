@@ -26,6 +26,10 @@ class MovimentoDialog extends Component
 {
     public bool $show = false;
 
+    /** A withdrawal's entrada is managed from the business side only. */
+    #[Locked]
+    public bool $daEmpresa = false;
+
     #[Locked]
     public ?int $movimentoId = null;
 
@@ -54,7 +58,7 @@ class MovimentoDialog extends Component
     public function abrir(?string $tipo = null, ?int $movimentoId = null, ?int $fixoId = null, ?string $competencia = null): void
     {
         $this->resetValidation();
-        $this->reset(['movimentoId', 'fixoId', 'competencia', 'descricao', 'categoriaId', 'valor', 'meio', 'notas']);
+        $this->reset(['daEmpresa', 'movimentoId', 'fixoId', 'competencia', 'descricao', 'categoriaId', 'valor', 'meio', 'notas']);
         $this->data = Carbon::today()->toDateString();
         $this->tipo = $tipo === 'entrada' ? 'entrada' : 'saida';
 
@@ -69,6 +73,7 @@ class MovimentoDialog extends Component
             $this->data = $m->data->toDateString();
             $this->meio = (string) $m->meio;
             $this->notas = (string) $m->notas;
+            $this->daEmpresa = $m->retirada_id !== null;
         } elseif ($fixoId !== null) {
             $fixo = FixoPessoal::findOrFail($fixoId);
             $mes = FinancasPessoais::mesDe($competencia);
@@ -160,6 +165,10 @@ class MovimentoDialog extends Component
 
     public function guardar(): void
     {
+        if ($this->daEmpresa) {
+            return;
+        }
+
         $this->valor = Valor::normalizar($this->valor);
         $dados = $this->validate();
 
@@ -198,6 +207,10 @@ class MovimentoDialog extends Component
 
     public function apagar(): void
     {
+        if ($this->daEmpresa) {
+            return;
+        }
+
         if ($this->movimentoId === null) {
             return;
         }
