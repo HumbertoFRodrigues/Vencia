@@ -109,7 +109,7 @@
     {{-- Installable app (manifest + service worker, see public/sw.js). --}}
     <script data-navigate-once>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+            window.addEventListener('load', function () { navigator.serviceWorker.register(@js(asset('sw.js'))).catch(function () {}); });
         }
     </script>
 

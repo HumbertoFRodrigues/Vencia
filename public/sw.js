@@ -2,11 +2,12 @@
 // Pages are always fetched from the network (they hold live, private data);
 // only static files are cached, and a small offline page answers when there
 // is no connection.
-const CACHE = 'vencia-v1';
-const OFFLINE = '/offline.html';
+const CACHE = 'vencia-v2';
+// Relative to this file, so the app also works from a subfolder (localhost/vencia).
+const OFFLINE = new URL('offline.html', self.location).href;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE, '/assets/app-192.png'])).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE, new URL('assets/app-192.png', self.location).href])).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {

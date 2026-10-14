@@ -3,18 +3,18 @@
   "short_name": "Vencia",
   "description": "Clientes, serviços, vencimentos e finanças pessoais.",
   "lang": "pt-PT",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f8f9fb",
   "theme_color": "#3348d8",
   "icons": [
-    { "src": "/assets/app-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/assets/app-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/assets/app-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "assets/app-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/app-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/app-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Registar uma saída", "url": "/pessoal/movimentos", "icons": [{ "src": "/assets/app-192.png", "sizes": "192x192" }] },
-    { "name": "Vencimentos", "url": "/vencimentos", "icons": [{ "src": "/assets/app-192.png", "sizes": "192x192" }] }
+    { "name": "Registar uma saída", "url": "./pessoal/movimentos", "icons": [{ "src": "assets/app-192.png", "sizes": "192x192" }] },
+    { "name": "Vencimentos", "url": "./vencimentos", "icons": [{ "src": "assets/app-192.png", "sizes": "192x192" }] }
   ]
 }
