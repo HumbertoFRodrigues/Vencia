@@ -106,6 +106,13 @@
         });
     </script>
 
+    {{-- Installable app (manifest + service worker, see public/sw.js). --}}
+    <script data-navigate-once>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+        }
+    </script>
+
     {{-- Session expired mid-action: Livewire's own prompt is in English. --}}
     <script data-navigate-once>
         document.addEventListener('livewire:init', function () {

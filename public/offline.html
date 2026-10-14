@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sem ligação · Vencia</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; font: 15px/1.5 "Helvetica Neue", Arial, sans-serif; background: #f8f9fb; color: #343a47; }
+  @media (prefers-color-scheme: dark) { body { background: #0d1014; color: #c8cdd8; } .card { background: #15191f !important; border-color: #252b34 !important; } h1 { color: #f2f4f8 !important; } }
+  .card { max-width: 380px; padding: 28px; background: #fff; border: 1px solid #e5e8ef; border-radius: 12px; }
+  h1 { margin: 12px 0 6px; font-size: 20px; color: #14171d; }
+  p { margin: 0 0 16px; }
+  button { height: 36px; padding: 0 14px; border: 0; border-radius: 6px; background: #3348d8; color: #fff; font: inherit; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img src="/assets/app-192.png" alt="" width="40" height="40">
+    <h1>Sem ligação à internet</h1>
+    <p>A Vencia precisa de ligação para mostrar os teus dados. Volta a tentar quando estiveres online.</p>
+    <button type="button" onclick="location.reload()">Tentar de novo</button>
+  </div>
+</body>
+</html>
