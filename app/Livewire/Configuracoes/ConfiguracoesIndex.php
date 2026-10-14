@@ -8,6 +8,7 @@ use App\Models\BibliotecaServico;
 use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
 use App\Services\CopiaSeguranca;
+use App\Services\EmailsDeTeste;
 use App\Services\ServicoStatusService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Crypt;
@@ -126,6 +127,11 @@ class ConfiguracoesIndex extends Component
      */
     public string $smtpPassword = '';
 
+    /** "Testar emails" card: which sample to send and where. */
+    public string $testeTipo = 'simples';
+
+    public string $testeDestino = '';
+
     /** Days before the due date the reminders start, per billing cycle (see ServicoStatusService::ANTECEDENCIA_PADRAO). */
     public array $antecedencias = [];
 
@@ -140,6 +146,7 @@ class ConfiguracoesIndex extends Component
         $empresa = Configuracao::obter('empresa', []);
         $this->empresaNome = $empresa['nome'] ?? '';
         $this->empresaEmail = $empresa['email'] ?? '';
+        $this->testeDestino = $this->empresaEmail;
         $this->empresaMoeda = $empresa['moeda'] ?? 'MZN';
         $this->empresaFuso = $empresa['fuso_horario'] ?? 'Africa/Maputo';
 
@@ -624,38 +631,35 @@ class ConfiguracoesIndex extends Component
     }
 
     /**
-     * Real send attempt via whichever mailer is actually active for this
-     * request: Configuracao::aplicarSmtpEmTempoDeExecucao() switches to the
-     * admin's saved SMTP settings when one is configured, otherwise this
-     * falls back to .env's MAIL_MAILER (today "log") unchanged — the same
-     * runtime mailer VerificacaoDiariaService/SuspenderDialog now use, so
-     * this button genuinely proves whether SMTP works, not just whether the
-     * mail pipeline runs. Success or failure both surface as a toast; a
-     * failure is also logged (never the password itself).
+     * Sends one sample of the chosen email (EmailsDeTeste) to any address,
+     * through the same runtime mailer the real sends use, so it proves both
+     * that SMTP works and how each message looks to the client.
      */
-    public function testarEmail(): void
+    public function enviarTeste(): void
     {
-        $destino = trim($this->empresaEmail) !== '' ? $this->empresaEmail : Configuracao::obter('empresa', [])['email'] ?? null;
+        $this->validate([
+            'testeTipo' => ['required', Rule::in(array_keys(EmailsDeTeste::TIPOS))],
+            'testeDestino' => ['required', 'email'],
+        ], [], ['testeTipo' => 'tipo de email', 'testeDestino' => 'email de destino']);
 
-        if (! $destino) {
-            $this->dispatch('toast', title: 'Sem email remetente configurado', body: 'Preencha o email remetente em Empresa primeiro.', tone: 'danger');
+        $tipo = EmailsDeTeste::TIPOS[$this->testeTipo];
+
+        try {
+            app(EmailsDeTeste::class)->enviar($this->testeTipo, $this->testeDestino);
+        } catch (\Throwable $e) {
+            Log::error('Falha ao enviar email de teste ('.$this->testeTipo.'): '.$e->getMessage());
+            $this->dispatch('toast', title: 'Falha ao enviar: '.$tipo, body: mb_strimwidth($e->getMessage(), 0, 160, '…'), tone: 'danger');
 
             return;
         }
 
-        Configuracao::aplicarSmtpEmTempoDeExecucao();
+        if (EmailsDeTeste::soNoRegisto()) {
+            $this->dispatch('toast', title: 'SMTP por configurar', body: 'O email foi gravado só no registo (storage/logs), não saiu para '.$this->testeDestino.'.', tone: 'info');
 
-        try {
-            Mail::raw('Isto é um email de teste do Vencia.', function ($message) use ($destino): void {
-                $message->to($destino)->subject('Email de teste — Vencia');
-            });
-
-            $this->dispatch('toast', title: 'Email de teste enviado', body: $destino, tone: 'success');
-        } catch (\Throwable $e) {
-            Log::error('Falha ao enviar email de teste do Vencia: '.$e->getMessage());
-
-            $this->dispatch('toast', title: 'Falha ao enviar email de teste', body: 'Verifique a configuração SMTP.', tone: 'danger');
+            return;
         }
+
+        $this->dispatch('toast', title: 'Email de teste enviado', body: $tipo.' → '.$this->testeDestino, tone: 'success');
     }
 
     public function render()

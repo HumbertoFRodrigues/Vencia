@@ -121,9 +121,9 @@ class CopiaSeguranca
     }
 
     /** Sends the copy to the empresa email. Returns false (and logs why) when it couldn't. */
-    public function enviarPorEmail(string $ficheiro): bool
+    public function enviarPorEmail(string $ficheiro, ?string $destino = null): bool
     {
-        $destino = Configuracao::obter('empresa', [])['email'] ?? null;
+        $destino ??= Configuracao::obter('empresa', [])['email'] ?? null;
         $smtp = trim((string) (Configuracao::obter('smtp', [])['servidor'] ?? ''));
 
         if (! $destino || ($smtp === '' && config('mail.default') === 'log')) {

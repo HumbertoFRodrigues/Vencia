@@ -63,7 +63,7 @@ class Configuracao extends Model
      * Empresa → "Envio de email") to the mailer actually used for the rest
      * of this request/console invocation — call this once, right before any
      * Mail::... ->send() (or ->raw()), from every place that sends mail:
-     * VerificacaoDiariaService, SuspenderDialog, ConfiguracoesIndex::testarEmail().
+     * VerificacaoDiariaService, SuspenderDialog, ConfiguracoesIndex::enviarTeste().
      * Centralised here so none of those three call sites duplicates the
      * config-juggling logic.
      *

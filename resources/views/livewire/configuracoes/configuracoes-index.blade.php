@@ -352,11 +352,27 @@
                     </div>
                     <x-ui.input label="Utilizador" wire:model="smtpUtilizador" placeholder="cobrancas@exemplo.co.mz" />
                     <x-ui.input label="Password" type="password" wire:model="smtpPassword" placeholder="Deixe em branco para manter a actual" hint="Nunca é reexibida depois de guardada — só substituída se preencher um valor novo." />
-                    <div style="display:flex;justify-content:space-between;gap:8px">
+                    <div style="display:flex;justify-content:flex-start;gap:8px">
                         <x-ui.button size="sm" wire:click="guardarSmtp">Guardar</x-ui.button>
-                        <x-ui.button variant="secondary" icon="send" wire:click="testarEmail">Enviar email de teste</x-ui.button>
                     </div>
                 </div>
+            </x-ui.card>
+
+            <x-ui.card title="Testar emails" subtitle="Envia um exemplo de cada email da Vencia, com dados fictícios, para o endereço que escolheres. Nada é gravado e o cliente não recebe nada.">
+                <form wire:submit="enviarTeste" style="display:flex;flex-direction:column;gap:12px">
+                    <x-ui.select
+                        label="Tipo de email"
+                        wire:model="testeTipo"
+                        :options="collect(\App\Services\EmailsDeTeste::TIPOS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all()"
+                    />
+                    <x-ui.input label="Enviar para" type="email" wire:model="testeDestino" placeholder="o-teu-email@exemplo.co.mz" :error="$errors->first('testeDestino')" hint="Guarda primeiro o SMTP acima — o teste usa as definições guardadas." />
+                    <div style="display:flex;justify-content:flex-end">
+                        <x-ui.button type="submit" icon="send" wire:loading.attr="disabled" wire:target="enviarTeste">
+                            <span wire:loading.remove wire:target="enviarTeste">Enviar teste</span>
+                            <span wire:loading wire:target="enviarTeste">A enviar…</span>
+                        </x-ui.button>
+                    </div>
+                </form>
             </x-ui.card>
 
             <x-ui.card title="Cópias de segurança" subtitle="Toda a base de dados num ficheiro. Criadas todos os dias pela tarefa agendada e enviadas por email à empresa; o servidor guarda as últimas 14.">
