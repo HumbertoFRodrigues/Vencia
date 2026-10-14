@@ -131,6 +131,8 @@ class ConfiguracoesIndex extends Component
 
     public function mount(): void
     {
+        $this->setTab($this->tab);
+
         $this->antecedencias = array_merge(
             ServicoStatusService::ANTECEDENCIA_PADRAO,
             array_intersect_key(Configuracao::obter('lembretes', [])['antecedencia'] ?? [], ServicoStatusService::ANTECEDENCIA_PADRAO),
@@ -152,7 +154,7 @@ class ConfiguracoesIndex extends Component
 
     public function setTab(string $tab): void
     {
-        $this->tab = $tab;
+        $this->tab = in_array($tab, ['biblioteca', 'lembretes', 'empresa', 'seguranca'], true) ? $tab : 'biblioteca';
     }
 
     // ================= Biblioteca de Serviços =================

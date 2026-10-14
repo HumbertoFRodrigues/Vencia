@@ -21,6 +21,7 @@
             ['id' => 'biblioteca', 'label' => 'Biblioteca de Serviços', 'count' => $itens->count()],
             ['id' => 'lembretes', 'label' => 'Lembretes'],
             ['id' => 'empresa', 'label' => 'Empresa'],
+            ['id' => 'seguranca', 'label' => 'Segurança'],
         ]"
     />
 
@@ -297,7 +298,7 @@
                 @endif
             </x-ui.card>
         </div>
-    @else
+    @elseif($tab === 'empresa')
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start">
             <x-ui.card title="Empresa">
                 <div style="display:flex;flex-direction:column;gap:12px">
@@ -379,5 +380,7 @@
                 @endif
             </x-ui.card>
         </div>
+    @elseif($tab === 'seguranca')
+        <livewire:configuracoes.seguranca />
     @endif
 </div>

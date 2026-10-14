@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\DoisPassosController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -34,6 +35,8 @@ if (app()->environment('local')) {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:login')->name('login.store');
+    Route::get('/login/dois-passos', [DoisPassosController::class, 'create'])->name('login.dois-passos');
+    Route::post('/login/dois-passos', [DoisPassosController::class, 'store'])->middleware('throttle:login')->name('login.dois-passos.store');
 
     Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->middleware('throttle:login')->name('password.email');

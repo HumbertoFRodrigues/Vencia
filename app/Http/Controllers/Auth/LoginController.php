@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,7 +39,7 @@ class LoginController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($credentials)) {
+        if (! Auth::validate($credentials)) {
             RateLimiter::hit($this->throttleKey($request));
 
             return back()
@@ -48,6 +49,18 @@ class LoginController extends Controller
 
         RateLimiter::clear($this->throttleKey($request));
 
+        /** @var User $user */
+        $user = Auth::getProvider()->retrieveByCredentials(['email' => $credentials['email']]);
+
+        // Password right but a second step is on: not logged in yet, only "half way" for 5 minutes.
+        if ($user->temDoisPassos()) {
+            $request->session()->regenerate();
+            $request->session()->put('dois_passos', ['id' => $user->id, 'expira' => now()->addMinutes(5)->timestamp]);
+
+            return redirect()->route('login.dois-passos');
+        }
+
+        Auth::login($user);
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'));
