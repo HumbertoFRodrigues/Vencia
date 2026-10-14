@@ -100,6 +100,31 @@ A primeira tarefa, `vencia:verificar-vencimentos`, é a que envia os lembretes p
 
 > ⚠️ Nunca publiques o `.env` de desenvolvimento por cima do de produção — tem a password da tua base de dados local e a chave da app antiga. Mudar a `APP_KEY` depois de configurado o SMTP obriga a reintroduzir a password SMTP.
 
+## 9. Segurança e telemóvel
+
+- **Verificação em dois passos**: em Configurações → Segurança, lê o código QR com o Google Authenticator / Microsoft Authenticator e guarda os códigos de recuperação num sítio seguro.
+- **App no telemóvel**: com o site em **HTTPS**, abre-o no Chrome (Android) ou Safari (iPhone) e escolhe "Adicionar ao ecrã principal". Sem HTTPS esta opção não aparece.
+
+## 10. Publicação automática (opcional)
+
+Depois da primeira instalação manual (passos 1–8), cada `git push` para `main` pode actualizar o site sozinho: o GitHub corre os testes e, se passarem, envia os ficheiros por FTP e corre as migrações. Enquanto não configurares nada, o workflow "Publicar" fica desligado (aparece como concluído, sem fazer nada).
+
+1. No `.env` do **servidor**, acrescenta `DEPLOY_TOKEN=` com um texto aleatório de 32+ caracteres (ex.: gera com `php -r "echo bin2hex(random_bytes(24));"`). Corre o truque do Cron do passo 6 uma vez (`config:cache`) para o servidor o ler.
+2. No cPanel → **Contas FTP**, cria uma conta cuja pasta seja a pasta-mãe da aplicação (ou usa a conta principal).
+3. No GitHub → repositório → **Settings → Secrets and variables → Actions → New repository secret**, cria:
+
+| Secret | Exemplo |
+|---|---|
+| `FTP_SERVER` | `ftp.oteudominio.com` |
+| `FTP_USERNAME` | `deploy@oteudominio.com` |
+| `FTP_PASSWORD` | a password dessa conta FTP |
+| `FTP_DIR` | `vencia_app/` (caminho da app visto por essa conta, **terminado em `/`**) |
+| `APP_URL` | `https://oteudominio.com` |
+| `DEPLOY_TOKEN` | o mesmo valor do `.env` do servidor |
+| `FTP_PROTOCOL` | opcional: `ftp` se o servidor não aceitar FTPS (por omissão `ftps`) |
+
+Nunca são enviados: `.env`, `storage/`, `public/storage/` (logótipos), `tests/` nem `.git`. A primeira publicação demora (envia tudo); as seguintes só enviam o que mudou. Para publicar sem novo commit: separador **Actions → Publicar → Run workflow**.
+
 ## Se algo correr mal
 
 | Sintoma | Onde olhar primeiro |

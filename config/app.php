@@ -75,6 +75,9 @@ return [
 
     'admin_email' => env('ADMIN_EMAIL'),
 
+    // Secret (32+ chars) the GitHub deploy workflow sends to finish a deploy (migrations, caches). Unset = endpoint off.
+    'deploy_token' => env('DEPLOY_TOKEN'),
+
     // Email the empresa when an unexpected error happens (App\Support\AlertaErro). On by default in production only.
     'alertas_erro' => (bool) env('ALERTAS_ERRO', env('APP_ENV') === 'production'),
 

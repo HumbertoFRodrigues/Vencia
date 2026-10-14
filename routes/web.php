@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\DoisPassosController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\ImplantacaoController;
 use App\Http\Controllers\ReciboController;
 use App\Http\Middleware\ActualizarEstadosDoDia;
 use App\Livewire\Clientes\ClienteDetail;
@@ -23,6 +24,7 @@ use App\Livewire\Servicos\ServicoDetail;
 use App\Livewire\Servicos\ServicosIndex;
 use App\Livewire\Vencimentos\VencimentosIndex;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 
 if (app()->environment('local')) {
@@ -32,6 +34,12 @@ if (app()->environment('local')) {
         return redirect('/');
     });
 }
+
+// Called by the GitHub deploy workflow after the FTP upload (see ImplantacaoController). No session, no CSRF: token in a header.
+Route::post('/implantacao/concluir', [ImplantacaoController::class, 'concluir'])
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->middleware('throttle:5,1')
+    ->name('implantacao.concluir');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');

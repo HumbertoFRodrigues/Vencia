@@ -1,0 +1,87 @@
+name: Publicar
+
+# Publishes main to the cPanel by FTP after the tests pass, then calls
+# /implantacao/concluir to run the migrations. Stays off (skips) until the
+# FTP_SERVER secret exists — see DEPLOY.md, "Publicação automática".
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configurado?
+        id: cfg
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+        run: |
+          if [ -z "$FTP_SERVER" ]; then
+            echo "Publicação automática desligada: falta o secret FTP_SERVER (ver DEPLOY.md)."
+            echo "activo=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "activo=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.activo == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: shivammathur/setup-php@v2
+        if: steps.cfg.outputs.activo == 'true'
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, gd
+          coverage: none
+
+      - name: Dependências de produção
+        if: steps.cfg.outputs.activo == 'true'
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+
+      - name: Enviar por FTP
+        if: steps.cfg.outputs.activo == 'true'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_DIR }}
+          protocol: ${{ secrets.FTP_PROTOCOL || 'ftps' }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .env
+            .env.*
+            node_modules/**
+            tests/**
+            docs/**
+            screenshots/**
+            phpunit.xml
+            storage/**
+            public/storage/**
+            bootstrap/cache/*.php
+
+      - name: Concluir (migrações e caches)
+        if: steps.cfg.outputs.activo == 'true'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$DEPLOY_TOKEN" ]; then
+            echo "::warning::Ficheiros enviados, mas faltam APP_URL/DEPLOY_TOKEN: corre as migrações à mão (DEPLOY.md, passo 6)."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 300 \
+            -X POST -H "X-Deploy-Token: $DEPLOY_TOKEN" -H "Accept: application/json" \
+            "${APP_URL%/}/implantacao/concluir"
