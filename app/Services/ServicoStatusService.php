@@ -8,6 +8,7 @@ use App\Enums\Periodicidade;
 use App\Enums\ServicoStatus;
 use App\Models\Configuracao;
 use App\Models\Historico;
+use App\Models\Pagamento;
 use App\Models\Servico;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -171,7 +172,7 @@ class ServicoStatusService
      *
      * @param  array{data?: string, valor?: float|string, metodo: string, periodo?: string, observacoes?: string|null, user_id?: int|null}  $dadosPagamento
      */
-    public function renovar(Servico $servico, array $dadosPagamento): void
+    public function renovar(Servico $servico, array $dadosPagamento): Pagamento
     {
         if ($servico->periodicidade === Periodicidade::Unica) {
             throw new RuntimeException('Serviços com periodicidade "única" não têm ciclo de renovação.');
@@ -181,7 +182,7 @@ class ServicoStatusService
             throw new RuntimeException('Um serviço cancelado não pode ser renovado.');
         }
 
-        DB::transaction(function () use ($servico, $dadosPagamento): void {
+        return DB::transaction(function () use ($servico, $dadosPagamento): Pagamento {
             $novoVencimento = $this->calcularProximoVencimento($servico);
 
             // Renewing reactivates a suspended servico, but the new status
@@ -194,7 +195,7 @@ class ServicoStatusService
 
             $valor = $dadosPagamento['valor'] ?? $servico->valor;
 
-            $servico->pagamentos()->create([
+            $pagamento = $servico->pagamentos()->create([
                 'data' => $dadosPagamento['data'] ?? Carbon::today()->toDateString(),
                 'cliente_id' => $servico->cliente_id,
                 'valor' => $valor,
@@ -218,6 +219,8 @@ class ServicoStatusService
                 'description' => $descricao,
                 'kind' => HistoricoKind::Pagamento,
             ]);
+
+            return $pagamento;
         });
     }
 

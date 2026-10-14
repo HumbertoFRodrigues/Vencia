@@ -38,6 +38,14 @@
                     Este serviço não tem ciclo de renovação (periodicidade única).
                 @endif
             </div>
+            <div style="margin-top:12px">
+                <x-ui.checkbox
+                    label="Enviar recibo ao cliente por email"
+                    :description="$s?->cliente?->email ? 'Recibo em PDF para '.$s->cliente->email.' (com cópia para a empresa).' : 'O cliente não tem email registado.'"
+                    :checked="$enviarRecibo && $s?->cliente?->email"
+                    wire:click.prevent="$toggle('enviarRecibo')"
+                />
+            </div>
 
             <x-slot:footer>
                 <x-ui.button wire:click="fechar">Cancelar</x-ui.button>

@@ -6,6 +6,7 @@ use App\Enums\Periodicidade;
 use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
+use App\Services\Recibos;
 use App\Services\ServicoStatusService;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -45,11 +46,14 @@ class RenovarDialog extends Component
 
     public ?string $observacoes = null;
 
+    public bool $enviarRecibo = true;
+
     #[On('renovar:abrir')]
     public function abrir(int $servicoId): void
     {
         $this->resetValidation();
         $servico = Servico::findOrFail($servicoId);
+        $this->enviarRecibo = true;
 
         $this->servicoId = $servicoId;
         $this->valorPago = (string) $servico->valor;
@@ -140,7 +144,7 @@ class RenovarDialog extends Component
         $servico = $this->servico;
 
         try {
-            app(ServicoStatusService::class)->renovar($servico, [
+            $pagamento = app(ServicoStatusService::class)->renovar($servico, [
                 'data' => $data['dataPagamento'],
                 'valor' => $data['valorPago'],
                 'metodo' => $data['metodo'],
@@ -154,11 +158,12 @@ class RenovarDialog extends Component
         }
 
         $valorFormatado = number_format((float) $data['valorPago'], 0, ',', '.');
+        $recibo = $this->enviarRecibo ? app(Recibos::class)->enviar($pagamento) : null;
 
         $this->dispatch(
             'toast',
             title: 'Renovação registrada',
-            body: $valorFormatado.' '.Configuracao::moeda().' — '.$servico->nome,
+            body: $valorFormatado.' '.Configuracao::moeda().' — '.$servico->nome.Recibos::notaEnvio($recibo),
             tone: 'success',
         );
         $this->dispatch('servico-actualizado', servicoId: $servico->id);

@@ -9,6 +9,7 @@ use App\Models\Historico;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Models\Servico;
+use App\Services\Recibos;
 use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -86,6 +87,9 @@ class RegistrarPagamentoDialog extends Component
 
     public string $metodo = 'mpesa';
 
+    /** Email the receipt PDF to the client after recording a new payment. */
+    public bool $enviarRecibo = true;
+
     public function mount(?int $servicoId = null): void
     {
         $this->servicoId = $servicoId;
@@ -97,6 +101,7 @@ class RegistrarPagamentoDialog extends Component
     {
         $this->resetValidation();
         $this->pagamentoId = $pagamentoId;
+        $this->enviarRecibo = true;
         $this->servicoId = $this->servicoIdFixo;
         $this->data = Carbon::today()->toDateString();
         $this->periodo = '1 mês';
@@ -262,8 +267,8 @@ class RegistrarPagamentoDialog extends Component
     /** @param array<string, mixed> $data */
     private function criar(Servico $servico, array $data): void
     {
-        DB::transaction(function () use ($servico, $data): void {
-            Pagamento::create([
+        $pagamento = DB::transaction(function () use ($servico, $data): Pagamento {
+            $pagamento = Pagamento::create([
                 'data' => $data['data'],
                 'cliente_id' => $servico->cliente_id,
                 'servico_id' => $servico->id,
@@ -280,11 +285,14 @@ class RegistrarPagamentoDialog extends Component
                 'description' => sprintf('%s — %s', $data['valor'], $servico->nome),
                 'kind' => 'pagamento',
             ]);
+
+            return $pagamento;
         });
 
         $valorFormatado = number_format((float) $data['valor'], 0, ',', '.');
+        $recibo = $this->enviarRecibo ? app(Recibos::class)->enviar($pagamento) : null;
 
-        $this->dispatch('toast', title: 'Pagamento registado', body: $valorFormatado.' '.Configuracao::moeda().' — '.$servico->nome, tone: 'success');
+        $this->dispatch('toast', title: 'Pagamento registado', body: $valorFormatado.' '.Configuracao::moeda().' — '.$servico->nome.Recibos::notaEnvio($recibo), tone: 'success');
         // Reuses the same refresh signal RenovarDialog dispatches, so both
         // ServicoDetail's and PagamentosIndex's own listeners for it pick up
         // the new ledger row without a dedicated event just for this dialog.
