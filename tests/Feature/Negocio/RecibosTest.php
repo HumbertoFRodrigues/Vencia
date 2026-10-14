@@ -53,6 +53,14 @@ class RecibosTest extends TestCase
         $this->assertSame('Recibo enviado', Historico::where('kind', 'email')->value('title'));
     }
 
+    public function test_amounts_typed_the_pt_way_are_read_as_thousands(): void
+    {
+        Livewire::test(RenovarDialog::class)->call('abrir', $this->servico->id)
+            ->set('enviarRecibo', false)->set('valorPago', '2.500')->call('confirmar')->assertHasNoErrors();
+
+        $this->assertEquals(2500, Pagamento::sole()->valor);
+    }
+
     public function test_the_receipt_can_be_turned_off(): void
     {
         Livewire::test(RenovarDialog::class)->call('abrir', $this->servico->id)->set('enviarRecibo', false)->call('confirmar');

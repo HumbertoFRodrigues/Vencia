@@ -12,6 +12,7 @@ use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
 use App\Models\ServicoLembreteConfig;
 use App\Services\ServicoStatusService;
+use App\Support\Valor;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -208,6 +209,8 @@ class NewSubscriptionDialog extends Component
 
     public function guardar(): void
     {
+        // "2.500" is 2500 here, as in the personal panel (not 2.5).
+        $this->valor = Valor::normalizar($this->valor);
         $data = $this->validate();
 
         $servico = DB::transaction(function () use ($data) {

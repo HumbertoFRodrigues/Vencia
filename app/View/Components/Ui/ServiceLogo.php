@@ -35,8 +35,10 @@ class ServiceLogo extends Component
         string|ServicoCategoria $category = 'outro',
         public ?string $src = null,
         public int $size = 40,
-        public string $assetsBase = '/assets/logos/',
+        public ?string $assetsBase = null,
     ) {
+        // Through asset() so it also works when the app lives in a subfolder (localhost/vencia).
+        $this->assetsBase = $assetsBase ?? asset('assets/logos').'/';
         $this->category = $category instanceof ServicoCategoria ? $category->value : $category;
 
         $categoriaEnum = ServicoCategoria::tryFrom($this->category) ?? ServicoCategoria::Outro;
@@ -45,12 +47,13 @@ class ServiceLogo extends Component
         $this->bgVar = "--cat-{$this->category}-bg";
         $this->fgVar = "--cat-{$this->category}-fg";
         $this->categoryIcon = $categoriaEnum->icon();
-        $this->url = $src ?: self::resolveLogo($name, $assetsBase);
+        $this->url = $src ?: self::resolveLogo($name, $this->assetsBase);
         $this->initials = self::initialsFor($name);
     }
 
-    public static function resolveLogo(string $name, string $assetsBase = '/assets/logos/'): ?string
+    public static function resolveLogo(string $name, ?string $assetsBase = null): ?string
     {
+        $assetsBase ??= asset('assets/logos').'/';
         $key = mb_strtolower(trim($name));
 
         if ($key === '') {

@@ -4,7 +4,7 @@ Guia passo-a-passo para colocar a aplicação online num alojamento partilhado n
 
 ## 1. Confirmar com o fornecedor de hospedagem
 
-- [ ] **PHP 8.4 ou mais recente** (obrigatório — as dependências não instalam em 8.3) — normalmente activável no "MultiPHP Manager" do cPanel, com as extensões `mbstring`, `intl`, `gd`, `pdo_mysql`.
+- [ ] **PHP 8.4 ou mais recente** (obrigatório — as dependências não instalam em 8.3) — normalmente activável no "MultiPHP Manager" do cPanel, com as extensões `mbstring`, `intl`, `gd`, `pdo_mysql`, `zlib` (cópias de segurança), `fileinfo` (logótipos) e `openssl`.
 - [ ] **Base de dados MySQL** — o cPanel cria isto em "Bases de Dados MySQL".
 - [ ] **Cron Jobs** — existe em praticamente todos os cPanel e é o que permite correr comandos `php artisan` mesmo **sem SSH** (ver passo 6).
 
@@ -21,6 +21,8 @@ Põe a aplicação numa pasta **fora** de `public_html` (ex.: `~/vencia_app`), p
 ## 3. Apontar o domínio para `public/`
 
 No cPanel, ao criar o domínio ou subdomínio, o **Document Root** deve ser a pasta `public/` do projecto (ex.: `vencia_app/public`) — nunca a raiz. Se por engano apontar para a raiz, o `.htaccess` que está lá encaminha tudo para `public/`, por isso o `.env` e o código continuam inacessíveis — mas o correcto é `public/`.
+
+**Numa subpasta** (ex.: `oteudominio.com/vencia`, ou `localhost/vencia` no XAMPP): também funciona — o `.htaccess` da raiz encaminha para `public/` e a app descobre sozinha a pasta. Põe no `.env` o endereço completo, com a pasta: `APP_URL=https://oteudominio.com/vencia`.
 
 ## 4. Criar a base de dados
 

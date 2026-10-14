@@ -100,6 +100,7 @@ class ClienteForm extends Component
 
         $this->show = false;
         $this->dispatch($this->savedEvent, clienteId: $cliente->id);
+        $this->dispatch('toast', title: $cliente->wasRecentlyCreated ? 'Cliente criado' : 'Cliente actualizado', body: $cliente->nome, tone: 'success');
     }
 
     public function render()

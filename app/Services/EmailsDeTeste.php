@@ -100,6 +100,11 @@ class EmailsDeTeste
         $ficheiro = $copias->criar();
         $copias->limpar();
 
+        // No SMTP yet: the copy exists; the caller reports "only in the log" like the other types.
+        if (self::soNoRegisto()) {
+            return;
+        }
+
         if (! $copias->enviarPorEmail($ficheiro, $destino)) {
             throw new RuntimeException('A cópia foi criada mas não foi enviada (demasiado grande para email ou falha no SMTP — ver o registo).');
         }

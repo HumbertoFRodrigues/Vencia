@@ -11,6 +11,7 @@ use App\Models\Historico;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
 use App\Services\ServicoStatusService;
+use App\Support\Valor;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -152,6 +153,8 @@ class EditarServicoDialog extends Component
 
     public function guardar(): void
     {
+        // "2.500" is 2500 here, as in the personal panel (not 2.5).
+        $this->valor = Valor::normalizar($this->valor);
         $data = $this->validate();
         $servico = Servico::findOrFail($this->servicoId);
 

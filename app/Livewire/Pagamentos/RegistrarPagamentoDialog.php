@@ -10,6 +10,7 @@ use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Models\Servico;
 use App\Services\Recibos;
+use App\Support\Valor;
 use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -246,6 +247,8 @@ class RegistrarPagamentoDialog extends Component
 
     public function confirmar(): void
     {
+        // "2.500" is 2500 here, as in the personal panel (not 2.5).
+        $this->valor = Valor::normalizar($this->valor);
         $data = $this->validate();
         $servico = $this->servico;
 

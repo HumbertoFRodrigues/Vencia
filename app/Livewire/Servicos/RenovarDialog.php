@@ -8,6 +8,7 @@ use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
 use App\Services\Recibos;
 use App\Services\ServicoStatusService;
+use App\Support\Valor;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -140,6 +141,8 @@ class RenovarDialog extends Component
 
     public function confirmar(): void
     {
+        // "2.500" is 2500 here, as in the personal panel (not 2.5).
+        $this->valorPago = Valor::normalizar($this->valorPago);
         $data = $this->validate();
         $servico = $this->servico;
 

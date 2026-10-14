@@ -2,7 +2,7 @@
     'items' => [],
     'active' => null,
     'brand' => 'Vencia',
-    'logoSrc' => '/assets/logo-mark.png',
+    'logoSrc' => null,
 ])
 {{-- Collapse state lives as data-sidebar-collapsed on <html> (like data-theme
      for the theme toggle), not a class here — <html> sits outside what
@@ -12,7 +12,7 @@
      rules in components.css), same technique as ThemeToggle. --}}
 <nav {{ $attributes->class(['sidebar-nav']) }}>
     <div class="sidebar-nav__brand">
-        <img src="{{ $logoSrc }}" alt="" class="sidebar-nav__logo" />
+        <img src="{{ $logoSrc ?? asset('assets/logo-mark.png') }}" alt="" class="sidebar-nav__logo" />
         <span class="sidebar-nav__brand-name">{{ $brand }}</span>
     </div>
     {{ $switcher ?? '' }}

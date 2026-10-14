@@ -1,7 +1,7 @@
 <?php
 
+use App\Http\PedidoComBase;
 use Illuminate\Foundation\Application;
-use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
@@ -12,8 +12,8 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 
 // Reached through the project root's .htaccess (document root = project
 // folder, e.g. localhost/vencia or a cPanel domain pointing at the app
-// folder): the browser URL has no "/public", so tell Laravel the app lives
-// one level up. Otherwise every page in a subfolder answers 404.
+// folder): the browser URL has no "/public", so tell Laravel where the app
+// lives (see PedidoComBase). Otherwise every page in a subfolder answers 404.
 $script = $_SERVER['SCRIPT_NAME'] ?? '';
 if (str_ends_with($script, '/public/index.php')) {
     $base = substr($script, 0, -strlen('/public/index.php'));
@@ -23,7 +23,7 @@ if (str_ends_with($script, '/public/index.php')) {
         $base = substr($uri, 0, strlen($base));
     }
     $viaPublic = strncasecmp($uri, $base.'/public/', strlen($base) + 8) === 0 || strcasecmp(strtok($uri, '?'), $base.'/public') === 0;
-    $_SERVER['SCRIPT_NAME'] = $_SERVER['PHP_SELF'] = $base.($viaPublic ? '/public/index.php' : '/index.php');
+    $_SERVER['VENCIA_BASE_URL'] = $viaPublic ? $base.'/public' : $base;
 }
 
 // Register the Composer autoloader...
@@ -33,4 +33,4 @@ require __DIR__.'/../vendor/autoload.php';
 /** @var Application $app */
 $app = require_once __DIR__.'/../bootstrap/app.php';
 
-$app->handleRequest(Request::capture());
+$app->handleRequest(PedidoComBase::capture());

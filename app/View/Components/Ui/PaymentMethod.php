@@ -62,8 +62,10 @@ class PaymentMethod extends Component
         string|MetodoPagamento $method = 'outro',
         public int $size = 22,
         public bool $showLabel = true,
-        public string $assetsBase = '/assets/logos/',
+        public ?string $assetsBase = null,
     ) {
+        // Through asset() so it also works when the app lives in a subfolder (localhost/vencia).
+        $this->assetsBase = $assetsBase ?? asset('assets/logos').'/';
         $this->method = $method instanceof MetodoPagamento ? $method->value : $method;
         $conhecido = self::METHODS[$this->method] ?? null;
 
