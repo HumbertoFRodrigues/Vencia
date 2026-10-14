@@ -59,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
                     ['id' => 'movimentos', 'label' => 'Movimentos', 'icon' => 'list', 'route' => 'pessoal.movimentos'],
                     ['id' => 'fixos', 'label' => 'Fixos mensais', 'icon' => 'repeat', 'route' => 'pessoal.fixos'],
                     ['id' => 'orcamentos', 'label' => 'Orçamentos', 'icon' => 'target', 'route' => 'pessoal.orcamentos'],
+                    ['id' => 'saldos', 'label' => 'Saldos e metas', 'icon' => 'piggy-bank', 'route' => 'pessoal.saldos'],
                     ['id' => 'analise', 'label' => 'Análise', 'icon' => 'chart-line', 'route' => 'pessoal.analise'],
                 ];
             } else {

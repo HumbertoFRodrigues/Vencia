@@ -200,3 +200,22 @@
 .dois-passos-config__qr svg { width: 180px; height: 180px; }
 .codigos-recuperacao { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .codigos-recuperacao li { padding: 8px 10px; background: var(--surface-sunken); border-radius: var(--radius-sm); text-align: center; letter-spacing: .04em; }
+
+/* ---------- Saldos e metas ---------- */
+.metas-list, .contas-list { list-style: none; margin: 0; padding: 0; }
+.meta { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); }
+.meta:last-child { border-bottom: 0; }
+.meta__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.meta__nome { display: block; color: var(--text-strong); font-size: var(--text-sm); }
+.meta__info { font-size: var(--text-xs); color: var(--text-muted); }
+.meta__accoes { display: inline-flex; gap: 4px; flex: 0 0 auto; }
+.meta > .progress { flex: none; height: 8px; }
+.meta__nums { font-size: var(--text-xs); color: var(--text-muted); }
+.progress__fill--meta { background: var(--accent); }
+.contas-list li { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border-subtle); }
+.contas-list li:last-child { border-bottom: 0; }
+.contas-list__saldo { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; }
+.contas-list__hint { font-size: 11px; color: var(--status-due-fg); }
+.contas-list__semmeio { font-size: var(--text-sm); color: var(--text-muted); }
+.contas-list__acerto { display: flex; align-items: center; gap: 8px; width: 100%; }
+.contas-list__acerto .field { flex: 1; min-width: 0; }

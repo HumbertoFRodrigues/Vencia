@@ -18,6 +18,7 @@ use App\Livewire\Pessoal\Fixos as PessoalFixos;
 use App\Livewire\Pessoal\Movimentos as PessoalMovimentos;
 use App\Livewire\Pessoal\Orcamentos as PessoalOrcamentos;
 use App\Livewire\Pessoal\Resumo as PessoalResumo;
+use App\Livewire\Pessoal\Saldos as PessoalSaldos;
 use App\Livewire\Servicos\ServicoDetail;
 use App\Livewire\Servicos\ServicosIndex;
 use App\Livewire\Vencimentos\VencimentosIndex;
@@ -70,5 +71,6 @@ Route::middleware(['auth', ActualizarEstadosDoDia::class])->group(function () {
         Route::get('/fixos', PessoalFixos::class)->name('fixos');
         Route::get('/orcamentos', PessoalOrcamentos::class)->name('orcamentos');
         Route::get('/analise', PessoalAnalise::class)->name('analise');
+        Route::get('/saldos', PessoalSaldos::class)->name('saldos');
     });
 });
