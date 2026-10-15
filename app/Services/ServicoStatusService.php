@@ -10,6 +10,7 @@ use App\Models\Configuracao;
 use App\Models\Historico;
 use App\Models\Pagamento;
 use App\Models\Servico;
+use App\Support\ContaActual;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -26,7 +27,8 @@ class ServicoStatusService
     public const ANTECEDENCIA_OPCOES = [1, 3, 7, 15, 30];
 
     /** Global reminder settings, read once per instance instead of per servico × interval. */
-    private ?array $globais = null;
+    /** @var array<int, array> the conta's lembretes settings, read once per conta */
+    private array $globais = [];
 
     /**
      * Lead time (days) for this servico's cycle. "Personalizada" follows the
@@ -49,7 +51,7 @@ class ServicoStatusService
             return null;
         }
 
-        $configurada = ($this->globais ??= Configuracao::obter('lembretes', []))['antecedencia'][$ciclo] ?? null;
+        $configurada = $this->lembretes()['antecedencia'][$ciclo] ?? null;
 
         return in_array((int) $configurada, self::ANTECEDENCIA_OPCOES, true) ? (int) $configurada : self::ANTECEDENCIA_PADRAO[$ciclo];
     }
@@ -152,7 +154,7 @@ class ServicoStatusService
             return (bool) $explicito;
         }
 
-        $globais = $this->globais ??= Configuracao::obter('lembretes', []);
+        $globais = $this->lembretes();
         if (! ($globais[$intervalo->value] ?? false)) {
             return false;
         }
@@ -317,6 +319,11 @@ class ServicoStatusService
     }
 
     /** @return int how many servicos changed status */
+    private function lembretes(): array
+    {
+        return $this->globais[ContaActual::id() ?? 0] ??= Configuracao::obter('lembretes', []);
+    }
+
     public function sincronizarTodos(): int
     {
         $alterados = 0;

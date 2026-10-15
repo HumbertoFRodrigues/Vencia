@@ -117,7 +117,7 @@ class ServicosTest extends TestCase
         $s = $this->servico(['vencimento' => '2026-10-01', 'status' => 'activo']);
         $this->actingAs(User::factory()->create());
 
-        $this->get('/')->assertOk();
+        $this->get('/painel')->assertOk();
 
         $this->assertSame(ServicoStatus::Vencido, $s->fresh()->status);
     }

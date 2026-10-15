@@ -18,7 +18,7 @@
     @if($currency)
         <x-ui.money-value :amount="$value" :currency="$currency" :period="$period" size="metric" :tone="in_array($tone, ['in', 'out'], true) ? $tone : 'neutral'" />
     @else
-        <span class="stat-card__value stat-card__value--{{ $tone }}">{{ $value }}</span>
+        <span class="stat-card__value stat-card__value--{{ $tone }}">{{ is_int($value) || is_float($value) ? number_format($value, 0, ',', '.') : $value }}</span>
     @endif
     @if($delta || $footnote)
         <div class="stat-card__foot">

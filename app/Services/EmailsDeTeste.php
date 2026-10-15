@@ -34,16 +34,26 @@ class EmailsDeTeste
         'erro' => 'Alerta de erro',
     ];
 
+    /** What a business can test from its Configurações: the emails its clients receive. */
+    public const TIPOS_CONTA = ['simples', 'lembrete', 'terminado', 'recibo'];
+
+    /** The platform's own emails, tested by the super-admin with the platform's SMTP. */
+    public const TIPOS_PLATAFORMA = ['simples', 'password', 'copia', 'erro'];
+
     /** True when mail only goes to laravel.log (no SMTP saved and .env still on "log"). */
-    public static function soNoRegisto(): bool
+    public static function soNoRegisto(bool $plataforma = false): bool
     {
-        return trim((string) (Configuracao::obter('smtp', [])['servidor'] ?? '')) === '' && config('mail.default') === 'log';
+        if ($plataforma) {
+            return trim((string) (Configuracao::plataforma('smtp', [])['servidor'] ?? '')) === '' && config('mail.default') === 'log';
+        }
+
+        return ! Configuracao::envioDisponivel();
     }
 
     /** Sends the sample; throws when the mail server refuses it. */
-    public function enviar(string $tipo, string $destino): void
+    public function enviar(string $tipo, string $destino, bool $plataforma = false): void
     {
-        Configuracao::aplicarSmtpEmTempoDeExecucao();
+        $plataforma ? Configuracao::aplicarSmtpDaPlataforma() : Configuracao::aplicarSmtpEmTempoDeExecucao();
 
         match ($tipo) {
             'simples' => Mail::raw(
@@ -101,7 +111,7 @@ class EmailsDeTeste
         $copias->limpar();
 
         // No SMTP yet: the copy exists; the caller reports "only in the log" like the other types.
-        if (self::soNoRegisto()) {
+        if (self::soNoRegisto(plataforma: true)) {
             return;
         }
 

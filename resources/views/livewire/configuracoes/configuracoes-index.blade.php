@@ -335,7 +335,10 @@
                 </div>
             </x-ui.card>
 
-            <x-ui.card title="Envio de email (SMTP)" subtitle="Guardado aqui — sem precisar de editar o .env do servidor">
+            <x-ui.card title="Envio de email (SMTP)" :subtitle="$this->smtpProprioPermitido ? 'Opcional: o teu próprio servidor. Em branco, os emails saem pelo servidor da Vencia com o nome da tua empresa.' : 'Os emails aos teus clientes saem pelo servidor da Vencia, com o nome e o email de resposta da tua empresa.'">
+                @unless($this->smtpProprioPermitido)
+                    <p class="pessoal-muted">Usar o teu próprio servidor de email está incluído no plano Pro.@can('gerir-conta') <a href="{{ route('conta.plano') }}" wire:navigate>Ver planos</a>@endcan</p>
+                @else
                 <div style="display:flex;flex-direction:column;gap:12px">
                     <x-ui.input label="Servidor" wire:model="smtpServidor" placeholder="smtp.exemplo.co.mz" />
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -356,6 +359,7 @@
                         <x-ui.button size="sm" wire:click="guardarSmtp">Guardar</x-ui.button>
                     </div>
                 </div>
+                @endunless
             </x-ui.card>
 
             <x-ui.card title="Testar emails" subtitle="Envia um exemplo de cada email da Vencia, com dados fictícios, para o endereço que escolheres. Nada é gravado e o cliente não recebe nada.">
@@ -363,9 +367,9 @@
                     <x-ui.select
                         label="Tipo de email"
                         wire:model="testeTipo"
-                        :options="collect(\App\Services\EmailsDeTeste::TIPOS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all()"
+                        :options="collect(\App\Services\EmailsDeTeste::TIPOS_CONTA)->map(fn ($t) => ['value' => $t, 'label' => \App\Services\EmailsDeTeste::TIPOS[$t]])->all()"
                     />
-                    <x-ui.input label="Enviar para" type="email" wire:model="testeDestino" placeholder="o-teu-email@exemplo.co.mz" :error="$errors->first('testeDestino')" hint="Guarda primeiro o SMTP acima — o teste usa as definições guardadas." />
+                    <x-ui.input label="Enviar para" type="email" wire:model="testeDestino" placeholder="o-teu-email@exemplo.co.mz" :error="$errors->first('testeDestino')" hint="Usa o servidor de email em vigor para a tua conta." />
                     <div style="display:flex;justify-content:flex-end">
                         <x-ui.button type="submit" icon="send" wire:loading.attr="disabled" wire:target="enviarTeste">
                             <span wire:loading.remove wire:target="enviarTeste">Enviar teste</span>
@@ -375,26 +379,6 @@
                 </form>
             </x-ui.card>
 
-            <x-ui.card title="Cópias de segurança" subtitle="Toda a base de dados num ficheiro. Criadas todos os dias pela tarefa agendada e enviadas por email à empresa; o servidor guarda as últimas 14.">
-                <x-slot:action>
-                    <x-ui.button size="sm" icon="download" wire:click="criarCopia">Criar e descarregar</x-ui.button>
-                </x-slot:action>
-                @php($copias = $this->copias)
-                @if(empty($copias))
-                    <p class="pessoal-muted">Ainda não há cópias. Cria uma agora ou agenda <code>php artisan vencia:copia-seguranca</code> (ver DEPLOY.md).</p>
-                @else
-                    <ul class="copias-list">
-                        @foreach($copias as $c)
-                            <li wire:key="copia-{{ $c['nome'] }}">
-                                <span class="num">{{ $c['data']->format('d/m/Y H:i') }}</span>
-                                <span class="copias-list__tamanho">{{ number_format($c['bytes'] / 1024, 0, ',', '.') }} KB</span>
-                                <x-ui.icon-button size="sm" icon="download" label="Descarregar esta cópia" wire:click="descarregarCopia({{ \Illuminate\Support\Js::from($c['nome']) }})" />
-                            </li>
-                        @endforeach
-                    </ul>
-                    <p class="field__hint" style="margin-top:10px">Para restaurar: phpMyAdmin → base de dados vazia → Importar o ficheiro.</p>
-                @endif
-            </x-ui.card>
         </div>
     @elseif($tab === 'seguranca')
         <livewire:configuracoes.seguranca />

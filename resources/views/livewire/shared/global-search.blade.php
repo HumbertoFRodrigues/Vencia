@@ -3,7 +3,7 @@
 @endphp
 
 <div class="global-search">
-    <x-ui.search-input wire:model.live.debounce.300ms="q" placeholder="Pesquisar cliente, serviço, domínio…" :shortcut="null" />
+    <x-ui.search-input wire:model.live.debounce.300ms="q" placeholder="Pesquisar cliente ou serviço…" :shortcut="null" />
 
     @if($termo !== '')
         <div class="global-search__panel" onmousedown="event.preventDefault()">

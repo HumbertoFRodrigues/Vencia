@@ -10,6 +10,7 @@ use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
 use App\Models\Servico;
 use App\Services\Recibos;
+use App\Support\ContaActual;
 use App\Support\Valor;
 use App\View\Components\Ui\PaymentMethod;
 use Illuminate\Support\Carbon;
@@ -238,8 +239,8 @@ class RegistrarPagamentoDialog extends Component
         ];
 
         if ($this->servicoId === null) {
-            $rules['clienteSelecionado'] = ['required', 'string', Rule::exists('clientes', 'id')];
-            $rules['servicoSelecionado'] = ['required', 'string', Rule::exists('servicos', 'id')];
+            $rules['clienteSelecionado'] = ['required', 'string', Rule::exists('clientes', 'id')->where('conta_id', ContaActual::id())];
+            $rules['servicoSelecionado'] = ['required', 'string', Rule::exists('servicos', 'id')->where('conta_id', ContaActual::id())];
         }
 
         return $rules;

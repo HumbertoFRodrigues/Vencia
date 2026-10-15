@@ -1,7 +1,7 @@
 {{-- Every stylesheet linked directly with an mtime version, so a deploy is
      picked up immediately instead of a browser keeping a stale cached copy. --}}
 @php
-    $folhas = ['tokens/fonts', 'tokens/colors', 'tokens/typography', 'tokens/spacing', 'tokens/elevation', 'tokens/motion', 'tokens/base', 'components', 'pessoal'];
+    $folhas = ['tokens/fonts', 'tokens/colors', 'tokens/typography', 'tokens/spacing', 'tokens/elevation', 'tokens/motion', 'tokens/base', 'components', 'pessoal', 'saas', 'site'];
 @endphp
 <link rel="icon" type="image/png" href="{{ asset('assets/app-192.png') }}">
 <link rel="apple-touch-icon" href="{{ asset('assets/apple-touch-icon.png') }}">

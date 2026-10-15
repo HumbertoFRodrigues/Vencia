@@ -2,21 +2,26 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Papel;
+use App\Mail\PlataformaMail;
 use App\Mail\ResetPasswordMail;
 use App\Support\Totp;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token', 'dois_passos_segredo', 'dois_passos_recuperacao'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -35,7 +40,61 @@ class User extends Authenticatable
             'dois_passos_recuperacao' => 'encrypted:array',
             'dois_passos_confirmado_em' => 'datetime',
             'dois_passos_ultimo_passo' => 'integer',
+            'super_admin' => 'boolean',
+            'bloqueado_em' => 'datetime',
         ];
+    }
+
+    /** @var array<int, Papel|null> */
+    private array $papeis = [];
+
+    public function contas(): BelongsToMany
+    {
+        return $this->belongsToMany(Conta::class, 'conta_user')->withPivot('papel')->withTimestamps();
+    }
+
+    /** The conta last chosen in the switcher, or the first one the user belongs to. */
+    public function contaActual(): ?Conta
+    {
+        $conta = $this->conta_actual_id ? $this->contas()->whereKey($this->conta_actual_id)->first() : null;
+
+        return $conta ?? $this->contas()->orderBy('conta_user.created_at')->orderBy('conta_user.id')->first();
+    }
+
+    public function papelNa(Conta $conta): ?Papel
+    {
+        if (! array_key_exists($conta->id, $this->papeis)) {
+            $papel = $this->contas()->whereKey($conta->id)->first()?->pivot?->papel;
+            $this->papeis[$conta->id] = $papel ? Papel::from($papel) : null;
+        }
+
+        return $this->papeis[$conta->id];
+    }
+
+    public function esquecerPapeis(): void
+    {
+        $this->papeis = [];
+    }
+
+    public function bloqueado(): bool
+    {
+        return $this->bloqueado_em !== null;
+    }
+
+    /** The account confirmation email, in pt-PT and sent through the platform's SMTP. */
+    public function sendEmailVerificationNotification(): void
+    {
+        $url = URL::temporarySignedRoute('verification.verify', Carbon::now()->addHours(48), [
+            'id' => $this->getKey(),
+            'hash' => sha1($this->getEmailForVerification()),
+        ]);
+
+        Configuracao::aplicarSmtpDaPlataforma();
+
+        Mail::to($this->getEmailForVerification())->send(new PlataformaMail('Confirma o teu email', [
+            'Olá, '.$this->name.'.',
+            'Para activar a tua conta Vencia, abre esta ligação (é válida durante 48 horas):',
+        ], $url));
     }
 
     public function temDoisPassos(): bool
@@ -96,9 +155,9 @@ class User extends Authenticatable
 
         $expiraEmMinutos = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
 
-        // Same mailer as every other email (the SMTP saved in Configurações),
+        // The platform's own mailer (an account email, not one from a business),
         // never the log driver that would write the reset link to disk.
-        Configuracao::aplicarSmtpEmTempoDeExecucao();
+        Configuracao::aplicarSmtpDaPlataforma();
 
         Mail::to($this->getEmailForPasswordReset())->send(new ResetPasswordMail($url, $expiraEmMinutos));
     }

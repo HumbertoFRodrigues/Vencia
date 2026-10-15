@@ -3,6 +3,7 @@
 namespace App\Livewire\Pagamentos;
 
 use App\Enums\HistoricoKind;
+use App\Livewire\Concerns\RespeitaPlano;
 use App\Models\Cliente;
 use App\Models\Configuracao;
 use App\Models\Historico;
@@ -41,6 +42,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 #[Title('Pagamentos')]
 class PagamentosIndex extends Component
 {
+    use RespeitaPlano;
     use WithPagination;
 
     /** Dense ledger rows — 25/page. */
@@ -263,8 +265,12 @@ class PagamentosIndex extends Component
     }
 
     /** Streams every pagamento matching the applied filters (not just the visible page) as a pt-PT-formatted CSV. */
-    public function exportarCsv(): StreamedResponse
+    public function exportarCsv(): ?StreamedResponse
     {
+        if ($this->bloqueadoPeloPlano('exportar')) {
+            return null;
+        }
+
         $pagamentos = $this->pagamentosQuery()
             ->with(['cliente', 'servico'])
             ->orderByDesc('data')
@@ -323,8 +329,12 @@ class PagamentosIndex extends Component
     }
 
     /** Same filtered ledger as exportarCsv() (reuses pagamentosQuery()), through the shared relatório template. */
-    public function exportarPdf(): StreamedResponse
+    public function exportarPdf(): ?StreamedResponse
     {
+        if ($this->bloqueadoPeloPlano('exportar')) {
+            return null;
+        }
+
         $pagamentos = $this->pagamentosQuery()
             ->with(['cliente', 'servico'])
             ->orderByDesc('data')

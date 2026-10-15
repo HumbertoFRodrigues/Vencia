@@ -43,10 +43,17 @@
     @livewireStyles
 </head>
 <body>
+    @if(session('admin_original_id'))
+        <form method="POST" action="{{ route('suporte.voltar') }}" class="faixa-suporte">
+            @csrf
+            <span>Estás a ver a Vencia como <strong>{{ auth()->user()->email }}</strong> (suporte).</span>
+            <button type="submit" class="btn btn--secondary btn--sm">Voltar ao admin</button>
+        </form>
+    @endif
     <div class="app-shell">
         <x-ui.sidebar-nav id="menu-principal" :items="$navItems" :active="$navActive">
             <x-slot:switcher><x-ui.panel-switch :active="$painel" /></x-slot:switcher>
-            <x-slot:footer>{{ $painel === 'pessoal' ? 'Painel privado — só tu vês' : 'Verificação diária às 07:00' }}</x-slot:footer>
+            <x-slot:footer>{{ match ($painel) { 'pessoal' => 'Painel privado — só tu vês', 'admin' => 'Administração da plataforma', default => 'Verificação diária às 07:00' } }}</x-slot:footer>
         </x-ui.sidebar-nav>
         <div class="nav-scrim" data-nav-close aria-hidden="true"></div>
 

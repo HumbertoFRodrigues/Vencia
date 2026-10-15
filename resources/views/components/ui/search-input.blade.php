@@ -1,5 +1,5 @@
 @props([
-    'placeholder' => 'Pesquisar cliente, serviço, domínio…',
+    'placeholder' => 'Pesquisar cliente ou serviço…',
     'shortcut' => '/',
     'name' => 'q',
     'width' => 380,

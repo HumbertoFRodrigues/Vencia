@@ -53,7 +53,9 @@
                 neutral action, matching how much rarer and more final it is.
             --}}
             @if($s->status !== ServicoStatus::Cancelado)
-                <x-ui.button variant="ghost" icon="circle-slash" class="action-danger-quiet" wire:click="$dispatch('servico-cancelar:abrir', { servicoId: {{ $s->id }} })">Cancelar serviço</x-ui.button>
+                @can('gerir-negocio')
+                    <x-ui.button variant="ghost" icon="circle-slash" class="action-danger-quiet" wire:click="$dispatch('servico-cancelar:abrir', { servicoId: {{ $s->id }} })">Cancelar serviço</x-ui.button>
+                @endcan
             @endif
         </x-slot:actions>
     </x-ui.page-header>

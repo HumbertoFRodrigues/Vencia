@@ -17,6 +17,7 @@
         <x-ui.stat-card
             label="Entradas do período"
             :value="$totais['entradas']"
+            :currency="\App\Models\Configuracao::moeda()"
             tone="in"
             icon="arrow-down-to-line"
             :footnote="$totais['nPagamentos'].' pagamentos'"
@@ -24,12 +25,13 @@
         <x-ui.stat-card
             label="A receber"
             :value="$totais['aReceber']"
+            :currency="\App\Models\Configuracao::moeda()"
             tone="out"
             icon="hourglass"
             :footnote="$totais['nAReceber'].' serviços'"
         />
-        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" icon="repeat" />
-        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" icon="chart-line" />
+        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" :currency="\App\Models\Configuracao::moeda()" icon="repeat" />
+        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" :currency="\App\Models\Configuracao::moeda()" icon="chart-line" />
     </div>
 
     <div class="pill-picker">

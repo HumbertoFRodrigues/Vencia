@@ -10,6 +10,8 @@ use App\Models\Pagamento;
 use App\Models\Servico;
 use App\Models\ServicoLembreteConfig;
 use App\Models\Suspensao;
+use App\Models\User;
+use App\Support\ContaActual;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
@@ -35,6 +37,8 @@ class DatabaseSeeder extends Seeder
         $this->shiftDays = (int) $referenciaFicticia->diffInDays(Carbon::today(), false);
 
         $this->call(AdminSeeder::class);
+        // The demo business is the admin's own conta.
+        ContaActual::definir(User::query()->where('email', config('app.admin_email'))->firstOrFail()->contaActual());
         $this->seedEmpresaDemo();
         $biblioteca = BibliotecaServico::all()->keyBy('nome')->all();
         $clientes = $this->seedClientes();
@@ -103,17 +107,17 @@ class DatabaseSeeder extends Seeder
     private function seedServicos(array $clientes, array $biblioteca): array
     {
         $linhas = [
-            ['id' => 's1', 'clienteId' => 'c1', 'bib' => 'Hospedagem Business', 'descricao' => 'Alojamento do site institucional, 10 GB SSD, backups semanais.', 'nome' => 'Hospedagem', 'plano' => 'Plano Business', 'categoria' => 'hospedagem', 'valor' => 1500, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '02/09/2025', 'vencimento' => '02/09/2026', 'status' => 'a_vencer', 'dias' => 3],
-            ['id' => 's2', 'clienteId' => 'c1', 'bib' => 'Domínio .co.mz', 'descricao' => 'Registo e renovação do domínio principal, DNS gerido por mim.', 'nome' => 'exemplo.co.mz', 'plano' => 'Domínio .co.mz', 'categoria' => 'dominio', 'valor' => 800, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '02/09/2025', 'vencimento' => '02/09/2027', 'status' => 'activo', 'dias' => 368],
-            ['id' => 's3', 'clienteId' => 'c1', 'bib' => 'ChatGPT', 'descricao' => 'Acesso partilhado à conta de equipe — 2 utilizadores.', 'nome' => 'ChatGPT', 'plano' => 'Acesso Equipe', 'categoria' => 'ia', 'valor' => 500, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '01/09/2026', 'vencimento' => '01/10/2026', 'status' => 'activo', 'dias' => 32],
-            ['id' => 's4', 'clienteId' => 'c2', 'bib' => 'ChatGPT', 'descricao' => 'Acesso individual para redacção de conteúdos.', 'nome' => 'ChatGPT', 'plano' => 'Acesso Equipe', 'categoria' => 'ia', 'valor' => 500, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '05/08/2026', 'vencimento' => '05/09/2026', 'status' => 'a_vencer', 'dias' => 6],
-            ['id' => 's5', 'clienteId' => 'c2', 'bib' => 'Canva', 'descricao' => 'Licença Pro para materiais de marketing da loja.', 'nome' => 'Canva', 'plano' => 'Pro', 'categoria' => 'software', 'valor' => 1000, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '20/10/2025', 'vencimento' => '20/10/2026', 'status' => 'activo', 'dias' => 51],
-            ['id' => 's6', 'clienteId' => 'c3', 'bib' => 'Domínio .co.mz', 'descricao' => 'Domínio da agência, renovação anual automática.', 'nome' => 'Domínio cmdigital.co.mz', 'plano' => 'Domínio .co.mz', 'categoria' => 'dominio', 'valor' => 800, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '08/09/2024', 'vencimento' => '08/09/2026', 'status' => 'a_vencer', 'dias' => 9],
-            ['id' => 's7', 'clienteId' => 'c3', 'bib' => 'Manutenção de site', 'descricao' => 'Manutenção mensal do site: actualizações, backups e 4h de alterações.', 'nome' => 'Manutenção do site', 'plano' => '4h / mês', 'categoria' => 'manutencao', 'valor' => 2500, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '01/08/2026', 'vencimento' => '01/09/2026', 'status' => 'vencido', 'dias' => -1],
-            ['id' => 's8', 'clienteId' => 'c4', 'bib' => 'Claude', 'descricao' => 'Acesso individual usado para análise de documentos.', 'nome' => 'Claude', 'plano' => 'Acesso individual', 'categoria' => 'ia', 'valor' => 700, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '15/08/2026', 'vencimento' => '15/09/2026', 'status' => 'activo', 'dias' => 16],
-            ['id' => 's9', 'clienteId' => 'c4', 'bib' => 'Email corporativo', 'descricao' => '5 contas de email corporativo com webmail e antispam.', 'nome' => 'Email corporativo', 'plano' => '5 contas', 'categoria' => 'email', 'valor' => 1200, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '09/09/2025', 'vencimento' => '09/09/2026', 'status' => 'a_vencer', 'dias' => 10],
-            ['id' => 's10', 'clienteId' => 'c5', 'bib' => 'ChatGPT', 'descricao' => 'Acesso suspenso por falta de pagamento; conta ainda não removida.', 'nome' => 'ChatGPT', 'plano' => 'Acesso Equipe', 'categoria' => 'ia', 'valor' => 500, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '05/07/2026', 'vencimento' => '05/08/2026', 'status' => 'suspenso', 'dias' => -25],
-            ['id' => 's11', 'clienteId' => 'c2', 'bib' => 'Hospedagem Business', 'descricao' => 'Alojamento partilhado do site da loja online, 5 GB SSD.', 'nome' => 'Hospedagem', 'plano' => 'Plano Start', 'categoria' => 'hospedagem', 'valor' => 900, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '28/08/2026', 'vencimento' => '28/08/2027', 'status' => 'activo', 'dias' => 363],
+            ['id' => 's1', 'clienteId' => 'c1', 'bib' => 'Seguro', 'descricao' => 'Seguro multirriscos do escritório, renovação anual.', 'nome' => 'Seguro do escritório', 'plano' => 'Multirriscos', 'categoria' => 'outro', 'valor' => 12000, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '02/09/2025', 'vencimento' => '02/09/2026', 'status' => 'a_vencer', 'dias' => 3],
+            ['id' => 's2', 'clienteId' => 'c1', 'bib' => 'Domínio .co.mz', 'descricao' => 'Registo e renovação do domínio da empresa.', 'nome' => 'silvaconsultoria.co.mz', 'plano' => 'Domínio .co.mz', 'categoria' => 'dominio', 'valor' => 800, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '02/09/2025', 'vencimento' => '02/09/2027', 'status' => 'activo', 'dias' => 368],
+            ['id' => 's3', 'clienteId' => 'c1', 'bib' => 'Contabilidade', 'descricao' => 'Avença mensal: contabilidade, salários e declarações fiscais.', 'nome' => 'Contabilidade', 'plano' => 'Avença mensal', 'categoria' => 'consultoria', 'valor' => 4500, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '01/09/2026', 'vencimento' => '01/10/2026', 'status' => 'activo', 'dias' => 32],
+            ['id' => 's4', 'clienteId' => 'c2', 'bib' => 'Explicações', 'descricao' => 'Explicações de Matemática, duas vezes por semana.', 'nome' => 'Explicações de Matemática', 'plano' => '2x por semana', 'categoria' => 'consultoria', 'valor' => 1500, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '05/08/2026', 'vencimento' => '05/09/2026', 'status' => 'a_vencer', 'dias' => 6],
+            ['id' => 's5', 'clienteId' => 'c2', 'bib' => 'Mensalidade', 'descricao' => 'Inscrição anual no ginásio, acesso livre.', 'nome' => 'Ginásio', 'plano' => 'Plano anual', 'categoria' => 'outro', 'valor' => 18000, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '20/10/2025', 'vencimento' => '20/10/2026', 'status' => 'activo', 'dias' => 51],
+            ['id' => 's6', 'clienteId' => 'c3', 'bib' => 'Manutenção', 'descricao' => 'Quatro visitas por ano aos aparelhos de ar condicionado.', 'nome' => 'Manutenção de ar condicionado', 'plano' => '4 visitas / ano', 'categoria' => 'manutencao', 'valor' => 7200, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '08/09/2024', 'vencimento' => '08/09/2026', 'status' => 'a_vencer', 'dias' => 9],
+            ['id' => 's7', 'clienteId' => 'c3', 'bib' => 'Limpeza', 'descricao' => 'Limpeza semanal do escritório, materiais incluídos.', 'nome' => 'Limpeza do escritório', 'plano' => 'Semanal', 'categoria' => 'manutencao', 'valor' => 6000, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '01/08/2026', 'vencimento' => '01/09/2026', 'status' => 'vencido', 'dias' => -1],
+            ['id' => 's8', 'clienteId' => 'c4', 'bib' => 'Segurança e vigilância', 'descricao' => 'Guarda nocturno e monitorização do alarme.', 'nome' => 'Vigilância 24h', 'plano' => 'Guarda + alarme', 'categoria' => 'seguranca', 'valor' => 8500, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '15/08/2026', 'vencimento' => '15/09/2026', 'status' => 'activo', 'dias' => 16],
+            ['id' => 's9', 'clienteId' => 'c4', 'bib' => 'Renda', 'descricao' => 'Arrendamento do armazém, pago anualmente.', 'nome' => 'Renda do armazém', 'plano' => 'Contrato anual', 'categoria' => 'outro', 'valor' => 96000, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '09/09/2025', 'vencimento' => '09/09/2026', 'status' => 'a_vencer', 'dias' => 10],
+            ['id' => 's10', 'clienteId' => 'c5', 'bib' => 'Internet', 'descricao' => 'Plano de internet por fibra; suspenso por falta de pagamento.', 'nome' => 'Internet fibra', 'plano' => '100 Mbps', 'categoria' => 'telefonia', 'valor' => 1800, 'periodo' => 'mes', 'periodicidade' => 'mensal', 'inicio' => '05/07/2026', 'vencimento' => '05/08/2026', 'status' => 'suspenso', 'dias' => -25],
+            ['id' => 's11', 'clienteId' => 'c2', 'bib' => 'Alojamento de site', 'descricao' => 'Alojamento do site da loja online.', 'nome' => 'Alojamento do site', 'plano' => 'Plano Start', 'categoria' => 'hospedagem', 'valor' => 900, 'periodo' => 'ano', 'periodicidade' => 'anual', 'inicio' => '28/08/2026', 'vencimento' => '28/08/2027', 'status' => 'activo', 'dias' => 363],
         ];
 
         $porId = [];
@@ -184,15 +188,15 @@ class DatabaseSeeder extends Seeder
     {
         $linhas = [
             ['data' => '30/08/2026', 'clienteId' => 'c2', 'servicoId' => 's11', 'valor' => 900, 'metodo' => 'mpesa', 'periodo' => '1 ano'],
-            ['data' => '28/08/2026', 'clienteId' => 'c2', 'servicoId' => 's4', 'valor' => 500, 'metodo' => 'transferencia', 'periodo' => '1 mês'],
-            ['data' => '20/08/2026', 'clienteId' => 'c4', 'servicoId' => 's8', 'valor' => 700, 'metodo' => 'emola', 'periodo' => '1 mês'],
-            ['data' => '15/08/2026', 'clienteId' => 'c1', 'servicoId' => 's3', 'valor' => 500, 'metodo' => 'mpesa', 'periodo' => '1 mês'],
-            ['data' => '12/08/2026', 'clienteId' => 'c3', 'servicoId' => 's7', 'valor' => 2500, 'metodo' => 'dinheiro', 'periodo' => '1 mês'],
-            ['data' => '04/08/2026', 'clienteId' => 'c4', 'servicoId' => 's9', 'valor' => 1200, 'metodo' => 'transferencia', 'periodo' => '1 ano'],
-            ['data' => '18/08/2026', 'clienteId' => 'c1', 'servicoId' => 's1', 'valor' => 1500, 'metodo' => 'mpesa', 'periodo' => '1 ano'],
-            ['data' => '14/08/2026', 'clienteId' => 'c2', 'servicoId' => 's5', 'valor' => 1000, 'metodo' => 'emola', 'periodo' => '1 ano'],
-            ['data' => '11/08/2026', 'clienteId' => 'c3', 'servicoId' => 's6', 'valor' => 800, 'metodo' => 'transferencia', 'periodo' => '1 ano'],
-            ['data' => '08/08/2026', 'clienteId' => 'c4', 'servicoId' => 's8', 'valor' => 700, 'metodo' => 'mpesa', 'periodo' => '1 mês'],
+            ['data' => '28/08/2026', 'clienteId' => 'c2', 'servicoId' => 's4', 'valor' => 1500, 'metodo' => 'transferencia', 'periodo' => '1 mês'],
+            ['data' => '20/08/2026', 'clienteId' => 'c4', 'servicoId' => 's8', 'valor' => 8500, 'metodo' => 'emola', 'periodo' => '1 mês'],
+            ['data' => '15/08/2026', 'clienteId' => 'c1', 'servicoId' => 's3', 'valor' => 4500, 'metodo' => 'mpesa', 'periodo' => '1 mês'],
+            ['data' => '12/08/2026', 'clienteId' => 'c3', 'servicoId' => 's7', 'valor' => 6000, 'metodo' => 'dinheiro', 'periodo' => '1 mês'],
+            ['data' => '04/08/2026', 'clienteId' => 'c4', 'servicoId' => 's9', 'valor' => 96000, 'metodo' => 'transferencia', 'periodo' => '1 ano'],
+            ['data' => '18/08/2026', 'clienteId' => 'c1', 'servicoId' => 's1', 'valor' => 12000, 'metodo' => 'mpesa', 'periodo' => '1 ano'],
+            ['data' => '14/08/2026', 'clienteId' => 'c2', 'servicoId' => 's5', 'valor' => 18000, 'metodo' => 'emola', 'periodo' => '1 ano'],
+            ['data' => '11/08/2026', 'clienteId' => 'c3', 'servicoId' => 's6', 'valor' => 7200, 'metodo' => 'transferencia', 'periodo' => '1 ano'],
+            ['data' => '08/08/2026', 'clienteId' => 'c4', 'servicoId' => 's8', 'valor' => 8500, 'metodo' => 'mpesa', 'periodo' => '1 mês'],
             ['data' => '02/08/2026', 'clienteId' => 'c1', 'servicoId' => 's2', 'valor' => 800, 'metodo' => 'mpesa', 'periodo' => '1 ano'],
         ];
 
@@ -215,10 +219,10 @@ class DatabaseSeeder extends Seeder
     private function seedHistoricoExemplo(array $clientes, array $servicos): void
     {
         // Ported verbatim from data.js's `historico` array, which narrates s1's
-        // (Hospedagem, cliente c1) life from creation to its most recent reminders.
+        // (Seguro do escritório, cliente c1) life from creation to its most recent reminders.
         $linhas = [
-            ['data' => '01/09/2025', 'title' => 'Serviço criado', 'description' => 'Hospedagem — Plano Business', 'kind' => 'criado'],
-            ['data' => '02/09/2025', 'title' => 'Pagamento recebido', 'description' => '1.500 MZN — M-Pesa · 1 ano', 'kind' => 'pagamento'],
+            ['data' => '01/09/2025', 'title' => 'Serviço criado', 'description' => 'Seguro do escritório — Multirriscos', 'kind' => 'criado'],
+            ['data' => '02/09/2025', 'title' => 'Pagamento recebido', 'description' => '12.000 MZN — M-Pesa · 1 ano', 'kind' => 'pagamento'],
             ['data' => '02/09/2025', 'title' => 'Serviço activado', 'description' => null, 'kind' => 'activado'],
             ['data' => '03/08/2026', 'title' => 'Lembrete enviado', 'description' => '30 dias antes — joao@email.com', 'kind' => 'lembrete'],
             ['data' => '18/08/2026', 'title' => 'Lembrete enviado', 'description' => '15 dias antes — joao@email.com', 'kind' => 'lembrete'],

@@ -5,6 +5,7 @@ namespace App\Livewire\Servicos;
 use App\Enums\ClienteStatus;
 use App\Enums\Periodicidade;
 use App\Enums\Periodo;
+use App\Livewire\Concerns\RespeitaPlano;
 use App\Models\BibliotecaServico;
 use App\Models\Cliente;
 use App\Models\Historico;
@@ -12,6 +13,7 @@ use App\Models\MetodoPagamentoOpcao;
 use App\Models\Servico;
 use App\Models\ServicoLembreteConfig;
 use App\Services\ServicoStatusService;
+use App\Support\ContaActual;
 use App\Support\Valor;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -32,6 +34,8 @@ use Livewire\Component;
  */
 class NewSubscriptionDialog extends Component
 {
+    use RespeitaPlano;
+
     /** @var list<array{value: string, label: string}> */
     private const PERIODICIDADE_OPTIONS = [
         ['value' => 'mensal', 'label' => 'Mensal'],
@@ -188,7 +192,7 @@ class NewSubscriptionDialog extends Component
     protected function rules(): array
     {
         $rules = [
-            'bibliotecaServicoId' => ['required', 'integer', Rule::exists('biblioteca_servicos', 'id')],
+            'bibliotecaServicoId' => ['required', 'integer', Rule::exists('biblioteca_servicos', 'id')->where('conta_id', ContaActual::id())],
             'clienteSelecionado' => ['required', 'string'],
             'valor' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
             'periodicidade' => ['required', Rule::enum(Periodicidade::class)],
@@ -201,7 +205,7 @@ class NewSubscriptionDialog extends Component
 
         if ($this->novoCliente) {
             $rules['novoClienteNome'] = ['required', 'string', 'max:255'];
-            $rules['novoClienteEmail'] = ['required', 'string', 'email', 'max:255', Rule::unique('clientes', 'email')];
+            $rules['novoClienteEmail'] = ['required', 'string', 'email', 'max:255', Rule::unique('clientes', 'email')->where('conta_id', ContaActual::id())];
         }
 
         return $rules;
@@ -212,6 +216,10 @@ class NewSubscriptionDialog extends Component
         // "2.500" is 2500 here, as in the personal panel (not 2.5).
         $this->valor = Valor::normalizar($this->valor);
         $data = $this->validate();
+
+        if ($this->bloqueadoPeloPlano('servicos') || ($this->novoCliente && $this->bloqueadoPeloPlano('clientes'))) {
+            return;
+        }
 
         $servico = DB::transaction(function () use ($data) {
             if ($this->novoCliente) {

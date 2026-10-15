@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Enums\ServicoStatus;
+use App\Livewire\Concerns\RespeitaPlano;
 use App\Models\Configuracao;
 use App\Models\Servico;
 use App\Services\RelatorioPdf;
@@ -20,6 +21,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 #[Title('Dashboard')]
 class Dashboard extends Component
 {
+    use RespeitaPlano;
+
     /**
      * @return array{
      *     entradas: float, nPagamentos: int,
@@ -76,8 +79,12 @@ class Dashboard extends Component
      * here). Mirrors PagamentosIndex::exportarCsv()'s exact CSV conventions
      * (UTF-8 BOM, semicolon delimiter, dd/mm/aaaa dates, dot-thousands MZN).
      */
-    public function exportarCsv(): StreamedResponse
+    public function exportarCsv(): ?StreamedResponse
     {
+        if ($this->bloqueadoPeloPlano('exportar')) {
+            return null;
+        }
+
         $servicos = $this->proximosVencimentos;
 
         $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
@@ -96,8 +103,12 @@ class Dashboard extends Component
     }
 
     /** Same "próximos vencimentos" rows as exportarCsv(), through the shared relatório template. */
-    public function exportarPdf(): StreamedResponse
+    public function exportarPdf(): ?StreamedResponse
     {
+        if ($this->bloqueadoPeloPlano('exportar')) {
+            return null;
+        }
+
         $servicos = $this->proximosVencimentos;
 
         $linhas = $servicos->map(fn (Servico $s) => [

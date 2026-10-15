@@ -82,25 +82,46 @@ Em **Cron Jobs**, uma vez por dia às 07:00:
 0 7 * * * cd /home/utilizador/vencia_app && php artisan vencia:verificar-vencimentos
 ```
 
-E uma segunda tarefa, às 03:00, para a **cópia de segurança diária** (guarda as últimas 14 em `storage/app/copias` e envia a nova por email para o email da empresa):
+Esta tarefa percorre todas as contas, cada uma com os seus lembretes, modelos e servidor de email.
+
+Uma segunda tarefa, às 06:30, para os **planos** (avisa os donos 7 dias e 1 dia antes do fim do plano pago e passa para o Grátis as contas cujo plano terminou):
+
+```
+30 6 * * * cd /home/utilizador/vencia_app && php artisan vencia:planos
+```
+
+E uma terceira, às 03:00, para a **cópia de segurança diária** de toda a base de dados (guarda as últimas 14 em `storage/app/copias` e envia a nova por email ao super-admin):
 
 ```
 0 3 * * * cd /home/utilizador/vencia_app && php artisan vencia:copia-seguranca
 ```
 
-Também podes criar e descarregar uma cópia a qualquer momento em Configurações → Empresa → Cópias de segurança. Para restaurar: phpMyAdmin → base de dados vazia → Importar o ficheiro `.sql.gz`.
+Também podes criar e descarregar uma cópia a qualquer momento em Admin → Plataforma → Cópias de segurança (só o super-admin vê esta opção, porque a cópia tem os dados de todas as contas). Para restaurar: phpMyAdmin → base de dados vazia → Importar o ficheiro `.sql.gz`.
 
-Em produção, qualquer erro inesperado é enviado por email para o email da empresa (no máximo uma vez por hora para o mesmo erro). Desliga-se com `ALERTAS_ERRO=false` no `.env`.
+Em produção, qualquer erro inesperado é enviado por email ao super-admin (no máximo uma vez por hora para o mesmo erro). Desliga-se com `ALERTAS_ERRO=false` no `.env`.
 
 A primeira tarefa, `vencia:verificar-vencimentos`, é a que envia os lembretes por email. Os **estados** dos serviços (activo / a vencer / vencido) acertam-se também sozinhos no primeiro acesso de cada dia, por isso os totais nunca ficam errados mesmo num dia em que a tarefa falhe — e um lembrete que falhe num dia é recuperado no seguinte.
 
 ## 8. Depois de publicar
 
-- [ ] Entra com o `ADMIN_EMAIL`/`ADMIN_PASSWORD` do `.env` de produção.
-- [ ] Em Configurações → Empresa, preenche nome, email, logótipo e o SMTP; usa **Enviar email de teste**.
+- [ ] Entra com o `ADMIN_EMAIL`/`ADMIN_PASSWORD` do `.env` de produção. Esta conta é o **super-admin** da plataforma (vê o separador **Admin**) e tem a sua própria empresa no plano Pro, sem data de fim.
+- [ ] Em **Admin → Plataforma**, preenche o **SMTP da plataforma** (é por ele que saem a confirmação de conta, as passwords, os convites e os emails das empresas sem servidor próprio) e os **dados de pagamento** (M-Pesa, e-Mola, banco) que os clientes vêem ao pedir o Pro. Usa **Testar emails da plataforma**.
+- [ ] Em **Admin → Planos**, confirma os preços e os limites do Grátis e do Pro.
+- [ ] Em Configurações → Empresa, preenche nome, email e logótipo da tua empresa.
 - [ ] Corre a verificação uma vez à mão (Terminal, ou o truque do Cron do passo 6) para confirmar que funciona.
 
 > ⚠️ Nunca publiques o `.env` de desenvolvimento por cima do de produção — tem a password da tua base de dados local e a chave da app antiga. Mudar a `APP_KEY` depois de configurado o SMTP obriga a reintroduzir a password SMTP.
+
+## Actualizar uma instalação antiga para a versão com contas
+
+A migração `2026_10_15_000002` converte sozinha uma instalação que já tem dados:
+
+- tudo o que existe (clientes, serviços, pagamentos, configurações) passa a ser **uma conta**, com o nome da empresa;
+- o utilizador do `ADMIN_EMAIL` (ou o primeiro) fica **dono** dessa conta e **super-admin**; outros utilizadores ficam como gestores;
+- a conta fica no plano **Pro sem data de fim**, e os números dos recibos antigos não mudam;
+- o SMTP que estava configurado passa a ser também o SMTP da plataforma.
+
+Antes de actualizar, faz uma cópia de segurança. Depois do `migrate --force`, acrescenta a tarefa `vencia:planos` ao Cron (passo 7).
 
 ## 9. Segurança e telemóvel
 

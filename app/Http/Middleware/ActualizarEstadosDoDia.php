@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\ServicoStatusService;
+use App\Support\ContaActual;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -21,9 +22,10 @@ class ActualizarEstadosDoDia
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $chave = 'estados-servicos:'.Carbon::today()->toDateString();
+        $conta = ContaActual::id();
+        $chave = 'estados-servicos:'.$conta.':'.Carbon::today()->toDateString();
 
-        if (Cache::add($chave, true, Carbon::tomorrow())) {
+        if ($conta && Cache::add($chave, true, Carbon::tomorrow())) {
             try {
                 app(ServicoStatusService::class)->sincronizarTodos();
             } catch (Throwable $e) {

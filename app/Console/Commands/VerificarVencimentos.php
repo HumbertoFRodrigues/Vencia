@@ -27,7 +27,8 @@ class VerificarVencimentos extends Command
         }
 
         $this->info(sprintf(
-            'Serviços avaliados: %d | Estados alterados: %d | Lembretes enviados: %d | Lembretes falhados: %d',
+            'Contas: %d | Serviços avaliados: %d | Estados alterados: %d | Lembretes enviados: %d | Lembretes falhados: %d',
+            $resumo['contas'],
             $resumo['servicos_avaliados'],
             $resumo['estados_alterados'],
             $resumo['lembretes_enviados'],
