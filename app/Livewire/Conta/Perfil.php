@@ -3,10 +3,12 @@
 namespace App\Livewire\Conta;
 
 use App\Enums\Papel;
+use App\Services\DadosDaConta;
 use App\Services\Equipa;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Computed;
@@ -14,6 +16,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 /**
@@ -33,6 +36,10 @@ class Perfil extends Component
     public string $passwordNova = '';
 
     public string $passwordNova_confirmation = '';
+
+    public string $confirmarApagar = '';
+
+    public string $passwordApagar = '';
 
     public function mount(): void
     {
@@ -112,6 +119,60 @@ class Perfil extends Component
 
         $this->reset('passwordActual', 'passwordNova', 'passwordNova_confirmation');
         $this->dispatch('toast', title: 'Palavra-passe alterada', body: 'As outras sessões abertas foram terminadas.', tone: 'success');
+    }
+
+    public function exportarPessoal(): BinaryFileResponse
+    {
+        return response()->download(app(DadosDaConta::class)->zipPessoal(), 'vencia-o-meu-pessoal.zip')->deleteFileAfterSend();
+    }
+
+    /** The whole business, for its dono only. */
+    public function exportarEmpresa(int $contaId): ?BinaryFileResponse
+    {
+        $conta = auth()->user()->contas()->wherePivot('papel', Papel::Dono->value)->find($contaId);
+        abort_unless($conta, 403);
+
+        return response()->download(app(DadosDaConta::class)->zipEmpresa($conta), 'vencia-'.Str::slug($conta->nome).'.zip')->deleteFileAfterSend();
+    }
+
+    /** What would happen if this account were deleted (shown before the button). */
+    #[Computed]
+    public function planoApagar(): array
+    {
+        return app(DadosDaConta::class)->planoParaApagar(auth()->user());
+    }
+
+    public function apagarConta(): void
+    {
+        $user = auth()->user();
+
+        $this->validate(['confirmarApagar' => ['required']], [], ['confirmarApagar' => 'confirmação']);
+
+        if (mb_strtoupper(trim($this->confirmarApagar)) !== 'APAGAR' || ! Hash::check($this->passwordApagar, $user->password)) {
+            $this->addError('confirmarApagar', 'Escreve APAGAR e a tua palavra-passe actual para confirmar.');
+
+            return;
+        }
+
+        $bloqueios = app(DadosDaConta::class)->planoParaApagar($user)['bloqueios'];
+        if ($bloqueios !== []) {
+            $this->addError('confirmarApagar', $bloqueios[0]);
+
+            return;
+        }
+
+        // Sign out first: logging out saves the user (remember token), which after deleting would re-create it.
+        auth()->guard('web')->logout();
+        session()->invalidate();
+        session()->regenerateToken();
+
+        app(DadosDaConta::class)->apagarUtilizador($user);
+
+        session()->flash('status', 'A tua conta foi apagada. Obrigado por teres usado a Vencia.');
+
+        // There is no user left to draw this page for.
+        $this->skipRender();
+        $this->redirectRoute('login');
     }
 
     public function sair(int $contaId): void

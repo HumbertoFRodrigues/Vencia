@@ -65,7 +65,7 @@ class ConfiguracoesIndex extends Component
 
     public string $novoNome = '';
 
-    public string $novaCategoria = 'software';
+    public string $novaCategoria = 'outro';
 
     public ?string $novaDescricao = null;
 
@@ -226,7 +226,7 @@ class ConfiguracoesIndex extends Component
         $this->resetValidation();
         $this->editandoId = null;
         $this->novoNome = '';
-        $this->novaCategoria = ServicoCategoria::Software->value;
+        $this->novaCategoria = ServicoCategoria::Outro->value;
         $this->novaDescricao = null;
         $this->novoLogo = null;
     }

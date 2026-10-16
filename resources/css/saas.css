@@ -72,3 +72,21 @@ a.auth-card__brand { text-decoration: none; }
 .passos-iniciais__item--feito { background: var(--surface-app); }
 .passos-iniciais__item--feito .passos-iniciais__marca { background: var(--status-active-bg); color: var(--status-active-fg); }
 .passos-iniciais__item--feito strong { color: var(--text-muted); text-decoration: line-through; }
+
+/* Category tints for the everyday (non-IT) service categories */
+:root {
+  --cat-educacao-bg: #fff4e0; --cat-educacao-fg: #8a5300;
+  --cat-saude-bg: #fdecec; --cat-saude-fg: #a42828;
+  --cat-imoveis-bg: #eaf5ec; --cat-imoveis-fg: #1f6b35;
+  --cat-financas-bg: #e9f3f7; --cat-financas-fg: #1d5c75;
+  --cat-seguros-bg: #f1edf9; --cat-seguros-fg: #5a3c99;
+  --cat-transporte-bg: #eef2f6; --cat-transporte-fg: #3e5871;
+}
+[data-theme="dark"] {
+  --cat-educacao-bg: #2c2313; --cat-educacao-fg: #f0c073;
+  --cat-saude-bg: #2e1715; --cat-saude-fg: #f2a19a;
+  --cat-imoveis-bg: #122a1c; --cat-imoveis-fg: #7fd09a;
+  --cat-financas-bg: #12252e; --cat-financas-fg: #86c6dd;
+  --cat-seguros-bg: #221a33; --cat-seguros-fg: #c3aef0;
+  --cat-transporte-bg: #1c222b; --cat-transporte-fg: #a9b9c9;
+}

@@ -30,6 +30,7 @@ class Actividade extends Component
         'user.reposicao_enviada' => 'Link de reposição enviado',
         'user.super_admin' => 'Tornado super-admin',
         'user.sem_super_admin' => 'Deixou de ser super-admin',
+        'user.apagou_conta' => 'Utilizador apagou a conta',
         'plano.criado' => 'Plano criado',
         'plano.editado' => 'Plano editado',
         'plataforma.smtp' => 'SMTP da plataforma',

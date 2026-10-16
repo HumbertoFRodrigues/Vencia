@@ -34,6 +34,9 @@
                                 <span class="lista-simples__meta">{{ $papel->label() }} · plano {{ $c->planoEfectivo()->nome }}</span>
                             </div>
                             <div class="lista-simples__accoes">
+                                @if($papel === $papeis::Dono)
+                                    <x-ui.icon-button size="sm" icon="download" label="Exportar os dados desta empresa (ZIP)" wire:click="exportarEmpresa({{ $c->id }})" />
+                                @endif
                                 @if($c->id !== $actual)
                                     <form method="POST" action="{{ route('conta.mudar') }}">
                                         @csrf
@@ -54,6 +57,43 @@
             </x-ui.card>
 
             <livewire:configuracoes.seguranca />
+
+            <x-ui.card title="Exportar os teus dados" subtitle="Uma cópia de tudo, em ficheiros que abrem no Excel.">
+                <div class="pilha pilha--12">
+                    <p class="pessoal-muted" style="margin:0">O teu painel pessoal: movimentos, fixos mensais, categorias, saldos e metas. Os dados de cada empresa de que és dono descarregam-se no ícone <x-ui.icon name="download" size="13" /> ao lado dela.</p>
+                    <div><x-ui.button size="sm" icon="download" wire:click="exportarPessoal">Exportar o meu painel pessoal</x-ui.button></div>
+                </div>
+            </x-ui.card>
         </div>
     </div>
+
+    @php
+        $plano = $this->planoApagar;
+    @endphp
+    <x-ui.card title="Apagar a minha conta" subtitle="Definitivo: não pode ser desfeito. Exporta primeiro o que quiseres guardar.">
+        <div class="pilha pilha--12">
+            @if($plano['bloqueios'])
+                @foreach($plano['bloqueios'] as $motivo)
+                    <x-ui.alert-banner tone="warning">{{ $motivo }}</x-ui.alert-banner>
+                @endforeach
+            @else
+                <ul class="lista-check" style="font-size:var(--text-sm)">
+                    <li><x-ui.icon name="x" size="15" color="var(--money-out)" /> O teu utilizador e todo o teu painel pessoal são apagados.</li>
+                    @foreach($plano['apagar'] as $c)
+                        <li><x-ui.icon name="x" size="15" color="var(--money-out)" /> A empresa "{{ $c->nome }}" (és o único membro) é apagada com os clientes, serviços e pagamentos.</li>
+                    @endforeach
+                    @foreach($plano['sair'] as $c)
+                        <li><x-ui.icon name="check" size="15" /> Sais da equipa de "{{ $c->nome }}"; os dados da empresa ficam.</li>
+                    @endforeach
+                </ul>
+                <form wire:submit="apagarConta" class="grelha-2" style="align-items:end">
+                    <x-ui.input label="Escreve APAGAR" wire:model="confirmarApagar" autocomplete="off" :error="$errors->first('confirmarApagar')" />
+                    <x-ui.input label="Palavra-passe actual" type="password" wire:model="passwordApagar" autocomplete="current-password" />
+                    <div class="linha-accoes" style="grid-column:1 / -1">
+                        <x-ui.button type="submit" size="sm" variant="danger" icon="trash-2">Apagar a minha conta</x-ui.button>
+                    </div>
+                </form>
+            @endif
+        </div>
+    </x-ui.card>
 </div>

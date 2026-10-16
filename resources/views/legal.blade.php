@@ -32,7 +32,7 @@
                 <p>Não podes usar a Vencia para enviar mensagens não solicitadas (spam), para actividades ilegais, nem tentar aceder a dados de outras contas. Podemos suspender uma conta que viole estes termos, avisando o dono sempre que possível.</p>
 
                 <h2>5. Os teus dados</h2>
-                <p>Os dados que registas são teus. Tratamo-los como descrito na <a href="{{ route('privacidade') }}">Política de privacidade</a>. Podes pedir uma cópia ou a eliminação da tua conta a qualquer momento.</p>
+                <p>Os dados que registas são teus. Tratamo-los como descrito na <a href="{{ route('privacidade') }}">Política de privacidade</a>. Podes descarregar uma cópia dos teus dados ou apagar a tua conta a qualquer momento, em O meu perfil.</p>
 
                 <h2>6. Disponibilidade e responsabilidade</h2>
                 <p>Fazemos cópias de segurança diárias e trabalhamos para manter o serviço sempre disponível, mas podem ocorrer interrupções. A Vencia é fornecida tal como está; não somos responsáveis por perdas indirectas resultantes de interrupções, de emails não entregues ou de dados mal introduzidos.</p>
@@ -64,7 +64,7 @@
                 <p>Enquanto a conta existir. Se pedires a eliminação, apagamos os dados da empresa e da conta; as cópias de segurança são substituídas ao fim de 14 dias.</p>
 
                 <h2>6. Os teus direitos</h2>
-                <p>Podes consultar e corrigir os teus dados na própria Vencia e pedir uma cópia ou a eliminação da conta @if($contacto)escrevendo para <a href="mailto:{{ $contacto }}">{{ $contacto }}</a>@endif.</p>
+                <p>Podes consultar e corrigir os teus dados na própria Vencia, e em <strong>O meu perfil</strong> descarregar uma cópia (ficheiros CSV) ou apagar a tua conta.@if($contacto) Para qualquer dúvida, escreve para <a href="mailto:{{ $contacto }}">{{ $contacto }}</a>.@endif</p>
             @endif
         </article>
     </main>

@@ -3,17 +3,11 @@
 namespace App\Livewire\Admin;
 
 use App\Models\ActividadeAdmin;
-use App\Models\Cliente;
 use App\Models\Conta;
-use App\Models\Historico;
-use App\Models\Pagamento;
 use App\Models\Plano;
-use App\Models\Retirada;
-use App\Models\Servico;
+use App\Services\DadosDaConta;
 use App\Services\Faturacao;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -104,26 +98,7 @@ class ContaDetalhe extends Component
             return;
         }
 
-        $faturas = $conta->faturas()->pluck('id');
-
-        // Payments are protected against deletion (restrictOnDelete); remove the business rows in order first.
-        DB::transaction(function () use ($conta): void {
-            Pagamento::withoutGlobalScope('conta')->where('conta_id', $conta->id)->delete();
-            // The members' personal panels are theirs: the "Retirada da empresa" entries stay, just unlinked.
-            $retiradas = Retirada::withoutGlobalScope('conta')->where('conta_id', $conta->id)->pluck('id');
-            DB::table('movimentos_pessoais')->whereIn('retirada_id', $retiradas)->update(['retirada_id' => null]);
-            Retirada::withoutGlobalScope('conta')->where('conta_id', $conta->id)->delete();
-            Historico::withoutGlobalScope('conta')->where('conta_id', $conta->id)->toBase()->delete();
-            Servico::withoutGlobalScope('conta')->where('conta_id', $conta->id)->delete();
-            Cliente::withoutGlobalScope('conta')->where('conta_id', $conta->id)->delete();
-            $conta->delete();
-        });
-
-        // Uploaded logos and payment proofs go with it.
-        Storage::disk('public')->deleteDirectory('contas/'.$conta->id);
-        foreach ($faturas as $faturaId) {
-            Storage::disk('local')->deleteDirectory('faturas/'.$faturaId);
-        }
+        app(DadosDaConta::class)->apagarConta($conta);
 
         ActividadeAdmin::registar('conta.apagada', 'conta:'.$conta->id, $conta->nome);
         session()->flash('toast', ['title' => 'Conta apagada', 'body' => $conta->nome]);

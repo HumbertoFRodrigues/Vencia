@@ -100,12 +100,12 @@ class PrepararConta
     {
         // A mix of everyday recurring services, not only IT: each business edits, archives or adds its own.
         $servicos = [
-            'Mensalidade' => ['outro', 'Valor fixo cobrado todos os meses (ginásio, escola, clube, associação).'],
-            'Explicações' => ['consultoria', 'Aulas ou explicações cobradas por mês.'],
-            'Renda' => ['outro', 'Arrendamento de casa, loja ou escritório.'],
-            'Contabilidade' => ['consultoria', 'Avença mensal de contabilidade e impostos.'],
+            'Mensalidade' => ['saude', 'Valor fixo cobrado todos os meses (ginásio, escola, clube, associação).'],
+            'Explicações' => ['educacao', 'Aulas ou explicações cobradas por mês.'],
+            'Renda' => ['imoveis', 'Arrendamento de casa, loja ou escritório.'],
+            'Contabilidade' => ['financas', 'Avença mensal de contabilidade e impostos.'],
             'Consultoria' => ['consultoria', 'Horas de consultoria ou acompanhamento mensal.'],
-            'Seguro' => ['outro', 'Prémio de seguro com renovação anual.'],
+            'Seguro' => ['seguros', 'Prémio de seguro com renovação anual.'],
             'Limpeza' => ['manutencao', 'Serviço de limpeza regular.'],
             'Manutenção' => ['manutencao', 'Manutenção preventiva de equipamentos ou instalações.'],
             'Segurança e vigilância' => ['seguranca', 'Guarda, alarme ou monitorização mensal.'],
