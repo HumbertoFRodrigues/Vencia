@@ -70,6 +70,20 @@ class RegistoEConvitesTest extends TestCase
         $this->get('/painel')->assertOk();
     }
 
+    public function test_the_confirmation_link_is_shown_only_when_testing_locally(): void
+    {
+        $this->actingAs(User::factory()->unverified()->create());
+        config(['mail.default' => 'log']);
+
+        $this->get('/confirmar-email')->assertOk()->assertDontSee('Confirmar o email agora');
+
+        $this->app['env'] = 'local';
+        $this->get('/confirmar-email')->assertOk()->assertSee('Confirmar o email agora');
+
+        $this->app['env'] = 'production';
+        $this->get('/confirmar-email')->assertDontSee('Confirmar o email agora');
+    }
+
     public function test_without_a_trial_new_contas_start_on_free(): void
     {
         Configuracao::guardarPlataforma('registo', ['aberto' => true, 'dias_teste' => 0]);
