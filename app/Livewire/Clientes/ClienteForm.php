@@ -3,7 +3,9 @@
 namespace App\Livewire\Clientes;
 
 use App\Enums\ClienteStatus;
+use App\Livewire\Concerns\RespeitaPlano;
 use App\Models\Cliente;
+use App\Support\ContaActual;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
@@ -22,6 +24,8 @@ use Livewire\Component;
  */
 class ClienteForm extends Component
 {
+    use RespeitaPlano;
+
     public bool $show = false;
 
     #[Locked]
@@ -76,7 +80,7 @@ class ClienteForm extends Component
             'nome' => ['required', 'string', 'max:255'],
             'email' => [
                 'required', 'string', 'email', 'max:255',
-                Rule::unique('clientes', 'email')->ignore($this->clienteId),
+                Rule::unique('clientes', 'email')->ignore($this->clienteId)->where('conta_id', ContaActual::id()),
             ],
             'tel' => ['nullable', 'string', 'max:50'],
             'empresa' => ['nullable', 'string', 'max:255'],
@@ -86,6 +90,10 @@ class ClienteForm extends Component
 
     public function guardar(): void
     {
+        if ($this->clienteId === null && $this->bloqueadoPeloPlano('clientes')) {
+            return;
+        }
+
         $data = $this->validate();
         $data['tel'] = $data['tel'] !== null && trim($data['tel']) === '' ? null : $data['tel'];
         $data['empresa'] = $data['empresa'] !== null && trim($data['empresa']) === '' ? null : $data['empresa'];

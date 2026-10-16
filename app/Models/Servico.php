@@ -6,6 +6,7 @@ use App\Enums\Periodicidade;
 use App\Enums\Periodo;
 use App\Enums\ServicoCategoria;
 use App\Enums\ServicoStatus;
+use App\Models\Concerns\PertenceAConta;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ use Illuminate\Support\Carbon;
 
 class Servico extends Model
 {
-    use HasFactory;
+    use HasFactory, PertenceAConta;
 
     protected $fillable = [
         'cliente_id', 'biblioteca_servico_id', 'nome', 'descricao', 'plano',

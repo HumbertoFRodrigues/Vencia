@@ -3,13 +3,14 @@
 namespace App\Support;
 
 use App\Models\Configuracao;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 /**
- * Emails the empresa when an unexpected error happens in production, so a
+ * Emails the platform's super-admin when an unexpected error happens in production, so a
  * problem is noticed without reading laravel.log. The same error (class +
  * file + line) is reported at most once an hour. Never throws: if the
  * database or the mail server is the thing that is down, it just gives up.
@@ -32,14 +33,14 @@ class AlertaErro
                 return;
             }
 
-            $destino = Configuracao::obter('empresa', [])['email'] ?? config('app.admin_email');
+            $destino = User::query()->where('super_admin', true)->orderBy('id')->value('email') ?? config('app.admin_email');
             if (! $destino) {
                 return;
             }
 
             [$assunto, $corpo] = self::mensagem($e);
 
-            Configuracao::aplicarSmtpEmTempoDeExecucao();
+            Configuracao::aplicarSmtpDaPlataforma();
             Mail::raw($corpo, fn ($m) => $m->to($destino)->subject($assunto));
         } catch (Throwable) {
             // Reporting must never cause a second failure.
@@ -59,7 +60,8 @@ class AlertaErro
             'Ocorreu um erro na Vencia ('.config('app.url').").\n\n"
             .'Quando: '.Carbon::now()->format('d/m/Y H:i:s')."\n"
             ."Pedido: {$pedido}\n"
-            .'Utilizador: '.(auth()->user()?->email ?? '—')."\n\n"
+            .'Utilizador: '.(auth()->user()?->email ?? '—')."\n"
+            .'Conta: '.(ContaActual::get()?->nome ?? '—')."\n\n"
             .'Erro: '.$e::class."\n".$e->getMessage()."\n"
             .'Em: '.$e->getFile().':'.$e->getLine()."\n\n"
             ."{$trace}\n\n"

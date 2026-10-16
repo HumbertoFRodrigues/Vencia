@@ -78,5 +78,11 @@
             closeEl.addEventListener('click', remove);
         });
     }
+
+    // A toast flashed by a plain redirect (sign-up, switching conta, accepting an invite).
+    const inicial = @js(session('toast'));
+    if (inicial && inicial.title) {
+        Livewire.dispatch('toast', { tone: 'success', ...inicial });
+    }
 </script>
 @endscript

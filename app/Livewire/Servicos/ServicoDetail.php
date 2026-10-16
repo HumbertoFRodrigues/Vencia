@@ -7,6 +7,7 @@ use App\Models\Historico;
 use App\Models\Servico;
 use App\Models\Suspensao;
 use App\Services\ServicoStatusService;
+use App\Support\ContaActual;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -26,6 +27,15 @@ class ServicoDetail extends Component
     ];
 
     public Servico $servico;
+
+    /**
+     * Livewire reloads the model property without the conta scope: if the user
+     * switched business in another tab, this page must not keep acting on the old one.
+     */
+    public function hydrate(): void
+    {
+        abort_unless($this->servico->conta_id === ContaActual::id(), 404);
+    }
 
     public function mount(Servico $servico): void
     {

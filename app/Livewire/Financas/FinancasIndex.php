@@ -3,6 +3,7 @@
 namespace App\Livewire\Financas;
 
 use App\Enums\ServicoStatus;
+use App\Livewire\Concerns\RespeitaPlano;
 use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
 use App\Models\Pagamento;
@@ -26,6 +27,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 #[Title('Finanças')]
 class FinancasIndex extends Component
 {
+    use RespeitaPlano;
+
     /**
      * @return array{
      *     entradas: float, nPagamentos: int,
@@ -138,6 +141,11 @@ class FinancasIndex extends Component
     public function anularRetirada(int $retiradaId): void
     {
         $retirada = Retirada::findOrFail($retiradaId);
+
+        // Undoing one also removes the entry from that person's private panel: only they may do it.
+        $this->authorize('retirar');
+        abort_unless($retirada->user_id === auth()->id(), 403);
+
         app(Retiradas::class)->anular($retirada);
 
         $this->dispatch('toast', title: 'Retirada anulada', body: FinancasPessoais::mzn((float) $retirada->valor).' — também saiu do painel pessoal.', tone: 'success');
@@ -152,8 +160,12 @@ class FinancasIndex extends Component
     }
 
     /** Streams the "A receber" table currently shown (vencido/a_vencer serviços) as a pt-PT-formatted CSV. */
-    public function exportarCsv(): StreamedResponse
+    public function exportarCsv(): ?StreamedResponse
     {
+        if ($this->bloqueadoPeloPlano('exportar')) {
+            return null;
+        }
+
         $servicos = $this->aReceber;
 
         $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
@@ -179,8 +191,12 @@ class FinancasIndex extends Component
      * decoration), so a bare row-list would leave out half of what this
      * screen actually reports.
      */
-    public function exportarPdf(): StreamedResponse
+    public function exportarPdf(): ?StreamedResponse
     {
+        if ($this->bloqueadoPeloPlano('exportar')) {
+            return null;
+        }
+
         $servicos = $this->aReceber;
         $totais = $this->totais;
 

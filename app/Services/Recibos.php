@@ -20,12 +20,18 @@ class Recibos
 {
     public static function referencia(Pagamento $pagamento): string
     {
-        return '#'.str_pad((string) $pagamento->id, 6, '0', STR_PAD_LEFT);
+        return '#'.self::numero($pagamento);
     }
 
     public static function nomeFicheiro(Pagamento $pagamento): string
     {
-        return 'recibo-'.str_pad((string) $pagamento->id, 6, '0', STR_PAD_LEFT).'.pdf';
+        return 'recibo-'.self::numero($pagamento).'.pdf';
+    }
+
+    /** Numbered per conta; the id only for a sample that was never saved. */
+    private static function numero(Pagamento $pagamento): string
+    {
+        return str_pad((string) ($pagamento->numero ?? $pagamento->id), 6, '0', STR_PAD_LEFT);
     }
 
     /** Suffix for the toast after recording a payment: whether the receipt went out. */
@@ -63,8 +69,7 @@ class Recibos
         $email = $pagamento->cliente?->email;
 
         // No real mailer yet (no SMTP saved, .env still on "log"): don't pretend it was sent.
-        $smtp = trim((string) (Configuracao::obter('smtp', [])['servidor'] ?? ''));
-        if (! $email || ($smtp === '' && config('mail.default') === 'log')) {
+        if (! $email || ! Configuracao::envioDisponivel()) {
             return false;
         }
 

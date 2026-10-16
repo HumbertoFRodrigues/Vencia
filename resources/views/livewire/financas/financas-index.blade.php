@@ -13,7 +13,9 @@
     <x-ui.page-header :eyebrow="$mesLabel" title="Finanças">
         <x-slot:actions>
             <x-ui.export-menu />
+            @can('retirar')
             <x-ui.button variant="primary" icon="wallet" wire:click="$dispatch('retirada:abrir')">Retirar para pessoal</x-ui.button>
+            @endcan
         </x-slot:actions>
     </x-ui.page-header>
 
@@ -21,6 +23,7 @@
         <x-ui.stat-card
             label="Entradas"
             :value="$totais['entradas']"
+            :currency="\App\Models\Configuracao::moeda()"
             tone="in"
             icon="arrow-down-to-line"
             :footnote="$totais['nPagamentos'].' pagamentos em '.$mesLabel"
@@ -28,12 +31,13 @@
         <x-ui.stat-card
             label="A receber"
             :value="$totais['aReceber']"
+            :currency="\App\Models\Configuracao::moeda()"
             tone="out"
             icon="hourglass"
             :footnote="$totais['nAReceber'].' serviços'"
         />
-        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" icon="repeat" />
-        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" icon="chart-line" />
+        <x-ui.stat-card label="Receita mensal recorrente" :value="$totais['mrr']" :currency="\App\Models\Configuracao::moeda()" icon="repeat" />
+        <x-ui.stat-card label="Receita anual recorrente" :value="$totais['arr']" :currency="\App\Models\Configuracao::moeda()" icon="chart-line" />
         <x-ui.stat-card label="Disponível na empresa" :value="$this->retiradasTotais['disponivel']" :currency="\App\Models\Configuracao::moeda()" :tone="$this->retiradasTotais['disponivel'] >= 0 ? 'in' : 'out'" icon="landmark" footnote="Tudo o que os clientes pagaram menos as retiradas" />
         <x-ui.stat-card label="Retirado este mês" :value="$this->retiradasTotais['mes']" :currency="\App\Models\Configuracao::moeda()" icon="wallet" footnote="Passado para o painel pessoal" />
     </div>
@@ -63,9 +67,11 @@
                     <td style="color:var(--text-muted)">{{ $r->nota ?? '—' }}</td>
                     <td class="u-text-right"><x-ui.money-value :amount="$r->valor" size="sm" tone="out" /></td>
                     <td class="u-text-right">
-                        <x-ui.icon-button size="sm" icon="trash-2" label="Anular retirada" class="action-danger-quiet"
-                            wire:click="anularRetirada({{ $r->id }})"
-                            wire:confirm="Anular esta retirada? A entrada correspondente também sai do painel pessoal." />
+                        @if($r->user_id === auth()->id() && \Illuminate\Support\Facades\Gate::allows('retirar'))
+                            <x-ui.icon-button size="sm" icon="trash-2" label="Anular retirada" class="action-danger-quiet"
+                                wire:click="anularRetirada({{ $r->id }})"
+                                wire:confirm="Anular esta retirada? A entrada correspondente também sai do painel pessoal." />
+                        @endif
                     </td>
                 </tr>
             @endforeach

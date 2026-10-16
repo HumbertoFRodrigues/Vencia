@@ -29,7 +29,7 @@ class DoisPassosTest extends TestCase
     {
         User::factory()->create(['email' => 'a@t.mz', 'password' => 'segredo123']);
 
-        $this->post('/login', ['email' => 'a@t.mz', 'password' => 'segredo123'])->assertRedirect('/');
+        $this->post('/login', ['email' => 'a@t.mz', 'password' => 'segredo123'])->assertRedirect('/painel');
         $this->assertAuthenticated();
     }
 
@@ -39,7 +39,7 @@ class DoisPassosTest extends TestCase
 
         $this->post('/login', ['email' => 'a@t.mz', 'password' => 'segredo123'])->assertRedirect('/login/dois-passos');
         $this->assertGuest();
-        $this->get('/')->assertRedirect('/login');
+        $this->get('/painel')->assertRedirect('/login');
     }
 
     public function test_a_valid_code_logs_in_and_cannot_be_reused(): void
@@ -48,7 +48,7 @@ class DoisPassosTest extends TestCase
         $codigo = Totp::codigo($u->dois_passos_segredo, Totp::passoActual());
 
         $this->post('/login', ['email' => 'a@t.mz', 'password' => 'segredo123']);
-        $this->post('/login/dois-passos', ['codigo' => $codigo])->assertRedirect('/');
+        $this->post('/login/dois-passos', ['codigo' => $codigo])->assertRedirect('/painel');
         $this->assertAuthenticatedAs($u);
 
         auth()->logout();
@@ -62,7 +62,7 @@ class DoisPassosTest extends TestCase
         $u = $this->comDoisPassos();
 
         $this->post('/login', ['email' => 'a@t.mz', 'password' => 'segredo123']);
-        $this->post('/login/dois-passos', ['codigo' => 'AAAAA-BBBBB'])->assertRedirect('/');
+        $this->post('/login/dois-passos', ['codigo' => 'AAAAA-BBBBB'])->assertRedirect('/painel');
         $this->assertSame(['ccccc-ddddd'], $u->fresh()->dois_passos_recuperacao);
     }
 

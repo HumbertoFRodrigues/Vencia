@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PertenceAConta;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,7 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class MetodoPagamentoOpcao extends Model
 {
-    use HasFactory;
+    use HasFactory, PertenceAConta;
 
     protected $table = 'metodos_pagamento';
 

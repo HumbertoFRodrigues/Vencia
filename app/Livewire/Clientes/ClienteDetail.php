@@ -7,6 +7,7 @@ use App\Models\Cliente;
 use App\Models\Historico;
 use App\Models\Pagamento;
 use App\Models\Servico;
+use App\Support\ContaActual;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -15,6 +16,15 @@ use Livewire\Component;
 class ClienteDetail extends Component
 {
     public Cliente $cliente;
+
+    /**
+     * Livewire reloads the model property without the conta scope: if the user
+     * switched business in another tab, this page must not keep acting on the old one.
+     */
+    public function hydrate(): void
+    {
+        abort_unless($this->cliente->conta_id === ContaActual::id(), 404);
+    }
 
     public function mount(Cliente $cliente): void
     {

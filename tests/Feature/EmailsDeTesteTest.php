@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Admin\Plataforma;
 use App\Livewire\Configuracoes\ConfiguracoesIndex;
 use App\Models\Cliente;
 use App\Models\Configuracao;
@@ -51,9 +52,13 @@ class EmailsDeTesteTest extends TestCase
         ];
         $this->assertSame(array_keys(EmailsDeTeste::TIPOS), array_keys($esperado));
 
+        // A business tests its client emails; the super-admin tests the platform's own.
+        auth()->user()->forceFill(['super_admin' => true])->save();
+
         foreach ($esperado as $tipo => $assunto) {
-            Livewire::test(ConfiguracoesIndex::class, ['tab' => 'empresa'])
-                ->set('testeTipo', $tipo)->set('testeDestino', 'eu@teste.mz')
+            $plataforma = ! in_array($tipo, EmailsDeTeste::TIPOS_CONTA, true);
+            Livewire::test($plataforma ? Plataforma::class : ConfiguracoesIndex::class, $plataforma ? [] : ['tab' => 'empresa'])
+                ->set('testeTipo', $tipo)->set('testeDestino', 'empresa@teste.mz')
                 ->call('enviarTeste')->assertHasNoErrors()
                 ->assertDispatched('toast', fn ($nome, $p) => $p['tone'] === 'success');
         }
@@ -63,7 +68,7 @@ class EmailsDeTesteTest extends TestCase
 
         foreach (array_values($esperado) as $i => $assunto) {
             $email = $mensagens[$i]->getOriginalMessage();
-            $this->assertSame(['eu@teste.mz'], array_map(fn ($a) => $a->getAddress(), $email->getTo()));
+            $this->assertSame(['empresa@teste.mz'], array_map(fn ($a) => $a->getAddress(), $email->getTo()));
             $this->assertStringContainsStringIgnoringCase($assunto, $email->getSubject());
         }
 

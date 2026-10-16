@@ -7,13 +7,14 @@ use App\Enums\ServicoCategoria;
 use App\Models\BibliotecaServico;
 use App\Models\Configuracao;
 use App\Models\MetodoPagamentoOpcao;
-use App\Services\CopiaSeguranca;
 use App\Services\EmailsDeTeste;
 use App\Services\ServicoStatusService;
+use App\Support\ContaActual;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -22,7 +23,6 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Three independent tabs (Biblioteca de Serviços / Lembretes / Empresa),
@@ -65,7 +65,7 @@ class ConfiguracoesIndex extends Component
 
     public string $novoNome = '';
 
-    public string $novaCategoria = 'software';
+    public string $novaCategoria = 'outro';
 
     public ?string $novaDescricao = null;
 
@@ -226,7 +226,7 @@ class ConfiguracoesIndex extends Component
         $this->resetValidation();
         $this->editandoId = null;
         $this->novoNome = '';
-        $this->novaCategoria = ServicoCategoria::Software->value;
+        $this->novaCategoria = ServicoCategoria::Outro->value;
         $this->novaDescricao = null;
         $this->novoLogo = null;
     }
@@ -234,7 +234,7 @@ class ConfiguracoesIndex extends Component
     public function guardarBiblioteca(): void
     {
         $data = $this->validate([
-            'novoNome' => ['required', 'string', 'max:255', Rule::unique('biblioteca_servicos', 'nome')->ignore($this->editandoId)],
+            'novoNome' => ['required', 'string', 'max:255', Rule::unique('biblioteca_servicos', 'nome')->ignore($this->editandoId)->where('conta_id', ContaActual::id())],
             'novaCategoria' => ['required', Rule::enum(ServicoCategoria::class)],
             'novaDescricao' => ['nullable', 'string', 'max:500'],
             'novoLogo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,gif', 'max:2048'],
@@ -247,7 +247,7 @@ class ConfiguracoesIndex extends Component
         ];
 
         if ($this->novoLogo) {
-            $payload['logo_path'] = $this->novoLogo->store('logos', 'public');
+            $payload['logo_path'] = $this->novoLogo->store(ContaActual::pastaLogos(), 'public');
         }
 
         if ($this->editandoId !== null) {
@@ -362,14 +362,14 @@ class ConfiguracoesIndex extends Component
         }
 
         $data = $this->validate([
-            'novoMetodoNome' => ['required', 'string', 'max:255', Rule::unique('metodos_pagamento', 'nome')->ignore($this->editandoMetodoId)],
+            'novoMetodoNome' => ['required', 'string', 'max:255', Rule::unique('metodos_pagamento', 'nome')->ignore($this->editandoMetodoId)->where('conta_id', ContaActual::id())],
             'novoMetodoLogo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,gif', 'max:2048'],
         ]);
 
         $payload = ['nome' => $data['novoMetodoNome']];
 
         if ($this->novoMetodoLogo) {
-            $payload['logo_path'] = $this->novoMetodoLogo->store('logos', 'public');
+            $payload['logo_path'] = $this->novoMetodoLogo->store(ContaActual::pastaLogos(), 'public');
         }
 
         if ($this->editandoMetodoId !== null) {
@@ -430,35 +430,6 @@ class ConfiguracoesIndex extends Component
         }
 
         $this->atualizarLembretes($intervalo, ! (bool) ($this->lembretesGlobais[$intervalo] ?? false));
-    }
-
-    // ================= Cópias de segurança =================
-
-    #[Computed]
-    public function copias(): array
-    {
-        return app(CopiaSeguranca::class)->existentes();
-    }
-
-    public function criarCopia(): BinaryFileResponse
-    {
-        $ficheiro = app(CopiaSeguranca::class)->criar();
-        unset($this->copias);
-        $this->dispatch('toast', title: 'Cópia criada', body: basename($ficheiro), tone: 'success');
-
-        return response()->download($ficheiro);
-    }
-
-    public function descarregarCopia(string $nome): ?BinaryFileResponse
-    {
-        // Only a file name from our own listing — never a path.
-        if (! preg_match('/^vencia-\d{4}-\d{2}-\d{2}_\d{6}\.sql\.gz$/', $nome)) {
-            return null;
-        }
-
-        $ficheiro = app(CopiaSeguranca::class)->pasta().'/'.$nome;
-
-        return is_file($ficheiro) ? response()->download($ficheiro) : null;
     }
 
     public function updatedAntecedencias(mixed $valor, string $ciclo): void
@@ -585,7 +556,7 @@ class ConfiguracoesIndex extends Component
         $empresa['fuso_horario'] = $data['empresaFuso'];
 
         if ($this->novoLogoEmpresa) {
-            $empresa['logo_path'] = $this->novoLogoEmpresa->store('logos', 'public');
+            $empresa['logo_path'] = $this->novoLogoEmpresa->store(ContaActual::pastaLogos(), 'public');
         }
 
         Configuracao::query()->updateOrCreate(['chave' => 'empresa'], ['valor' => $empresa]);
@@ -596,6 +567,12 @@ class ConfiguracoesIndex extends Component
 
     public function guardarSmtp(): void
     {
+        if (! $this->smtpProprioPermitido) {
+            $this->dispatch('toast', title: 'Servidor de email próprio é do plano Pro', body: 'No teu plano os emails saem pelo servidor da Vencia, com o nome da tua empresa.', tone: 'info');
+
+            return;
+        }
+
         $data = $this->validate([
             'smtpServidor' => ['nullable', 'string', 'max:255'],
             'smtpPorta' => ['nullable', 'integer', 'between:1,65535'],
@@ -638,9 +615,26 @@ class ConfiguracoesIndex extends Component
     public function enviarTeste(): void
     {
         $this->validate([
-            'testeTipo' => ['required', Rule::in(array_keys(EmailsDeTeste::TIPOS))],
+            'testeTipo' => ['required', Rule::in(EmailsDeTeste::TIPOS_CONTA)],
             'testeDestino' => ['required', 'email'],
         ], [], ['testeTipo' => 'tipo de email', 'testeDestino' => 'email de destino']);
+
+        // Through the platform's server a test only goes to the business's own addresses, a few an hour:
+        // otherwise a free account could send its own text to anyone (and harm the platform's reputation).
+        $permitidos = array_filter([mb_strtolower(auth()->user()->email), mb_strtolower((string) (Configuracao::obter('empresa', [])['email'] ?? ''))]);
+        if (! (Configuracao::smtpEfectivo()['proprio'] ?? false) && ! in_array(mb_strtolower($this->testeDestino), $permitidos, true)) {
+            $this->addError('testeDestino', 'Os testes só podem ir para o teu email ou para o email da empresa ('.implode(' ou ', $permitidos).').');
+
+            return;
+        }
+
+        $chave = 'emails-teste:'.ContaActual::id();
+        if (RateLimiter::tooManyAttempts($chave, 10)) {
+            $this->addError('testeDestino', 'Enviaste muitos testes. Tenta de novo daqui a '.ceil(RateLimiter::availableIn($chave) / 60).' minutos.');
+
+            return;
+        }
+        RateLimiter::hit($chave, 3600);
 
         $tipo = EmailsDeTeste::TIPOS[$this->testeTipo];
 
@@ -660,6 +654,13 @@ class ConfiguracoesIndex extends Component
         }
 
         $this->dispatch('toast', title: 'Email de teste enviado', body: $tipo.' → '.$this->testeDestino, tone: 'success');
+    }
+
+    /** Own SMTP is a paid feature; without it emails leave through the platform's server. */
+    #[Computed]
+    public function smtpProprioPermitido(): bool
+    {
+        return (bool) ContaActual::get()?->planoEfectivo()->permite('smtp_proprio');
     }
 
     public function render()

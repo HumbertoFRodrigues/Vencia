@@ -83,6 +83,7 @@ class RetirarDialog extends Component
 
     public function confirmar(): void
     {
+        $this->authorize('retirar');
         $this->valor = Valor::normalizar($this->valor);
         $dados = $this->validate();
 

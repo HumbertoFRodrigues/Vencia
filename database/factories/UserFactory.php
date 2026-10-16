@@ -2,7 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\Papel;
+use App\Models\Conta;
 use App\Models\User;
+use App\Support\ContaActual;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -31,6 +34,30 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /** Joins the current conta (tests always have one) as its dono unless papel() says otherwise. */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            $conta = ContaActual::get();
+
+            if ($conta && ! $user->contas()->whereKey($conta->id)->exists()) {
+                $user->contas()->attach($conta->id, ['papel' => Papel::Dono->value]);
+                $user->forceFill(['conta_actual_id' => $conta->id])->save();
+            }
+        });
+    }
+
+    public function papel(Papel $papel, ?Conta $conta = null): static
+    {
+        return $this->afterCreating(function (User $user) use ($papel, $conta): void {
+            $conta ??= ContaActual::get();
+            $user->contas()->syncWithoutDetaching([$conta->id => ['papel' => $papel->value]]);
+            $user->contas()->updateExistingPivot($conta->id, ['papel' => $papel->value]);
+            $user->forceFill(['conta_actual_id' => $conta->id])->save();
+            $user->esquecerPapeis();
+        });
     }
 
     /**

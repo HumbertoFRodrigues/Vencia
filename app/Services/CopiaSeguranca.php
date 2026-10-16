@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Configuracao;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -120,11 +121,11 @@ class CopiaSeguranca
             ->all();
     }
 
-    /** Sends the copy to the empresa email. Returns false (and logs why) when it couldn't. */
+    /** Sends the copy to the platform's super-admin. Returns false (and logs why) when it couldn't. */
     public function enviarPorEmail(string $ficheiro, ?string $destino = null): bool
     {
-        $destino ??= Configuracao::obter('empresa', [])['email'] ?? null;
-        $smtp = trim((string) (Configuracao::obter('smtp', [])['servidor'] ?? ''));
+        $destino ??= User::query()->where('super_admin', true)->orderBy('id')->value('email') ?? config('app.admin_email');
+        $smtp = trim((string) (Configuracao::plataforma('smtp', [])['servidor'] ?? ''));
 
         if (! $destino || ($smtp === '' && config('mail.default') === 'log')) {
             return false;
@@ -137,7 +138,7 @@ class CopiaSeguranca
         }
 
         try {
-            Configuracao::aplicarSmtpEmTempoDeExecucao();
+            Configuracao::aplicarSmtpDaPlataforma();
             Mail::raw(
                 'Cópia de segurança diária da Vencia em anexo ('.basename($ficheiro).").\n\n"
                 ."Guarda este email: para restaurar, importa o ficheiro numa base de dados vazia pelo phpMyAdmin.\n"

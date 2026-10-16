@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PertenceAConta;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /** Money taken from the business into the owner's personal panel. */
 class Retirada extends Model
 {
+    use PertenceAConta;
+
     protected $fillable = ['data', 'valor', 'meio', 'nota', 'user_id'];
 
     protected $casts = [

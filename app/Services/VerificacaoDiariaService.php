@@ -8,9 +8,11 @@ use App\Enums\Periodicidade;
 use App\Enums\ServicoStatus;
 use App\Mail\LembreteVencimentoMail;
 use App\Models\Configuracao;
+use App\Models\Conta;
 use App\Models\Historico;
 use App\Models\LembreteEnviado;
 use App\Models\Servico;
+use App\Support\ContaActual;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -40,6 +42,40 @@ class VerificacaoDiariaService
      * }
      */
     public function executar(): array
+    {
+        $total = [
+            'executado' => true,
+            'contas' => 0,
+            'servicos_avaliados' => 0,
+            'estados_alterados' => 0,
+            'lembretes_enviados' => 0,
+            'lembretes_falhados' => 0,
+        ];
+
+        // Each business with its own reminder settings, templates and mailer; a failure in one never stops the rest.
+        Conta::query()->where('estado', Conta::ACTIVA)->orderBy('id')->each(function (Conta $conta) use (&$total): void {
+            try {
+                $resumo = ContaActual::usar($conta, fn () => $this->executarNaContaActual());
+            } catch (Throwable $e) {
+                Log::error(sprintf('Verificação diária falhou na conta #%d (%s): %s', $conta->id, $conta->nome, $e->getMessage()));
+
+                return;
+            }
+
+            $total['contas']++;
+            foreach (['servicos_avaliados', 'estados_alterados', 'lembretes_enviados', 'lembretes_falhados'] as $chave) {
+                $total[$chave] += $resumo[$chave];
+            }
+            if (isset($resumo['nota']) && ! isset($total['nota'])) {
+                $total['nota'] = $resumo['nota'];
+            }
+        });
+
+        return $total;
+    }
+
+    /** @return array<string, mixed> the same summary as executar(), for the current conta only */
+    public function executarNaContaActual(): array
     {
         $resumo = [
             'executado' => true,

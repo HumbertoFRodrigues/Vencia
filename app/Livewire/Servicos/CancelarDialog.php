@@ -65,6 +65,7 @@ class CancelarDialog extends Component
 
     public function confirmar(): void
     {
+        $this->authorize('gerir-negocio');
         $dados = $this->validate();
         $servico = $this->servico;
 

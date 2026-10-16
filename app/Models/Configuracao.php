@@ -2,19 +2,27 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PertenceAConta;
+use App\Support\ContaActual;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
 
+/**
+ * Key/value settings. Rows with a conta_id belong to that business (empresa,
+ * lembretes, templates, its own SMTP); rows without one are the platform's
+ * (its SMTP, payment instructions, sign-up options), read with plataforma().
+ */
 class Configuracao extends Model
 {
-    use HasFactory;
+    use HasFactory, PertenceAConta;
 
     protected $table = 'configuracoes';
 
     protected $fillable = [
-        'chave', 'valor',
+        'conta_id', 'chave', 'valor',
     ];
 
     protected $casts = [
@@ -24,6 +32,22 @@ class Configuracao extends Model
     public static function obter(string $chave, mixed $default = null): mixed
     {
         return static::query()->where('chave', $chave)->value('valor') ?? $default;
+    }
+
+    public static function guardar(string $chave, mixed $valor): void
+    {
+        static::query()->updateOrCreate(['chave' => $chave], ['valor' => $valor]);
+    }
+
+    public static function plataforma(string $chave, mixed $default = null): mixed
+    {
+        return static::withoutGlobalScope('conta')->whereNull('conta_id')->where('chave', $chave)->value('valor') ?? $default;
+    }
+
+    public static function guardarPlataforma(string $chave, mixed $valor): void
+    {
+        static::withoutEvents(fn () => static::withoutGlobalScope('conta')
+            ->updateOrCreate(['conta_id' => null, 'chave' => $chave], ['valor' => $valor]));
     }
 
     /**
@@ -58,60 +82,93 @@ class Configuracao extends Model
         return [$admin];
     }
 
+    /** The conta's own SMTP when its plan allows one and it is filled in; otherwise the platform's. */
+    public static function smtpEfectivo(): array
+    {
+        $proprio = self::obter('smtp', []);
+        $conta = ContaActual::get();
+
+        if (trim((string) ($proprio['servidor'] ?? '')) !== '' && $conta?->planoEfectivo()->permite('smtp_proprio')) {
+            return $proprio + ['proprio' => true];
+        }
+
+        return self::plataforma('smtp', []) + ['proprio' => false];
+    }
+
+    /** False when mail would only be written to laravel.log (no SMTP anywhere and .env still on "log"). */
+    public static function envioDisponivel(): bool
+    {
+        return trim((string) (self::smtpEfectivo()['servidor'] ?? '')) !== '' || config('mail.default') !== 'log';
+    }
+
     /**
-     * Applies the admin's UI-configured SMTP settings (Configurações →
-     * Empresa → "Envio de email") to the mailer actually used for the rest
-     * of this request/console invocation — call this once, right before any
-     * Mail::... ->send() (or ->raw()), from every place that sends mail:
-     * VerificacaoDiariaService, SuspenderDialog, ConfiguracoesIndex::enviarTeste().
-     * Centralised here so none of those three call sites duplicates the
-     * config-juggling logic.
+     * Points the mailer at the right SMTP for the rest of this request or
+     * command step — call it right before any Mail::...->send(). Emails from
+     * a business carry the business name as sender and reply to the business
+     * email, even when they leave through the platform's server.
      *
-     * A no-op — leaving .env's MAIL_MAILER (today "log") exactly as it is —
-     * when the admin hasn't filled in a servidor yet, so nothing here breaks
-     * the working default for an install that hasn't configured SMTP.
-     *
-     * Why more than a plain config(['mail.mailers.smtp....' => ...]) call:
-     * Laravel's Mail facade resolves the 'mail.manager' singleton once per
-     * container and MailManager caches every mailer/transport it builds
-     * inside itself (Illuminate\Mail\MailManager::$mailers) for the
-     * lifetime of that container instance. If anything in this same
-     * request/console run already touched Mail:: before this call, the
-     * "smtp" transport may already be built and cached from the *old*
-     * config, and a later config() change alone would silently do nothing.
-     * app()->forgetInstance('mail.manager') discards that cached singleton,
-     * so the next time the Mail facade resolves 'mail.manager' the
-     * container rebuilds a fresh MailManager — and therefore a fresh "smtp"
-     * transport — reading the values just written to config() here. This
-     * was verified against Laravel's actual runtime-mailer-config pattern,
-     * not assumed.
+     * Why more than a plain config() call: Laravel's MailManager caches every
+     * transport it builds for the lifetime of the container, so a transport
+     * built before this call would keep the old settings.
+     * app()->forgetInstance('mail.manager') makes the next Mail:: call build
+     * a fresh one from the values written here.
      */
     public static function aplicarSmtpEmTempoDeExecucao(): void
     {
-        $smtp = self::obter('smtp', []);
+        $empresa = ContaActual::get() ? self::obter('empresa', []) : [];
+
+        self::aplicarSmtp(self::smtpEfectivo(), $empresa['nome'] ?? null, $empresa['email'] ?? null);
+    }
+
+    /** For the platform's own emails (sign-up, password reset, plan invoices, alerts). */
+    public static function aplicarSmtpDaPlataforma(): void
+    {
+        self::aplicarSmtp(self::plataforma('smtp', []), config('app.name'), null);
+    }
+
+    private static function aplicarSmtp(array $smtp, ?string $nome, ?string $responderPara): void
+    {
+        // A command walking several contas must not carry one conta's server
+        // or sender into the next: start each switch from the .env mailer.
+        if (! config()->has('mail.original')) {
+            config(['mail.original' => ['default' => config('mail.default'), 'from' => config('mail.from.address')]]);
+        }
+        config(['mail.default' => config('mail.original.default'), 'mail.from.address' => config('mail.original.from')]);
+
         $servidor = trim((string) ($smtp['servidor'] ?? ''));
 
-        if ($servidor === '') {
-            return;
+        if ($servidor !== '') {
+            $seguranca = strtoupper(trim((string) ($smtp['seguranca'] ?? 'STARTTLS')));
+
+            config([
+                'mail.default' => 'smtp',
+                'mail.mailers.smtp.transport' => 'smtp',
+                'mail.mailers.smtp.host' => $servidor,
+                'mail.mailers.smtp.port' => (int) (($smtp['porta'] ?? null) ?: 587),
+                'mail.mailers.smtp.encryption' => match ($seguranca) {
+                    'SSL' => 'ssl',
+                    'NENHUMA', 'NONE', '' => null,
+                    default => 'tls', // STARTTLS
+                },
+                'mail.mailers.smtp.username' => ($smtp['utilizador'] ?? null) ?: null,
+                'mail.mailers.smtp.password' => self::passwordSmtp($smtp['password'] ?? null),
+            ]);
+
+            $remetente = trim((string) ($smtp['remetente'] ?? ''));
+            if ($remetente === '' && filter_var($smtp['utilizador'] ?? '', FILTER_VALIDATE_EMAIL)) {
+                $remetente = $smtp['utilizador'];
+            }
+            if ($remetente !== '') {
+                config(['mail.from.address' => $remetente]);
+            }
+
+            app()->forgetInstance('mail.manager');
         }
 
-        $seguranca = strtoupper(trim((string) ($smtp['seguranca'] ?? 'STARTTLS')));
-
-        config([
-            'mail.default' => 'smtp',
-            'mail.mailers.smtp.transport' => 'smtp',
-            'mail.mailers.smtp.host' => $servidor,
-            'mail.mailers.smtp.port' => (int) ($smtp['porta'] ?: 587),
-            'mail.mailers.smtp.encryption' => match ($seguranca) {
-                'SSL' => 'ssl',
-                'NENHUMA', 'NONE', '' => null,
-                default => 'tls', // STARTTLS
-            },
-            'mail.mailers.smtp.username' => $smtp['utilizador'] ?: null,
-            'mail.mailers.smtp.password' => self::passwordSmtp($smtp['password'] ?? null),
-        ]);
-
-        app()->forgetInstance('mail.manager');
+        // Sender name and reply-to go straight onto the mailer in use, so they
+        // change per conta without rebuilding the transport each time.
+        Mail::alwaysFrom(config('mail.from.address'), $nome ?: config('app.name'));
+        Mail::alwaysReplyTo($responderPara, $responderPara ? $nome : null);
     }
 
     /** Saved passwords are encrypted; one saved before encryption existed is still read as-is. */

@@ -27,6 +27,10 @@
                     <strong>{{ auth()->user()->name }}</strong>
                     <span>{{ auth()->user()->email }}</span>
                 </div>
+                <a href="{{ route('conta.perfil') }}" wire:navigate class="dropdown-menu-item"><x-ui.icon name="circle-user-round" size="16" /> O meu perfil</a>
+                @if(auth()->user()->contas()->count() > 1)
+                    <a href="{{ route('conta.escolher') }}" class="dropdown-menu-item"><x-ui.icon name="briefcase" size="16" /> Mudar de empresa</a>
+                @endif
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="dropdown-menu-item dropdown-menu-item--danger">

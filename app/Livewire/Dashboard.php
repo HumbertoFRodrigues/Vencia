@@ -3,12 +3,17 @@
 namespace App\Livewire;
 
 use App\Enums\ServicoStatus;
+use App\Livewire\Concerns\RespeitaPlano;
+use App\Models\Cliente;
 use App\Models\Configuracao;
+use App\Models\Convite;
 use App\Models\Servico;
 use App\Services\RelatorioPdf;
 use App\Services\Totais;
+use App\Support\ContaActual;
 use App\Support\Csv;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -20,6 +25,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 #[Title('Dashboard')]
 class Dashboard extends Component
 {
+    use RespeitaPlano;
+
     /**
      * @return array{
      *     entradas: float, nPagamentos: int,
@@ -34,6 +41,70 @@ class Dashboard extends Component
     public function totais(): array
     {
         return app(Totais::class)->calcular();
+    }
+
+    /**
+     * "Primeiros passos" for a new business: each step ticks itself off from
+     * real data. Hidden once everything is done or the user dismisses it.
+     *
+     * @return list<array{feito: bool, titulo: string, texto: string, accao: string, href: ?string, evento: ?string}>|null
+     */
+    #[Computed]
+    public function primeirosPassos(): ?array
+    {
+        if (Configuracao::obter('onboarding', [])['dispensado'] ?? false) {
+            return null;
+        }
+
+        $empresa = Configuracao::obter('empresa', []);
+        $gere = Gate::allows('gerir-negocio');
+        $dono = Gate::allows('gerir-conta');
+
+        $passos = [];
+        if ($gere) {
+            $passos[] = [
+                'feito' => filled($empresa['email'] ?? null) && filled($empresa['logo_path'] ?? null),
+                'titulo' => 'Completa os dados da empresa',
+                'texto' => 'Email e logótipo aparecem nos lembretes e recibos que os teus clientes recebem.',
+                'accao' => 'Abrir Configurações',
+                'href' => route('configuracoes.index', ['tab' => 'empresa']),
+                'evento' => null,
+            ];
+        }
+        $passos[] = [
+            'feito' => Cliente::query()->exists(),
+            'titulo' => 'Regista o primeiro cliente',
+            'texto' => 'Nome e email. Podes importar os outros aos poucos.',
+            'accao' => 'Ir para Clientes',
+            'href' => route('clientes.index'),
+            'evento' => null,
+        ];
+        $passos[] = [
+            'feito' => Servico::query()->exists(),
+            'titulo' => 'Cria o primeiro serviço',
+            'texto' => 'O valor e quando renova. A partir daí os lembretes saem sozinhos.',
+            'accao' => 'Nova assinatura',
+            'href' => null,
+            'evento' => 'assinatura:abrir',
+        ];
+        if ($dono) {
+            $passos[] = [
+                'feito' => ContaActual::get()->membros()->count() > 1 || Convite::query()->where('conta_id', ContaActual::id())->exists(),
+                'titulo' => 'Convida a tua equipa (opcional)',
+                'texto' => 'Quem regista pagamentos não precisa de ver as finanças.',
+                'accao' => 'Abrir Equipa',
+                'href' => route('conta.equipa'),
+                'evento' => null,
+            ];
+        }
+
+        return collect($passos)->every(fn ($p) => $p['feito']) ? null : $passos;
+    }
+
+    public function dispensarPrimeirosPassos(): void
+    {
+        Configuracao::guardar('onboarding', ['dispensado' => true]);
+        unset($this->primeirosPassos);
     }
 
     /**
@@ -76,8 +147,12 @@ class Dashboard extends Component
      * here). Mirrors PagamentosIndex::exportarCsv()'s exact CSV conventions
      * (UTF-8 BOM, semicolon delimiter, dd/mm/aaaa dates, dot-thousands MZN).
      */
-    public function exportarCsv(): StreamedResponse
+    public function exportarCsv(): ?StreamedResponse
     {
+        if ($this->bloqueadoPeloPlano('exportar')) {
+            return null;
+        }
+
         $servicos = $this->proximosVencimentos;
 
         $this->dispatch('toast', title: 'A exportar CSV', body: 'A transferência começa em breve.', tone: 'success');
@@ -96,8 +171,12 @@ class Dashboard extends Component
     }
 
     /** Same "próximos vencimentos" rows as exportarCsv(), through the shared relatório template. */
-    public function exportarPdf(): StreamedResponse
+    public function exportarPdf(): ?StreamedResponse
     {
+        if ($this->bloqueadoPeloPlano('exportar')) {
+            return null;
+        }
+
         $servicos = $this->proximosVencimentos;
 
         $linhas = $servicos->map(fn (Servico $s) => [

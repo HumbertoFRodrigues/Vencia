@@ -31,6 +31,29 @@ class Csv
         }, $nomeArquivo, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    /**
+     * The same CSV as download(), as a string (for files that go into a ZIP).
+     *
+     * @param  list<string>  $cabecalho
+     * @param  iterable<array<int, mixed>>  $linhas
+     */
+    public static function conteudo(array $cabecalho, iterable $linhas): string
+    {
+        $handle = fopen('php://temp', 'w+');
+        fwrite($handle, "\xEF\xBB\xBF");
+        fputcsv($handle, $cabecalho, ';');
+
+        foreach ($linhas as $linha) {
+            fputcsv($handle, array_map([self::class, 'celula'], $linha), ';');
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return $csv;
+    }
+
     public static function celula(mixed $valor): string
     {
         $texto = (string) ($valor ?? '');
