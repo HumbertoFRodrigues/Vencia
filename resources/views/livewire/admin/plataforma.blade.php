@@ -36,6 +36,26 @@
                 </form>
             </x-ui.card>
 
+            @php
+                $mpesaPronto = \App\Services\Pagamentos\MpesaCliente::configurado();
+                $mpesaLigado = config('pagamentos.gateway') === 'mpesa' && $mpesaPronto;
+            @endphp
+            <x-ui.card title="Pagamento automático por M-Pesa" subtitle="Os clientes recebem o pedido no telemóvel, confirmam com o PIN e o plano activa sozinho. O pagamento manual continua disponível.">
+                <x-slot:action>
+                    <x-ui.tag :tone="$mpesaLigado ? 'success' : 'neutral'">{{ $mpesaLigado ? 'Ligado'.(config('pagamentos.mpesa.sandbox') ? ' (sandbox)' : '') : 'Desligado' }}</x-ui.tag>
+                </x-slot:action>
+                @unless($mpesaLigado)
+                    <p class="pessoal-muted" style="margin:0">
+                        @if(! $mpesaPronto)
+                            Para ligar, põe no <code>.env</code> do servidor as chaves do portal M-Pesa da Vodacom: <code>MPESA_API_KEY</code>, <code>MPESA_PUBLIC_KEY</code>, <code>MPESA_SERVICE_PROVIDER_CODE</code>, e depois <code>PAGAMENTOS_GATEWAY=mpesa</code> e <code>MPESA_SANDBOX=false</code>.
+                        @else
+                            As chaves já estão no <code>.env</code>. Falta <code>PAGAMENTOS_GATEWAY=mpesa</code>.
+                        @endif
+                        Ver DEPLOY.md.
+                    </p>
+                @endunless
+            </x-ui.card>
+
             <x-ui.card title="Registo de novas contas">
                 <form wire:submit="guardarRegisto" class="pilha pilha--12">
                     <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="registoAberto"> Qualquer pessoa pode criar conta (fechado: só por convite)</label>

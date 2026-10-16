@@ -90,3 +90,9 @@ a.auth-card__brand { text-decoration: none; }
   --cat-seguros-bg: #221a33; --cat-seguros-fg: #c3aef0;
   --cat-transporte-bg: #1c222b; --cat-transporte-fg: #a9b9c9;
 }
+
+/* "Pagar já com M-Pesa" on the plan page */
+.mpesa-ja { display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid var(--accent-soft-border); border-radius: var(--radius-md); background: var(--accent-soft); }
+.mpesa-ja strong { color: var(--text-strong); }
+.mpesa-ja__linha { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.mpesa-ja__linha .field { flex: 1; min-width: 180px; }

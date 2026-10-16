@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Conta;
 
+use App\Contracts\CobrancaImediata;
 use App\Models\Fatura;
 use App\Models\Plano as PlanoModel;
 use App\Services\Faturacao;
@@ -125,6 +126,34 @@ class Plano extends Component
         $this->reset('referencia', 'comprovativo');
         unset($this->faturaAberta, $this->faturas);
         $this->dispatch('toast', title: 'Enviado para confirmação', body: 'Recebes um email quando o pagamento for confirmado (normalmente no mesmo dia útil).', tone: 'success');
+    }
+
+    public string $telefone = '';
+
+    /** "Pagar já com M-Pesa": the PIN prompt goes to the customer's phone; the plan turns on when confirmed. */
+    public function pagarMpesa(): void
+    {
+        $this->authorize('gerir-conta');
+        $gateway = app(Faturacao::class)->gateway();
+        $fatura = $this->faturaAberta;
+
+        if (! $gateway instanceof CobrancaImediata || ! $fatura) {
+            return;
+        }
+
+        $this->validate(['telefone' => ['required', 'string', 'max:20']], [], ['telefone' => 'número M-Pesa']);
+
+        $resultado = $gateway->cobrar($fatura, $this->telefone);
+
+        if (! $resultado['ok']) {
+            $this->addError('telefone', $resultado['mensagem']);
+
+            return;
+        }
+
+        $this->reset('telefone');
+        unset($this->faturaAberta, $this->faturas, $this->conta);
+        $this->dispatch('toast', title: 'Pagamento confirmado', body: 'O plano já está activo. Recebes o recibo por email.', tone: 'success');
     }
 
     public function cancelar(): void

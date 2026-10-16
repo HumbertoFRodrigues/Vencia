@@ -48,6 +48,20 @@
 
                 @if($aberta->estado === \App\Models\Fatura::PENDENTE)
                     <div class="pilha pilha--12">
+                        @if($faturacao->gateway() instanceof \App\Contracts\CobrancaImediata)
+                            <form wire:submit="pagarMpesa" class="mpesa-ja">
+                                <strong>Pagar já com M-Pesa</strong>
+                                <span class="pessoal-muted">Recebes no telemóvel um pedido de {{ $faturacao->valor($aberta) }}. Confirma com o teu PIN e o plano fica activo de imediato.</span>
+                                <div class="mpesa-ja__linha">
+                                    <x-ui.input wire:model="telefone" inputmode="tel" placeholder="84 123 4567" autocomplete="tel" :error="$errors->first('telefone')" aria-label="Número M-Pesa" />
+                                    <x-ui.button type="submit" variant="primary" icon="smartphone" wire:loading.attr="disabled" wire:target="pagarMpesa">
+                                        <span wire:loading.remove wire:target="pagarMpesa">Pagar</span>
+                                        <span wire:loading wire:target="pagarMpesa">Confirma no telemóvel…</span>
+                                    </x-ui.button>
+                                </div>
+                            </form>
+                            <p class="pessoal-muted" style="margin:0">Ou paga de outra forma:</p>
+                        @endif
                         <p class="pessoal-muted" style="margin:0">1. Paga {{ $faturacao->valor($aberta) }} por um destes meios, com a referência <strong>{{ $aberta->referenciaInterna() }}</strong>:</p>
                         <ul class="instrucoes">
                             @foreach($faturacao->gateway()->instrucoes($aberta) as $i)

@@ -123,6 +123,25 @@ A migração `2026_10_15_000002` converte sozinha uma instalação que já tem d
 
 Antes de actualizar, faz uma cópia de segurança. Depois do `migrate --force`, acrescenta a tarefa `vencia:planos` ao Cron (passo 7).
 
+## Ligar o pagamento automático por M-Pesa (quando tiveres as credenciais)
+
+Está tudo pronto no código. Sem credenciais, os clientes pagam o Pro à mão (M-Pesa, e-Mola ou transferência) e tu confirmas em Admin → Faturação. Com credenciais, a página Plano mostra também **Pagar já com M-Pesa**: o cliente escreve o número, confirma com o PIN no telemóvel e o plano activa sozinho, com recibo por email.
+
+1. No portal da Vodacom (developer.mpesa.vm.co.mz), cria a aplicação e copia a **API Key**, a **Public Key** e o **Service Provider Code**.
+2. No `.env` do servidor, acrescenta:
+   ```
+   PAGAMENTOS_GATEWAY=mpesa
+   MPESA_API_KEY=a-tua-api-key
+   MPESA_PUBLIC_KEY=a-public-key-numa-só-linha
+   MPESA_SERVICE_PROVIDER_CODE=o-teu-código
+   MPESA_SANDBOX=true
+   ```
+3. Corre `php artisan config:cache` (ou o truque do Cron do passo 6).
+4. Em Admin → Plataforma confirma que o cartão do M-Pesa diz **Ligado (sandbox)** e faz um pagamento de teste com o número de teste da Vodacom.
+5. Quando a Vodacom aprovar a conta para produção, muda para `MPESA_SANDBOX=false` e corre `php artisan config:cache` outra vez.
+
+O pedido espera até 2,5 minutos pela confirmação do PIN. Se o alojamento cortar pedidos mais cedo (alguns cPanel limitam a 30–60 s), pede ao suporte para aumentar o `max_execution_time` do PHP para 180. Para desligar, basta pôr `PAGAMENTOS_GATEWAY=manual`.
+
 ## 9. Segurança e telemóvel
 
 - **Verificação em dois passos**: em Configurações → Segurança, lê o código QR com o Google Authenticator / Microsoft Authenticator e guarda os códigos de recuperação num sítio seguro.
