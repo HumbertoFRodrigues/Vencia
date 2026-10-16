@@ -31,7 +31,7 @@
             <x-ui.input type="password" name="password" label="Palavra-passe" required autocomplete="new-password" hint="Pelo menos 8 caracteres." :error="$errors->first('password')" />
             <x-ui.input type="password" name="password_confirmation" label="Repetir a palavra-passe" required autocomplete="new-password" size="lg" />
             <x-ui.button type="submit" variant="primary" size="lg" :full-width="true">Criar conta</x-ui.button>
-            <p class="auth-card__footnote" style="font-size:var(--text-xs)">Ao criar conta aceitas que guardemos os teus dados para prestar o serviço. Nunca os partilhamos.</p>
+            <p class="auth-card__footnote" style="font-size:var(--text-xs)">Ao criar conta aceitas os <a href="{{ route('termos') }}" target="_blank">Termos</a> e a <a href="{{ route('privacidade') }}" target="_blank">Política de privacidade</a>.</p>
         </form>
         <p class="auth-card__footnote"><a href="{{ route('login') }}">Já tens conta? Entrar</a></p>
     @endif

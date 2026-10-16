@@ -369,7 +369,7 @@
                         wire:model="testeTipo"
                         :options="collect(\App\Services\EmailsDeTeste::TIPOS_CONTA)->map(fn ($t) => ['value' => $t, 'label' => \App\Services\EmailsDeTeste::TIPOS[$t]])->all()"
                     />
-                    <x-ui.input label="Enviar para" type="email" wire:model="testeDestino" placeholder="o-teu-email@exemplo.co.mz" :error="$errors->first('testeDestino')" hint="Usa o servidor de email em vigor para a tua conta." />
+                    <x-ui.input label="Enviar para" type="email" wire:model="testeDestino" placeholder="o-teu-email@exemplo.co.mz" :error="$errors->first('testeDestino')" hint="Para o teu email ou o da empresa." />
                     <div style="display:flex;justify-content:flex-end">
                         <x-ui.button type="submit" icon="send" wire:loading.attr="disabled" wire:target="enviarTeste">
                             <span wire:loading.remove wire:target="enviarTeste">Enviar teste</span>

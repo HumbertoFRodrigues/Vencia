@@ -97,7 +97,9 @@
                                     <x-ui.icon name="receipt" size="15" />
                                 </a>
                                 <x-ui.icon-button icon="pencil" label="Editar" size="sm" wire:click="$dispatch('pagamento:abrir', { pagamentoId: {{ $p->id }} })" />
-                                <x-ui.icon-button icon="trash-2" label="Apagar" size="sm" wire:click="pedirConfirmacaoRemocao({{ $p->id }})" />
+                                @can('gerir-negocio')
+                                    <x-ui.icon-button icon="trash-2" label="Apagar" size="sm" wire:click="pedirConfirmacaoRemocao({{ $p->id }})" />
+                                @endcan
                             @endif
                         </span>
                     </td>

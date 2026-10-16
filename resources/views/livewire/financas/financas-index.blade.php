@@ -67,9 +67,11 @@
                     <td style="color:var(--text-muted)">{{ $r->nota ?? '—' }}</td>
                     <td class="u-text-right"><x-ui.money-value :amount="$r->valor" size="sm" tone="out" /></td>
                     <td class="u-text-right">
-                        <x-ui.icon-button size="sm" icon="trash-2" label="Anular retirada" class="action-danger-quiet"
-                            wire:click="anularRetirada({{ $r->id }})"
-                            wire:confirm="Anular esta retirada? A entrada correspondente também sai do painel pessoal." />
+                        @if($r->user_id === auth()->id() && \Illuminate\Support\Facades\Gate::allows('retirar'))
+                            <x-ui.icon-button size="sm" icon="trash-2" label="Anular retirada" class="action-danger-quiet"
+                                wire:click="anularRetirada({{ $r->id }})"
+                                wire:confirm="Anular esta retirada? A entrada correspondente também sai do painel pessoal." />
+                        @endif
                     </td>
                 </tr>
             @endforeach

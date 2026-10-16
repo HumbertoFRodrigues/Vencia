@@ -58,7 +58,7 @@ class EmailsDeTesteTest extends TestCase
         foreach ($esperado as $tipo => $assunto) {
             $plataforma = ! in_array($tipo, EmailsDeTeste::TIPOS_CONTA, true);
             Livewire::test($plataforma ? Plataforma::class : ConfiguracoesIndex::class, $plataforma ? [] : ['tab' => 'empresa'])
-                ->set('testeTipo', $tipo)->set('testeDestino', 'eu@teste.mz')
+                ->set('testeTipo', $tipo)->set('testeDestino', 'empresa@teste.mz')
                 ->call('enviarTeste')->assertHasNoErrors()
                 ->assertDispatched('toast', fn ($nome, $p) => $p['tone'] === 'success');
         }
@@ -68,7 +68,7 @@ class EmailsDeTesteTest extends TestCase
 
         foreach (array_values($esperado) as $i => $assunto) {
             $email = $mensagens[$i]->getOriginalMessage();
-            $this->assertSame(['eu@teste.mz'], array_map(fn ($a) => $a->getAddress(), $email->getTo()));
+            $this->assertSame(['empresa@teste.mz'], array_map(fn ($a) => $a->getAddress(), $email->getTo()));
             $this->assertStringContainsStringIgnoringCase($assunto, $email->getSubject());
         }
 

@@ -21,24 +21,7 @@
 <body class="site">
     <a href="#conteudo" class="site__saltar">Saltar para o conteúdo</a>
 
-    <header class="site-topo">
-        <div class="site__largura site-topo__barra">
-            <a href="{{ route('inicio') }}" class="site-marca"><img src="{{ asset('assets/logo-mark.png') }}" alt="">Vencia</a>
-            <nav class="site-topo__nav" aria-label="Secções">
-                <a href="#funcionalidades">Funcionalidades</a>
-                <a href="#como-funciona">Como funciona</a>
-                <a href="#planos">Planos</a>
-                <a href="#perguntas">Perguntas</a>
-            </nav>
-            <div class="site-topo__accoes">
-                <x-ui.theme-toggle />
-                <a class="btn btn--ghost btn--md site-topo__entrar" href="{{ route('login') }}">Entrar</a>
-                @if($registoAberto)
-                    <a class="btn btn--primary btn--md" href="{{ route('registar') }}">Criar conta</a>
-                @endif
-            </div>
-        </div>
-    </header>
+    @include('partials.site.topo')
 
     <main id="conteudo">
         {{-- Hero --}}
@@ -340,37 +323,6 @@
         @endif
     </main>
 
-    <footer class="site-rodape">
-        <div class="site__largura site-rodape__grelha">
-            <div class="site-rodape__marca">
-                <a href="{{ route('inicio') }}" class="site-marca"><img src="{{ asset('assets/logo-mark.png') }}" alt="">Vencia</a>
-                <p>Renovações dos clientes, pagamentos com recibo e finanças pessoais, num só sítio.</p>
-            </div>
-            <nav aria-label="Produto">
-                <h4>Produto</h4>
-                <a href="#funcionalidades">Funcionalidades</a>
-                <a href="#como-funciona">Como funciona</a>
-                <a href="#planos">Planos e preços</a>
-                <a href="#perguntas">Perguntas frequentes</a>
-            </nav>
-            <nav aria-label="Conta">
-                <h4>Conta</h4>
-                <a href="{{ route('login') }}">Entrar</a>
-                @if($registoAberto)<a href="{{ route('registar') }}">Criar conta</a>@endif
-                <a href="{{ route('password.request') }}">Recuperar palavra-passe</a>
-            </nav>
-            <div>
-                <h4>Contacto</h4>
-                @if($contacto)
-                    <a href="mailto:{{ $contacto }}">{{ $contacto }}</a>
-                @endif
-                <span>Maputo, Moçambique</span>
-            </div>
-        </div>
-        <div class="site__largura site-rodape__base">
-            <span>© {{ now()->year }} Vencia. Todos os direitos reservados.</span>
-            <span>Um produto <strong>HTech Group</strong></span>
-        </div>
-    </footer>
+    @include('partials.site.rodape')
 </body>
 </html>

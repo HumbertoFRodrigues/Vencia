@@ -7,6 +7,7 @@ use App\Services\Equipa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use RuntimeException;
 
 /** The link in an invite email: shows who invited you, then joins you to the conta. */
 class ConviteController extends Controller
@@ -41,7 +42,11 @@ class ConviteController extends Controller
                 ->withErrors(['email' => 'Este convite foi enviado para '.$convite->email.'. Entra com esse email para o aceitar.']);
         }
 
-        app(Equipa::class)->aceitar($convite, $request->user());
+        try {
+            app(Equipa::class)->aceitar($convite, $request->user());
+        } catch (RuntimeException $e) {
+            return redirect()->route('convite.mostrar', $token)->withErrors(['email' => $e->getMessage()]);
+        }
 
         return redirect()->route('dashboard')->with('toast', ['title' => 'Bem-vindo à equipa', 'body' => $convite->conta->nome]);
     }

@@ -9,6 +9,7 @@ use App\Services\Limites;
 use App\Support\ContaActual;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -52,6 +53,15 @@ class Equipa extends Component
     public function convidar(): void
     {
         $this->authorize('gerir-conta');
+
+        // Invites are emails from the platform: a handful per conta per day is plenty for a real team.
+        $chave = 'convites:'.ContaActual::id();
+        if (RateLimiter::tooManyAttempts($chave, 20)) {
+            $this->addError('email', 'Enviaste muitos convites hoje. Tenta de novo amanhã.');
+
+            return;
+        }
+        RateLimiter::hit($chave, 86400);
 
         $this->validate([
             'email' => ['required', 'email', 'max:255'],

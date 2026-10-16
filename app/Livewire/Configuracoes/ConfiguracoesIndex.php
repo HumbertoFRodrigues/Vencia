@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -617,6 +618,23 @@ class ConfiguracoesIndex extends Component
             'testeTipo' => ['required', Rule::in(EmailsDeTeste::TIPOS_CONTA)],
             'testeDestino' => ['required', 'email'],
         ], [], ['testeTipo' => 'tipo de email', 'testeDestino' => 'email de destino']);
+
+        // Through the platform's server a test only goes to the business's own addresses, a few an hour:
+        // otherwise a free account could send its own text to anyone (and harm the platform's reputation).
+        $permitidos = array_filter([mb_strtolower(auth()->user()->email), mb_strtolower((string) (Configuracao::obter('empresa', [])['email'] ?? ''))]);
+        if (! (Configuracao::smtpEfectivo()['proprio'] ?? false) && ! in_array(mb_strtolower($this->testeDestino), $permitidos, true)) {
+            $this->addError('testeDestino', 'Os testes só podem ir para o teu email ou para o email da empresa ('.implode(' ou ', $permitidos).').');
+
+            return;
+        }
+
+        $chave = 'emails-teste:'.ContaActual::id();
+        if (RateLimiter::tooManyAttempts($chave, 10)) {
+            $this->addError('testeDestino', 'Enviaste muitos testes. Tenta de novo daqui a '.ceil(RateLimiter::availableIn($chave) / 60).' minutos.');
+
+            return;
+        }
+        RateLimiter::hit($chave, 3600);
 
         $tipo = EmailsDeTeste::TIPOS[$this->testeTipo];
 

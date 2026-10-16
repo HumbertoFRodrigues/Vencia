@@ -378,3 +378,10 @@ body:has(#ciclo-anual:checked) .preco__valor .so-anual { display: inline-flex; }
   .acesso__cabecalho p { font-size: var(--text-xs); }
   .acesso__mensagem li:nth-child(n+3) { display: none; }
 }
+
+/* Terms and privacy */
+.legal h1 { margin: 10px 0 6px; font-size: clamp(1.75rem, 3.4vw, 2.5rem); letter-spacing: -0.025em; color: var(--text-strong); }
+.legal__data { margin: 0 0 32px; font-size: var(--text-sm); color: var(--text-faint); }
+.legal h2 { margin: 32px 0 10px; font-size: 1.125rem; color: var(--text-strong); }
+.legal p, .legal li { font-size: 1rem; line-height: 1.75; color: var(--text-body); }
+.legal ul { padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }

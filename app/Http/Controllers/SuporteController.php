@@ -20,6 +20,12 @@ class SuporteController extends Controller
         $admin = $request->user();
         abort_unless($admin->super_admin && ! $user->is($admin), 403);
 
+        // Not another super-admin (their actions would look like theirs), and not a blocked user
+        // (the block would sign the admin out too and lose the way back).
+        if ($user->super_admin || $user->bloqueado()) {
+            return back()->with('toast', ['title' => 'Não é possível entrar como este utilizador', 'body' => $user->super_admin ? 'É super-admin.' : 'Está bloqueado. Desbloqueia-o primeiro.', 'tone' => 'warning']);
+        }
+
         ActividadeAdmin::registar('entrar_como', 'user:'.$user->id, $user->email);
 
         Auth::login($user);

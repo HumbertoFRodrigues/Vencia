@@ -26,6 +26,7 @@ use App\Livewire\Clientes\ClienteDetail;
 use App\Livewire\Clientes\ClientesIndex;
 use App\Livewire\Configuracoes\ConfiguracoesIndex;
 use App\Livewire\Conta\Equipa as ContaEquipa;
+use App\Livewire\Conta\Perfil as ContaPerfil;
 use App\Livewire\Conta\Plano as ContaPlano;
 use App\Livewire\Dashboard;
 use App\Livewire\Financas\FinancasIndex;
@@ -60,6 +61,8 @@ Route::post('/implantacao/concluir', [ImplantacaoController::class, 'concluir'])
 
 // Public home (logged-in people go straight to their panel).
 Route::get('/', [ContaController::class, 'inicio'])->name('inicio');
+Route::get('/termos', [ContaController::class, 'termos'])->name('termos');
+Route::get('/privacidade', [ContaController::class, 'privacidade'])->name('privacidade');
 
 // Team invites: anyone with the link can see it; accepting needs the invited account.
 Route::get('/convite/{token}', [ConviteController::class, 'mostrar'])->name('convite.mostrar');
@@ -121,6 +124,7 @@ Route::middleware(['auth', 'verified', DefinirConta::class, ActualizarEstadosDoD
 
     Route::get('/conta/plano', ContaPlano::class)->middleware('can:gerir-conta')->name('conta.plano');
     Route::get('/conta/equipa', ContaEquipa::class)->middleware('can:gerir-conta')->name('conta.equipa');
+    Route::get('/conta/perfil', ContaPerfil::class)->name('conta.perfil');
 
     Route::prefix('pessoal')->name('pessoal.')->group(function () {
         Route::get('/', PessoalResumo::class)->name('resumo');

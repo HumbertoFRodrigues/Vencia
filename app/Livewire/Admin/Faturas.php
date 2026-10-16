@@ -86,7 +86,14 @@ class Faturas extends Component
         $this->validate(['motivo' => ['required', 'string', 'max:300']], [], ['motivo' => 'motivo']);
         $fatura = Fatura::query()->findOrFail($this->rejeitarId);
 
-        app(Faturacao::class)->rejeitar($fatura, auth()->user(), $this->motivo);
+        try {
+            app(Faturacao::class)->rejeitar($fatura, auth()->user(), $this->motivo);
+        } catch (RuntimeException $e) {
+            $this->rejeitarId = null;
+            $this->dispatch('toast', title: 'Não foi possível', body: $e->getMessage(), tone: 'danger');
+
+            return;
+        }
 
         $this->rejeitarId = null;
         unset($this->faturas, $this->contagens);

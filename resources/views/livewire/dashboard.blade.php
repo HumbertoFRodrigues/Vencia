@@ -15,6 +15,36 @@
     </x-slot:actions>
 </x-ui.page-header>
 
+@if($passos = $this->primeirosPassos)
+    @php
+        $feitos = collect($passos)->where('feito', true)->count();
+    @endphp
+    <x-ui.card title="Primeiros passos" :subtitle="$feitos.' de '.count($passos).' feitos · cada passo marca-se sozinho'">
+        <x-slot:action>
+            <x-ui.button size="sm" variant="ghost" wire:click="dispensarPrimeirosPassos">Esconder</x-ui.button>
+        </x-slot:action>
+        <div class="uso__barra" style="margin-bottom:14px"><span style="width:{{ round($feitos / count($passos) * 100) }}%"></span></div>
+        <ol class="passos-iniciais">
+            @foreach($passos as $i => $p)
+                <li class="{{ $p['feito'] ? 'passos-iniciais__item--feito' : '' }}">
+                    <span class="passos-iniciais__marca">@if($p['feito'])<x-ui.icon name="check" size="14" />@else{{ $i + 1 }}@endif</span>
+                    <div class="passos-iniciais__texto">
+                        <strong>{{ $p['titulo'] }}</strong>
+                        <span>{{ $p['texto'] }}</span>
+                    </div>
+                    @unless($p['feito'])
+                        @if($p['evento'])
+                            <x-ui.button size="sm" wire:click="$dispatch('{{ $p['evento'] }}')">{{ $p['accao'] }}</x-ui.button>
+                        @else
+                            <a href="{{ $p['href'] }}" wire:navigate class="btn btn--secondary btn--sm">{{ $p['accao'] }}</a>
+                        @endif
+                    @endunless
+                </li>
+            @endforeach
+        </ol>
+    </x-ui.card>
+@endif
+
 <div class="tile-grid">
     <x-ui.stat-card
         label="Receita deste mês"

@@ -59,8 +59,26 @@ class Equipa
         return $convite;
     }
 
+    /** The conta's plan still has room for this person (a plan may have ended since the invite was sent). */
+    public function cabe(Convite $convite, ?User $user = null): bool
+    {
+        $conta = $convite->conta;
+        if ($user && $user->contas()->whereKey($conta->id)->exists()) {
+            return true;
+        }
+
+        $limite = $conta->planoEfectivo()->limite('membros');
+
+        return $limite === null || $conta->membros()->count() < $limite;
+    }
+
+    /** @throws RuntimeException when the plan no longer has room */
     public function aceitar(Convite $convite, User $user): void
     {
+        if (! $this->cabe($convite, $user)) {
+            throw new RuntimeException('A equipa de '.$convite->conta->nome.' já está completa no plano actual. Pede a quem te convidou para passar ao Pro ou libertar um lugar.');
+        }
+
         DB::transaction(function () use ($convite, $user): void {
             $conta = $convite->conta;
 

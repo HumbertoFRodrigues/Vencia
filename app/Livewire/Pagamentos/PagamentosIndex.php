@@ -217,6 +217,7 @@ class PagamentosIndex extends Component
     /** Shows the inline "tens a certeza?" confirm step for one row instead of deleting on a single click. */
     public function pedirConfirmacaoRemocao(int $id): void
     {
+        $this->authorize('gerir-negocio');
         $this->confirmandoRemocaoId = $id;
     }
 
@@ -238,6 +239,8 @@ class PagamentosIndex extends Component
      */
     public function apagar(int $id): void
     {
+        // The Registos role records payments but never deletes them.
+        $this->authorize('gerir-negocio');
         $pagamento = Pagamento::findOrFail($id);
 
         DB::transaction(function () use ($pagamento): void {

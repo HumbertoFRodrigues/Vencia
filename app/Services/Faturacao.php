@@ -99,13 +99,20 @@ class Faturacao
     /** Extends the conta's plan by one cycle, starting where the current paid period ends. */
     public function marcarPaga(Fatura $fatura, ?User $aprovador = null, ?string $gatewayRef = null): void
     {
-        DB::transaction(function () use ($fatura, $aprovador, $gatewayRef): void {
+        $pagaAgora = DB::transaction(function () use ($fatura, $aprovador, $gatewayRef): bool {
+            // Re-read under a lock: a double click, two admins or a gateway retry must extend the plan only once.
+            $bloqueada = Fatura::query()->lockForUpdate()->findOrFail($fatura->id);
+            if ($bloqueada->estado === Fatura::PAGA) {
+                return false;
+            }
+
             $conta = Conta::query()->lockForUpdate()->findOrFail($fatura->conta_id);
             $hoje = Carbon::today();
 
-            $continua = $conta->plano_id === $fatura->plano_id && ! $conta->em_teste && $conta->plano_ate && $conta->plano_ate->gte($hoje);
+            // Paying before the end (also during a trial of the same plan) adds the cycle after the days still left.
+            $continua = $conta->plano_id === $fatura->plano_id && $conta->plano_ate && $conta->plano_ate->gte($hoje);
             $inicio = $continua ? $conta->plano_ate->copy()->addDay() : $hoje;
-            $fim = ($fatura->ciclo === 'anual' ? $inicio->copy()->addYear() : $inicio->copy()->addMonth())->subDay();
+            $fim = ($fatura->ciclo === 'anual' ? $inicio->copy()->addYearNoOverflow() : $inicio->copy()->addMonthNoOverflow())->subDay();
 
             $fatura->update([
                 'estado' => Fatura::PAGA,
@@ -124,7 +131,13 @@ class Faturacao
             ])->save();
 
             ActividadeAdmin::registar('fatura.aprovada', 'conta:'.$conta->id, $fatura->referenciaInterna().' — '.$fatura->plano->nome.' até '.$fim->format('d/m/Y'));
+
+            return true;
         });
+
+        if (! $pagaAgora) {
+            return;
+        }
 
         $fatura->refresh();
         $this->avisarDono($fatura->conta, 'Pagamento confirmado', [
@@ -135,6 +148,10 @@ class Faturacao
 
     public function rejeitar(Fatura $fatura, User $admin, string $motivo): void
     {
+        if (! $fatura->aberta()) {
+            throw new RuntimeException('Só uma fatura por pagar ou em análise pode ser rejeitada.');
+        }
+
         $fatura->update(['estado' => Fatura::REJEITADA, 'nota' => $motivo, 'aprovada_por' => $admin->id]);
         ActividadeAdmin::registar('fatura.rejeitada', 'conta:'.$fatura->conta_id, $fatura->referenciaInterna().' — '.$motivo);
 
@@ -157,7 +174,7 @@ class Faturacao
         $hoje = Carbon::today();
         $gratis = Plano::gratis();
 
-        Conta::query()->whereNotNull('plano_ate')->with('plano')->each(function (Conta $conta) use (&$resumo, $hoje, $gratis): void {
+        Conta::query()->whereNotNull('plano_ate')->with('plano')->lazyById(200)->each(function (Conta $conta) use (&$resumo, $hoje, $gratis): void {
             $dias = (int) $hoje->diffInDays($conta->plano_ate, false);
 
             if ($dias < 0) {

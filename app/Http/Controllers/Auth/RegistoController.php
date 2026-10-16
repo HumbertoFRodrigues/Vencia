@@ -62,6 +62,10 @@ class RegistoController extends Controller
             return back()->withErrors(['email' => 'Este convite já expirou ou já foi usado. Pede um novo a quem te convidou.'])->onlyInput('name', 'email');
         }
 
+        if ($convite && ! app(Equipa::class)->cabe($convite)) {
+            return back()->withErrors(['email' => 'A equipa de '.$convite->conta->nome.' já está completa no plano actual. Pede a quem te convidou para passar ao Pro ou libertar um lugar.'])->onlyInput('name', 'email');
+        }
+
         if (! $convite && ! self::opcoes()['aberto']) {
             return back()->withErrors(['email' => 'Os registos estão fechados de momento.']);
         }

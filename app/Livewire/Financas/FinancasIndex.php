@@ -141,6 +141,11 @@ class FinancasIndex extends Component
     public function anularRetirada(int $retiradaId): void
     {
         $retirada = Retirada::findOrFail($retiradaId);
+
+        // Undoing one also removes the entry from that person's private panel: only they may do it.
+        $this->authorize('retirar');
+        abort_unless($retirada->user_id === auth()->id(), 403);
+
         app(Retiradas::class)->anular($retirada);
 
         $this->dispatch('toast', title: 'Retirada anulada', body: FinancasPessoais::mzn((float) $retirada->valor).' — também saiu do painel pessoal.', tone: 'success');
