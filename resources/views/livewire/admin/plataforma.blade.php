@@ -37,23 +37,30 @@
             </x-ui.card>
 
             @php
-                $mpesaPronto = \App\Services\Pagamentos\MpesaCliente::configurado();
-                $mpesaLigado = config('pagamentos.gateway') === 'mpesa' && $mpesaPronto;
+                $mpesa = \App\Services\Pagamentos\MpesaConfig::get();
+                $mpesaActivo = \App\Services\Pagamentos\MpesaConfig::activo();
+                $temChave = filled($mpesa['api_key']);
             @endphp
-            <x-ui.card title="Pagamento automático por M-Pesa" subtitle="Os clientes recebem o pedido no telemóvel, confirmam com o PIN e o plano activa sozinho. O pagamento manual continua disponível.">
+            <x-ui.card title="Pagamento automático por M-Pesa" subtitle="Cola aqui as chaves do portal M-Pesa da Vodacom (as mesmas do teu payment-api). Os clientes confirmam com o PIN e o plano activa sozinho; o pagamento manual continua disponível.">
                 <x-slot:action>
-                    <x-ui.tag :tone="$mpesaLigado ? 'success' : 'neutral'">{{ $mpesaLigado ? 'Ligado'.(config('pagamentos.mpesa.sandbox') ? ' (sandbox)' : '') : 'Desligado' }}</x-ui.tag>
+                    <x-ui.tag :tone="$mpesaActivo ? 'success' : 'neutral'">{{ $mpesaActivo ? 'Ligado'.($mpesa['sandbox'] ? ' (sandbox)' : ' (produção)') : 'Desligado' }}</x-ui.tag>
                 </x-slot:action>
-                @unless($mpesaLigado)
-                    <p class="pessoal-muted" style="margin:0">
-                        @if(! $mpesaPronto)
-                            Para ligar, põe no <code>.env</code> do servidor as chaves do portal M-Pesa da Vodacom: <code>MPESA_API_KEY</code>, <code>MPESA_PUBLIC_KEY</code>, <code>MPESA_SERVICE_PROVIDER_CODE</code>, e depois <code>PAGAMENTOS_GATEWAY=mpesa</code> e <code>MPESA_SANDBOX=false</code>.
-                        @else
-                            As chaves já estão no <code>.env</code>. Falta <code>PAGAMENTOS_GATEWAY=mpesa</code>.
-                        @endif
-                        Ver DEPLOY.md.
-                    </p>
-                @endunless
+                <form wire:submit="guardarMpesa" class="pilha pilha--12">
+                    <x-ui.input label="API Key" type="password" wire:model="mpesaApiKey" autocomplete="off" :placeholder="$temChave ? 'Guardada (cola outra para substituir)' : 'Cola a API Key'" :error="$errors->first('mpesaApiKey')" />
+                    <x-ui.textarea label="Public Key" wire:model="mpesaPublicKey" rows="3" :placeholder="filled($mpesa['public_key']) ? 'Guardada (cola outra para substituir)' : 'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA…'" :error="$errors->first('mpesaPublicKey')" />
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                        <x-ui.input label="Service Provider Code" wire:model="mpesaCodigo" inputmode="numeric" placeholder="171717" :error="$errors->first('mpesaCodigo')" />
+                        <x-ui.select label="Ambiente" wire:model="mpesaAmbiente" :options="[['value' => 'sandbox', 'label' => 'Sandbox (testes)'], ['value' => 'producao', 'label' => 'Produção (dinheiro real)']]" />
+                    </div>
+                    <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="mpesaLigado"> Ligar "Pagar já com M-Pesa" na página Plano dos clientes</label>
+                    @if($mpesa['origem'] === 'env' && filled($mpesa['api_key']))
+                        <p class="field__hint" style="margin:0">Neste momento as chaves vêm do <code>.env</code> do servidor. O que guardares aqui passa a valer.</p>
+                    @endif
+                    <div class="linha-accoes">
+                        <x-ui.button size="sm" variant="ghost" icon="shield-check" wire:click="verificarMpesa">Verificar chaves</x-ui.button>
+                        <x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button>
+                    </div>
+                </form>
             </x-ui.card>
 
             <x-ui.card title="Registo de novas contas">

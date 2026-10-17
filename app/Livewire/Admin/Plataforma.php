@@ -7,6 +7,8 @@ use App\Models\ActividadeAdmin;
 use App\Models\Configuracao;
 use App\Services\CopiaSeguranca;
 use App\Services\EmailsDeTeste;
+use App\Services\Pagamentos\MpesaCliente;
+use App\Services\Pagamentos\MpesaConfig;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -14,6 +16,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
@@ -86,6 +89,11 @@ class Plataforma extends Component
         $this->diasTeste = (string) $registo['dias_teste'];
         $this->avisarAdmin = (bool) (Configuracao::plataforma('registo', [])['avisar_admin'] ?? true);
 
+        $mpesa = MpesaConfig::get();
+        $this->mpesaLigado = $mpesa['ligado'];
+        $this->mpesaAmbiente = $mpesa['sandbox'] ? 'sandbox' : 'producao';
+        $this->mpesaCodigo = (string) ($mpesa['service_provider_code'] ?? '');
+
         $this->testeDestino = auth()->user()->email;
     }
 
@@ -137,6 +145,75 @@ class Plataforma extends Component
 
         ActividadeAdmin::registar('plataforma.faturacao');
         $this->dispatch('toast', title: 'Dados de pagamento guardados', tone: 'success');
+    }
+
+    public bool $mpesaLigado = false;
+
+    public string $mpesaAmbiente = 'sandbox';
+
+    /** Never pre-filled: blank on save keeps the stored key. */
+    public string $mpesaApiKey = '';
+
+    public string $mpesaPublicKey = '';
+
+    public string $mpesaCodigo = '';
+
+    public function guardarMpesa(): void
+    {
+        $this->validate([
+            'mpesaApiKey' => ['nullable', 'string', 'max:200'],
+            'mpesaPublicKey' => ['nullable', 'string', 'max:2000'],
+            'mpesaCodigo' => ['nullable', 'string', 'max:20', 'regex:/^\d+$/'],
+            'mpesaAmbiente' => ['required', 'in:sandbox,producao'],
+        ], ['mpesaCodigo.regex' => 'O Service Provider Code só tem números (ex.: 171717).'], ['mpesaCodigo' => 'Service Provider Code']);
+
+        if ($this->mpesaLigado && ! filled($this->mpesaApiKey) && ! filled(Configuracao::plataforma('mpesa', [])['api_key'] ?? null)) {
+            $this->addError('mpesaApiKey', 'Cola a API Key antes de ligar.');
+
+            return;
+        }
+
+        MpesaConfig::guardar([
+            'ligado' => $this->mpesaLigado,
+            'sandbox' => $this->mpesaAmbiente !== 'producao',
+            'api_key' => $this->mpesaApiKey,
+            'public_key' => $this->mpesaPublicKey,
+            'service_provider_code' => $this->mpesaCodigo,
+        ]);
+
+        $this->reset('mpesaApiKey', 'mpesaPublicKey');
+        $this->mpesaCodigo = (string) (MpesaConfig::get()['service_provider_code'] ?? '');
+        ActividadeAdmin::registar('plataforma.mpesa', null, ($this->mpesaLigado ? 'ligado' : 'desligado').($this->mpesaAmbiente === 'producao' ? ' (produção)' : ' (sandbox)'));
+
+        if ($this->mpesaLigado && ! MpesaConfig::completo()) {
+            $this->dispatch('toast', title: 'Guardado, mas ainda desligado', body: 'Faltam chaves: API Key, Public Key e Service Provider Code.', tone: 'warning');
+
+            return;
+        }
+
+        $this->dispatch('toast', title: 'M-Pesa guardado', body: MpesaConfig::activo() ? 'Os clientes já vêem "Pagar já com M-Pesa".' : 'Desligado: os clientes pagam à mão.', tone: 'success');
+    }
+
+    /** Checks the saved keys fit together (the API Key encrypts with the Public Key). No money moves. */
+    public function verificarMpesa(): void
+    {
+        $config = MpesaConfig::get();
+
+        if (! MpesaConfig::completo()) {
+            $this->dispatch('toast', title: 'Faltam chaves', body: 'Guarda a API Key, a Public Key e o Service Provider Code primeiro.', tone: 'warning');
+
+            return;
+        }
+
+        try {
+            app(MpesaCliente::class)->bearer($config['api_key'], $config['public_key']);
+        } catch (RuntimeException $e) {
+            $this->dispatch('toast', title: 'Chaves inválidas', body: $e->getMessage(), tone: 'danger');
+
+            return;
+        }
+
+        $this->dispatch('toast', title: 'Chaves válidas', body: 'Para confirmar com a Vodacom, faz um pagamento de teste'.($config['sandbox'] ? ' com o número de teste do portal.' : ' de um plano.'), tone: 'success');
     }
 
     public function guardarRegisto(): void

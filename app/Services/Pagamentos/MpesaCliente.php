@@ -14,9 +14,7 @@ class MpesaCliente
 {
     public static function configurado(): bool
     {
-        return filled(config('pagamentos.mpesa.api_key'))
-            && filled(config('pagamentos.mpesa.public_key'))
-            && filled(config('pagamentos.mpesa.service_provider_code'));
+        return MpesaConfig::completo();
     }
 
     /** "84 123 4567", "+258841234567" → "258841234567"; null when it isn't an M-Pesa (84/85) number. */
@@ -32,20 +30,21 @@ class MpesaCliente
      */
     public function c2b(string $telefone, float $valor, string $referencia, string $referenciaTerceiro): array
     {
-        $sandbox = (bool) config('pagamentos.mpesa.sandbox');
+        $config = MpesaConfig::get();
+        $sandbox = $config['sandbox'];
         $url = 'https://'.($sandbox ? 'api.sandbox.vm.co.mz' : 'api.vm.co.mz').':18352/ipg/v1x/c2bPayment/singleStage/';
 
-        $resposta = Http::withToken($this->bearer())
+        $resposta = Http::withToken($this->bearer($config['api_key'], $config['public_key']))
             ->withHeaders(['Origin' => 'developer.mpesa.vm.co.mz'])
             ->withOptions(['verify' => ! $sandbox])
             ->connectTimeout(15)
-            ->timeout((int) config('pagamentos.mpesa.timeout', 150))
+            ->timeout($config['timeout'])
             ->post($url, [
                 'input_TransactionReference' => $referencia,
                 'input_CustomerMSISDN' => $telefone,
                 'input_Amount' => $this->valor($valor),
                 'input_ThirdPartyReference' => $referenciaTerceiro,
-                'input_ServiceProviderCode' => (string) config('pagamentos.mpesa.service_provider_code'),
+                'input_ServiceProviderCode' => (string) $config['service_provider_code'],
             ]);
 
         $json = $resposta->json() ?? [];
@@ -80,19 +79,19 @@ class MpesaCliente
     }
 
     /** The API key encrypted with Vodacom's public key: the bearer token. */
-    private function bearer(): string
+    public function bearer(?string $apiKey, ?string $publicKey): string
     {
-        $limpa = preg_replace('/\s+/', '', (string) config('pagamentos.mpesa.public_key'));
+        $limpa = preg_replace('/\s+/', '', (string) $publicKey);
         $pem = "-----BEGIN PUBLIC KEY-----\n".chunk_split($limpa, 64, "\n")."-----END PUBLIC KEY-----\n";
 
         $chave = openssl_pkey_get_public($pem);
         if ($chave === false) {
-            throw new RuntimeException('M-Pesa: a chave pública (MPESA_PUBLIC_KEY) é inválida.');
+            throw new RuntimeException('A Public Key do M-Pesa não é válida. Copia-a outra vez do portal da Vodacom.');
         }
 
         $cifrada = '';
-        if (! openssl_public_encrypt((string) config('pagamentos.mpesa.api_key'), $cifrada, $chave, OPENSSL_PKCS1_PADDING)) {
-            throw new RuntimeException('M-Pesa: não foi possível cifrar a MPESA_API_KEY.');
+        if (! openssl_public_encrypt((string) $apiKey, $cifrada, $chave, OPENSSL_PKCS1_PADDING)) {
+            throw new RuntimeException('Não foi possível usar a API Key com esta Public Key.');
         }
 
         return base64_encode($cifrada);

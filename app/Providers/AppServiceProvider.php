@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Services\FinancasPessoais;
 use App\Services\Pagamentos\GatewayManual;
 use App\Services\Pagamentos\GatewayMpesa;
-use App\Services\Pagamentos\MpesaCliente;
+use App\Services\Pagamentos\MpesaConfig;
 use App\Services\Totais;
 use App\Support\ContaActual;
 use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
@@ -35,8 +35,8 @@ class AppServiceProvider extends ServiceProvider
         // One per request (and per test): the conta never leaks from one request into the next.
         $this->app->scoped(ContaActual::class);
 
-        // Plan invoices: paid by hand, plus "Pagar já com M-Pesa" once PAGAMENTOS_GATEWAY=mpesa and the keys are in .env.
-        $this->app->bind(GatewayPagamento::class, fn () => config('pagamentos.gateway') === 'mpesa' && MpesaCliente::configurado()
+        // Plan invoices: paid by hand, plus "Pagar já com M-Pesa" once it is switched on with its keys (Admin → Plataforma or .env).
+        $this->app->bind(GatewayPagamento::class, fn () => MpesaConfig::activo()
             ? $this->app->make(GatewayMpesa::class)
             : $this->app->make(GatewayManual::class));
     }

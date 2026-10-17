@@ -3,7 +3,9 @@
 namespace Tests\Feature\Contas;
 
 use App\Contracts\GatewayPagamento;
+use App\Livewire\Admin\Plataforma;
 use App\Livewire\Conta\Plano as PlanoPage;
+use App\Models\Configuracao;
 use App\Models\Fatura;
 use App\Models\Plano;
 use App\Models\User;
@@ -11,6 +13,7 @@ use App\Services\Faturacao;
 use App\Services\Pagamentos\GatewayManual;
 use App\Services\Pagamentos\GatewayMpesa;
 use App\Services\Pagamentos\MpesaCliente;
+use App\Services\Pagamentos\MpesaConfig;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
@@ -56,6 +59,52 @@ class MpesaTest extends TestCase
 
         config(['pagamentos.mpesa.api_key' => 'x', 'pagamentos.gateway' => 'manual']);
         $this->assertInstanceOf(GatewayManual::class, app(GatewayPagamento::class));
+    }
+
+    public function test_keys_pasted_in_the_admin_panel_switch_it_on_and_are_stored_encrypted(): void
+    {
+        // Nothing in .env this time.
+        config(['pagamentos.gateway' => 'manual', 'pagamentos.mpesa.api_key' => null, 'pagamentos.mpesa.public_key' => null, 'pagamentos.mpesa.service_provider_code' => null]);
+        $this->assertInstanceOf(GatewayManual::class, app(GatewayPagamento::class));
+
+        $admin = User::factory()->create(['super_admin' => true]);
+        $this->actingAs($admin);
+
+        Livewire::test(Plataforma::class)
+            ->set('mpesaApiKey', 'chave-do-painel')
+            ->set('mpesaPublicKey', "-----BEGIN PUBLIC KEY-----\n".chunk_split(self::CHAVE_PUBLICA_DE_TESTE, 64, "\n").'-----END PUBLIC KEY-----')
+            ->set('mpesaCodigo', '900579')
+            ->set('mpesaAmbiente', 'sandbox')
+            ->set('mpesaLigado', true)
+            ->call('guardarMpesa')->assertHasNoErrors()
+            ->call('verificarMpesa')->assertDispatched('toast', fn ($n, $p) => $p['title'] === 'Chaves válidas');
+
+        $guardado = Configuracao::plataforma('mpesa');
+        $this->assertStringNotContainsString('chave-do-painel', json_encode($guardado), 'stored encrypted');
+        $this->assertSame('chave-do-painel', MpesaConfig::get()['api_key']);
+        $this->assertSame(self::CHAVE_PUBLICA_DE_TESTE, MpesaConfig::get()['public_key'], 'PEM header and line breaks removed');
+        $this->assertInstanceOf(GatewayMpesa::class, app(GatewayPagamento::class));
+
+        Http::fake(['*vm.co.mz*' => Http::response(['output_ResponseCode' => 'INS-0', 'output_TransactionID' => 'TXPAINEL'], 201)]);
+        $this->actingAs(User::query()->where('super_admin', false)->first());
+        Livewire::test(PlanoPage::class)->set('telefone', '841234567')->call('pagarMpesa')->assertHasNoErrors();
+        Http::assertSent(fn (Request $r) => $r['input_ServiceProviderCode'] === '900579');
+
+        // Saving again with the key fields blank keeps the keys; switching off turns it off.
+        $this->actingAs($admin);
+        Livewire::test(Plataforma::class)->set('mpesaLigado', false)->call('guardarMpesa');
+        $this->assertSame('chave-do-painel', MpesaConfig::get()['api_key']);
+        $this->assertInstanceOf(GatewayManual::class, app(GatewayPagamento::class));
+    }
+
+    public function test_a_wrong_public_key_is_caught_by_the_check(): void
+    {
+        $this->actingAs(User::factory()->create(['super_admin' => true]));
+
+        Livewire::test(Plataforma::class)
+            ->set('mpesaApiKey', 'x')->set('mpesaPublicKey', 'isto-nao-e-uma-chave')->set('mpesaCodigo', '171717')
+            ->call('guardarMpesa')
+            ->call('verificarMpesa')->assertDispatched('toast', fn ($n, $p) => $p['title'] === 'Chaves inválidas');
     }
 
     public function test_phone_numbers_are_normalised(): void
