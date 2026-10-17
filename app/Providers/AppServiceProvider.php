@@ -16,6 +16,7 @@ use App\Support\ContaActual;
 use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -137,6 +138,7 @@ class AppServiceProvider extends ServiceProvider
                 'navItems' => $navItems,
                 'navActive' => $navActive,
                 'painel' => $painel,
+                'avisoPlano' => $painel === 'empresa' ? $this->avisoPlano() : null,
             ]);
         });
     }
@@ -146,6 +148,38 @@ class AppServiceProvider extends ServiceProvider
      * platform's super-admin. Used by routes (`can:`), Livewire actions and
      * the menu above.
      */
+    /**
+     * A thin bar for the dono in the last days of a trial or paid plan, so the
+     * end never comes as a surprise (the emails can land in spam).
+     *
+     * @return array{texto: string, tom: string}|null
+     */
+    private function avisoPlano(): ?array
+    {
+        $conta = ContaActual::get();
+        if (! $conta || ! $conta->plano_ate || $conta->planoExpirado() || ! Gate::allows('gerir-conta')) {
+            return null;
+        }
+
+        $dias = (int) Carbon::today()->diffInDays($conta->plano_ate, false);
+        if ($dias > 5) {
+            return null;
+        }
+
+        $quando = match ($dias) {
+            0 => 'hoje',
+            1 => 'amanhã',
+            default => 'em '.$dias.' dias ('.$conta->plano_ate->format('d/m').')',
+        };
+
+        return [
+            'texto' => $conta->em_teste
+                ? 'O teu período de teste do '.$conta->planoEfectivo()->nome.' acaba '.$quando.'. Depois a conta passa para o Grátis (os dados ficam guardados).'
+                : 'O teu plano '.$conta->planoEfectivo()->nome.' termina '.$quando.'. Renova para continuar sem interrupção.',
+            'tom' => $dias <= 1 ? 'warning' : 'info',
+        ];
+    }
+
     private function definirPermissoes(): void
     {
         Gate::define('super-admin', fn (User $user) => $user->super_admin);
