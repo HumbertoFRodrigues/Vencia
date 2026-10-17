@@ -62,6 +62,13 @@
 
             <main class="app-shell__content">
                 <div class="app-shell__content-inner">
+                    @if($avisoPlano ?? null)
+                        <div class="faixa-plano faixa-plano--{{ $avisoPlano['tom'] }}" role="status">
+                            <x-ui.icon name="hourglass" size="16" />
+                            <span>{{ $avisoPlano['texto'] }}</span>
+                            <a href="{{ route('conta.plano') }}" wire:navigate class="btn btn--primary btn--sm">Ver planos</a>
+                        </div>
+                    @endif
                     {{ $slot }}
                 </div>
             </main>

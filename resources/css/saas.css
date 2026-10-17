@@ -96,3 +96,20 @@ a.auth-card__brand { text-decoration: none; }
 .mpesa-ja strong { color: var(--text-strong); }
 .mpesa-ja__linha { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
 .mpesa-ja__linha .field { flex: 1; min-width: 180px; }
+
+/* Side-by-side form fields (inline grids in forms and dialogs): let the fields shrink instead of
+   pushing past the screen, and stack them on phones. */
+[style*="grid-template-columns:1fr 1fr"] > *,
+[style*="grid-template-columns:repeat(3,1fr)"] > *,
+[style*="grid-template-columns:2fr 1fr"] > * { min-width: 0; }
+@media (max-width: 520px) {
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns:repeat(3,1fr)"],
+  [style*="grid-template-columns:2fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+
+/* Trial / plan ending, for the dono, at the top of every business page */
+.faixa-plano { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 16px; padding: 10px 14px; border-radius: var(--radius-md); font-size: var(--text-sm); }
+.faixa-plano span { flex: 1; min-width: 200px; }
+.faixa-plano--info { background: var(--accent-soft); color: var(--text-accent); border: 1px solid var(--accent-soft-border); }
+.faixa-plano--warning { background: var(--status-due-bg); color: var(--status-due-fg); border: 1px solid var(--status-due-dot); }

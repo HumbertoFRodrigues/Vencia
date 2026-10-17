@@ -3,10 +3,10 @@
     <x-ui.page-header eyebrow="Administração da plataforma" title="Visão geral" />
 
     <div class="stats-4">
-        <x-ui.stat-card label="Contas" :value="$n['contas']" :footnote="$n['novas'].' novas nos últimos 30 dias'" icon="briefcase" />
+        <x-ui.stat-card label="Contas" :value="$n['contas']" :footnote="$n['novas'].($n['novas'] === 1 ? ' nova' : ' novas').' nos últimos 30 dias'" icon="briefcase" />
         <x-ui.stat-card label="A pagar" :value="$n['pagantes']" :footnote="$n['teste'].' em período de teste'" icon="credit-card" tone="in" />
         <x-ui.stat-card label="Receita este mês" :value="$n['receitaMes']" :currency="$faturacao->moeda()" icon="banknote" tone="in" />
-        <x-ui.stat-card label="Faturas por confirmar" :value="$n['emAnalise']" :footnote="$n['utilizadores'].' utilizadores no total'" icon="hourglass" :tone="$n['emAnalise'] > 0 ? 'out' : 'neutral'" />
+        <x-ui.stat-card label="Faturas por confirmar" :value="$n['emAnalise']" :footnote="$n['utilizadores'].($n['utilizadores'] === 1 ? ' utilizador' : ' utilizadores').' no total'" icon="hourglass" :tone="$n['emAnalise'] > 0 ? 'out' : 'neutral'" />
     </div>
 
     <div class="grelha-2">
