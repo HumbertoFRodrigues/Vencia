@@ -43,6 +43,7 @@ class Actividade extends Component
         'plataforma.faturacao' => 'Dados de pagamento',
         'plataforma.registo' => 'Opções de registo',
         'plataforma.copia' => 'Cópia de segurança',
+        'plataforma.mpesa' => 'M-Pesa automático',
     ];
 
     public function render()

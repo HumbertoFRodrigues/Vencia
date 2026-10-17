@@ -127,20 +127,15 @@ Antes de actualizar, faz uma cópia de segurança. Depois do `migrate --force`, 
 
 Está tudo pronto no código. Sem credenciais, os clientes pagam o Pro à mão (M-Pesa, e-Mola ou transferência) e tu confirmas em Admin → Faturação. Com credenciais, a página Plano mostra também **Pagar já com M-Pesa**: o cliente escreve o número, confirma com o PIN no telemóvel e o plano activa sozinho, com recibo por email.
 
-1. No portal da Vodacom (developer.mpesa.vm.co.mz), cria a aplicação e copia a **API Key**, a **Public Key** e o **Service Provider Code**.
-2. No `.env` do servidor, acrescenta:
-   ```
-   PAGAMENTOS_GATEWAY=mpesa
-   MPESA_API_KEY=a-tua-api-key
-   MPESA_PUBLIC_KEY=a-public-key-numa-só-linha
-   MPESA_SERVICE_PROVIDER_CODE=o-teu-código
-   MPESA_SANDBOX=true
-   ```
-3. Corre `php artisan config:cache` (ou o truque do Cron do passo 6).
-4. Em Admin → Plataforma confirma que o cartão do M-Pesa diz **Ligado (sandbox)** e faz um pagamento de teste com o número de teste da Vodacom.
-5. Quando a Vodacom aprovar a conta para produção, muda para `MPESA_SANDBOX=false` e corre `php artisan config:cache` outra vez.
+1. No portal da Vodacom (developer.mpesa.vm.co.mz), copia a **API Key**, a **Public Key** e o **Service Provider Code**. São as mesmas chaves que o payment-api usa.
+2. Na Vencia: **Admin → Plataforma → Pagamento automático por M-Pesa**. Cola as três, escolhe o ambiente **Sandbox (testes)**, marca **Ligar** e carrega em **Guardar**. As chaves ficam cifradas na base de dados.
+3. Carrega em **Verificar chaves**: confirma que a API Key e a Public Key combinam, sem cobrar nada.
+4. Faz um pagamento de teste de um plano, com o número de teste do portal da Vodacom.
+5. Quando a Vodacom aprovar a conta para produção, muda o ambiente para **Produção (dinheiro real)** e guarda.
 
-O pedido espera até 2,5 minutos pela confirmação do PIN. Se o alojamento cortar pedidos mais cedo (alguns cPanel limitam a 30–60 s), pede ao suporte para aumentar o `max_execution_time` do PHP para 180. Para desligar, basta pôr `PAGAMENTOS_GATEWAY=manual`.
+Alternativa para quem prefere o servidor: as mesmas chaves no `.env` (`PAGAMENTOS_GATEWAY=mpesa`, `MPESA_API_KEY`, `MPESA_PUBLIC_KEY`, `MPESA_SERVICE_PROVIDER_CODE`, `MPESA_SANDBOX`). O que estiver guardado no painel tem prioridade.
+
+O pedido espera até 2,5 minutos pela confirmação do PIN. Se o alojamento cortar pedidos mais cedo (alguns cPanel limitam a 30–60 s), pede ao suporte para aumentar o `max_execution_time` do PHP para 180. Para desligar, desmarca **Ligar** no painel.
 
 ## 9. Segurança e telemóvel
 

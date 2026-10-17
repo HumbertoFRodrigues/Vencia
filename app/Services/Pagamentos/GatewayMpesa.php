@@ -45,7 +45,7 @@ class GatewayMpesa implements CobrancaImediata, GatewayPagamento
         }
 
         // The customer has up to a couple of minutes to type the PIN.
-        @set_time_limit((int) config('pagamentos.mpesa.timeout', 150) + 30);
+        @set_time_limit(MpesaConfig::get()['timeout'] + 30);
 
         $referencia = $fatura->referenciaInterna();
         $terceiro = 'V'.$fatura->id.'T'.now()->format('His');
