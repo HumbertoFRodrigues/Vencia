@@ -13,32 +13,70 @@
     </div>
 
     <div class="grelha-2">
-        <x-ui.card title="Membros">
+        <x-ui.card title="Membros" :subtitle="$membros->count().($membros->count() === 1 ? ' pessoa' : ' pessoas').' · uma conta tem sempre pelo menos um dono'">
             <ul class="lista-simples">
                 @foreach($membros as $m)
+                    @php
+                        $papelM = \App\Enums\Papel::from($m->pivot->papel);
+                    @endphp
                     <li wire:key="m-{{ $m->id }}">
                         <div class="lista-simples__corpo">
                             <span class="lista-simples__titulo">{{ $m->name }}</span>
-                            <span class="lista-simples__meta">{{ $m->email }} · {{ \App\Enums\Papel::from($m->pivot->papel)->label() }}</span>
+                            <span class="lista-simples__meta">{{ $m->email }}</span>
                         </div>
-                        @unless($m->is(auth()->user()))
-                            <form method="POST" action="{{ route('admin.entrar-como', $m) }}">
-                                @csrf
-                                <x-ui.button type="submit" size="sm" variant="ghost" icon="log-in">Entrar como</x-ui.button>
-                            </form>
-                        @endunless
+                        <div class="lista-simples__accoes">
+                            <div class="field__select-wrap">
+                                <select class="field__select" aria-label="Papel de {{ $m->name }}" wire:change="mudarPapelMembro({{ $m->id }}, $event.target.value)">
+                                    @foreach(\App\Enums\Papel::cases() as $p)
+                                        <option value="{{ $p->value }}" @selected($p === $papelM)>{{ $p->label() }}</option>
+                                    @endforeach
+                                </select>
+                                <x-ui.icon name="chevron-down" size="15" color="var(--text-faint)" class="field__select-chevron" />
+                            </div>
+                            @unless($m->is(auth()->user()) || $m->super_admin)
+                                <form method="POST" action="{{ route('admin.entrar-como', $m) }}">
+                                    @csrf
+                                    <x-ui.icon-button type="submit" size="sm" icon="log-in" :label="'Entrar como '.$m->name" />
+                                </form>
+                            @endunless
+                            <x-ui.icon-button size="sm" icon="trash-2" :label="'Remover '.$m->name.' da conta'" wire:click="removerMembro({{ $m->id }})" wire:confirm="Remover {{ $m->name }} desta conta? O utilizador continua a existir." />
+                        </div>
                     </li>
                 @endforeach
             </ul>
-        </x-ui.card>
-
-        <x-ui.card title="Plano (manual)" subtitle="Para ofertas, acertos ou pagamentos recebidos fora da app. Em branco = sem data de fim.">
-            <form wire:submit="guardarPlano" class="pilha pilha--12">
-                <x-ui.select label="Plano" wire:model="planoId" :options="$planos->map(fn ($p) => ['value' => (string) $p->id, 'label' => $p->nome])->all()" />
-                <x-ui.input label="Até" type="date" wire:model="planoAte" :error="$errors->first('planoAte')" />
-                <div class="linha-accoes"><x-ui.button type="submit" size="sm" variant="primary">Guardar plano</x-ui.button></div>
+            <form wire:submit="adicionarMembro" class="grelha-2" style="margin-top:14px;align-items:end">
+                <x-ui.input label="Acrescentar utilizador existente" type="email" wire:model="novoMembroEmail" placeholder="email@exemplo.mz" :error="$errors->first('novoMembroEmail')" />
+                <div style="display:flex;gap:8px;align-items:end">
+                    <div style="flex:1"><x-ui.select label="Papel" wire:model="novoMembroPapel" :options="collect(\App\Enums\Papel::cases())->map(fn ($p) => ['value' => $p->value, 'label' => $p->label()])->all()" /></div>
+                    <x-ui.button type="submit" size="sm" icon="user-plus">Acrescentar</x-ui.button>
+                </div>
             </form>
         </x-ui.card>
+
+        <div class="pilha">
+            <x-ui.card title="Nome da conta">
+                <form wire:submit="guardarNome" class="pilha pilha--12">
+                    <x-ui.input wire:model="nome" :error="$errors->first('nome')" aria-label="Nome da conta" />
+                    <div class="linha-accoes"><x-ui.button type="submit" size="sm">Guardar nome</x-ui.button></div>
+                </form>
+            </x-ui.card>
+
+            <x-ui.card title="Plano (manual)" subtitle="Para ofertas, acertos ou pagamentos recebidos fora da app. Em branco = sem data de fim.">
+                <div class="pilha pilha--12">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                        <span class="lista-simples__meta">Oferecer Pro:</span>
+                        @foreach([7, 14, 30] as $d)
+                            <x-ui.button size="sm" variant="secondary" wire:click="oferecerDias({{ $d }})">+{{ $d }} dias</x-ui.button>
+                        @endforeach
+                    </div>
+                    <form wire:submit="guardarPlano" class="pilha pilha--12">
+                        <x-ui.select label="Plano" wire:model="planoId" :options="$planos->map(fn ($p) => ['value' => (string) $p->id, 'label' => $p->nome])->all()" />
+                        <x-ui.input label="Até" type="date" wire:model="planoAte" :error="$errors->first('planoAte')" />
+                        <div class="linha-accoes"><x-ui.button type="submit" size="sm" variant="primary">Guardar plano</x-ui.button></div>
+                    </form>
+                </div>
+            </x-ui.card>
+        </div>
     </div>
 
     <x-ui.card title="Faturas" :padding="0">

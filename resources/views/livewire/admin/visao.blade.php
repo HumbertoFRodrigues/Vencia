@@ -1,4 +1,6 @@
-@php($n = $this->numeros)
+@php
+    $n = $this->numeros;
+@endphp
 <div class="pilha">
     <x-ui.page-header eyebrow="Administração da plataforma" title="Visão geral" />
 
@@ -8,6 +10,24 @@
         <x-ui.stat-card label="Receita este mês" :value="$n['receitaMes']" :currency="$faturacao->moeda()" icon="banknote" tone="in" />
         <x-ui.stat-card label="Faturas por confirmar" :value="$n['emAnalise']" :footnote="$n['utilizadores'].($n['utilizadores'] === 1 ? ' utilizador' : ' utilizadores').' no total'" icon="hourglass" :tone="$n['emAnalise'] > 0 ? 'out' : 'neutral'" />
     </div>
+
+    @php
+        $estado = $this->estado;
+        $problemas = collect($estado)->where('ok', false)->count();
+    @endphp
+    <x-ui.card title="Estado do sistema" :subtitle="$problemas === 0 ? 'Tudo a funcionar.' : $problemas.($problemas === 1 ? ' ponto precisa' : ' pontos precisam').' de atenção.'">
+        <ul class="lista-simples">
+            @foreach($estado as $linha)
+                <li>
+                    <x-ui.icon :name="$linha['ok'] ? 'circle-check' : 'triangle-alert'" size="18" :color="$linha['ok'] ? 'var(--money-in)' : 'var(--status-due-fg)'" />
+                    <div class="lista-simples__corpo">
+                        <span class="lista-simples__titulo">{{ $linha['titulo'] }}</span>
+                        <span class="lista-simples__meta" style="white-space:normal">{{ $linha['detalhe'] }}</span>
+                    </div>
+                </li>
+            @endforeach
+        </ul>
+    </x-ui.card>
 
     <div class="grelha-2">
         <x-ui.card title="Pagamentos por confirmar">

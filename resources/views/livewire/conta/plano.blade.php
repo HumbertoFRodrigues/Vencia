@@ -27,7 +27,9 @@
                 </div>
                 <div class="uso-lista">
                     @foreach($this->uso as $u)
-                        @php($pct = $u['limite'] ? min(100, round($u['usado'] / max(1, $u['limite']) * 100)) : 0)
+                        @php
+                            $pct = $u['limite'] ? min(100, round($u['usado'] / max(1, $u['limite']) * 100)) : 0;
+                        @endphp
                         <div class="uso">
                             <div class="uso__linha">
                                 <span>{{ $u['nome'] }}</span>

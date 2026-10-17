@@ -59,6 +59,7 @@
             <x-ui.card title="Registo de novas contas">
                 <form wire:submit="guardarRegisto" class="pilha pilha--12">
                     <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="registoAberto"> Qualquer pessoa pode criar conta (fechado: só por convite)</label>
+                    <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="avisarAdmin"> Avisar-me por email quando alguém cria conta</label>
                     <x-ui.input label="Dias de teste do plano Pro para contas novas" wire:model="diasTeste" inputmode="numeric" hint="0 = começam logo no Grátis." :error="$errors->first('diasTeste')" />
                     <div class="linha-accoes"><x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button></div>
                 </form>
@@ -81,7 +82,9 @@
             <x-slot:action>
                 <x-ui.button size="sm" icon="download" wire:click="criarCopia">Criar e descarregar</x-ui.button>
             </x-slot:action>
-            @php($copias = $this->copias)
+            @php
+                $copias = $this->copias;
+            @endphp
             @if(empty($copias))
                 <p class="pessoal-muted">Ainda não há cópias. Cria uma agora ou agenda <code>php artisan vencia:copia-seguranca</code> (ver DEPLOY.md).</p>
             @else
