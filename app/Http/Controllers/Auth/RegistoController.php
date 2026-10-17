@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PlataformaMail;
 use App\Models\Configuracao;
 use App\Models\Convite;
 use App\Models\Plano;
@@ -15,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Throwable;
@@ -35,6 +37,27 @@ class RegistoController extends Controller
             'aberto' => (bool) ($registo['aberto'] ?? true),
             'dias_teste' => max(0, (int) ($registo['dias_teste'] ?? 14)),
         ];
+    }
+
+    /** The super-admins hear about each new business (can be turned off in Admin → Plataforma). */
+    private function avisarAdmins(User $user): void
+    {
+        $admins = User::query()->where('super_admin', true)->pluck('email')->all();
+        if ($admins === [] || ! (Configuracao::plataforma('registo', [])['avisar_admin'] ?? true)) {
+            return;
+        }
+
+        $conta = $user->contaActual();
+
+        try {
+            Configuracao::aplicarSmtpDaPlataforma();
+            Mail::to($admins)->send(new PlataformaMail('Nova conta: '.($conta?->nome ?? $user->name), [
+                $user->name.' ('.$user->email.') acabou de criar a conta "'.($conta?->nome ?? '—').'"'
+                    .($conta?->em_teste ? ', em período de teste do '.$conta->planoEfectivo()->nome.' até '.$conta->plano_ate?->format('d/m/Y') : '').'.',
+            ], $conta ? route('admin.contas.show', $conta) : route('admin.contas')));
+        } catch (Throwable $e) {
+            Log::warning('Aviso de nova conta não enviado: '.$e->getMessage());
+        }
     }
 
     public function create(Request $request): View
@@ -119,6 +142,8 @@ class RegistoController extends Controller
         } catch (Throwable $e) {
             Log::error('Falha ao enviar o email de confirmação a '.$user->email.': '.$e->getMessage());
         }
+
+        $this->avisarAdmins($user);
 
         return redirect()->route('verification.notice');
     }

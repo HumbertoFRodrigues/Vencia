@@ -37,6 +37,7 @@
                             <div class="dropdown">
                                 <x-ui.icon-button icon="ellipsis" label="Mais acções" size="sm" data-dropdown-toggle data-dropdown-group="u-{{ $u->id }}" aria-haspopup="true" aria-expanded="false" />
                                 <div class="dropdown-panel" data-dropdown-panel data-dropdown-group="u-{{ $u->id }}" hidden>
+                                    <button type="button" class="dropdown-menu-item" wire:click="editar({{ $u->id }})">Editar nome e email</button>
                                     @unless($u->hasVerifiedEmail())
                                         <button type="button" class="dropdown-menu-item" wire:click="reenviarConfirmacao({{ $u->id }})">Reenviar confirmação</button>
                                         <button type="button" class="dropdown-menu-item" wire:click="confirmarEmail({{ $u->id }})">Marcar email como confirmado</button>
@@ -55,4 +56,18 @@
         </x-ui.data-table>
         <x-ui.pagination :paginator="$this->utilizadores" />
     </x-ui.card>
+
+    @if($editandoId)
+        <x-ui.dialog title="Editar utilizador" description="Um email corrigido aqui fica logo confirmado." width="440" wire:click="fecharEdicao">
+            <x-slot:close><x-ui.icon-button icon="x" label="Fechar" wire:click="fecharEdicao" /></x-slot:close>
+            <form wire:submit="guardarEdicao" class="pilha pilha--12">
+                <x-ui.input label="Nome" wire:model="editNome" :error="$errors->first('editNome')" />
+                <x-ui.input label="Email" type="email" wire:model="editEmail" :error="$errors->first('editEmail')" />
+                <div class="linha-accoes">
+                    <x-ui.button size="sm" variant="ghost" wire:click="fecharEdicao">Cancelar</x-ui.button>
+                    <x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button>
+                </div>
+            </form>
+        </x-ui.dialog>
+    @endif
 </div>

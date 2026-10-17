@@ -10,7 +10,9 @@
         <x-ui.card title="Membros" subtitle="Cada pessoa tem o seu próprio painel pessoal, que só ela vê.">
             <ul class="lista-simples">
                 @foreach($this->membros as $m)
-                    @php($papelM = \App\Enums\Papel::from($m->pivot->papel))
+                    @php
+                        $papelM = \App\Enums\Papel::from($m->pivot->papel);
+                    @endphp
                     <li wire:key="membro-{{ $m->id }}">
                         <div class="lista-simples__corpo">
                             <span class="lista-simples__titulo">{{ $m->name }}@if($m->is($eu)) <span class="lista-simples__meta">(tu)</span>@endif</span>

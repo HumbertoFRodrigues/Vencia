@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\VerificacaoDiariaService;
+use App\Support\Tarefas;
 use Illuminate\Console\Command;
 
 /**
@@ -34,6 +35,8 @@ class VerificarVencimentos extends Command
             $resumo['lembretes_enviados'],
             $resumo['lembretes_falhados'],
         ));
+
+        Tarefas::registar('verificar', sprintf('%d contas, %d lembretes enviados, %d falhados', $resumo['contas'], $resumo['lembretes_enviados'], $resumo['lembretes_falhados']));
 
         return Command::SUCCESS;
     }

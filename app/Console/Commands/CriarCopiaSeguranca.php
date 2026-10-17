@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\CopiaSeguranca;
+use App\Support\Tarefas;
 use Illuminate\Console\Command;
 
 class CriarCopiaSeguranca extends Command
@@ -21,6 +22,8 @@ class CriarCopiaSeguranca extends Command
                 ? 'Enviada por email para a empresa.'
                 : 'Não enviada por email (SMTP ou email da empresa por configurar, ou ficheiro grande demais).');
         }
+
+        Tarefas::registar('copia', basename($ficheiro).' ('.number_format(filesize($ficheiro) / 1024, 0, ',', '.').' KB)');
 
         return self::SUCCESS;
     }

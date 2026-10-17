@@ -57,6 +57,8 @@ class Plataforma extends Component
 
     public string $diasTeste = '14';
 
+    public bool $avisarAdmin = true;
+
     public string $testeTipo = 'simples';
 
     public string $testeDestino = '';
@@ -82,6 +84,7 @@ class Plataforma extends Component
         $registo = RegistoController::opcoes();
         $this->registoAberto = $registo['aberto'];
         $this->diasTeste = (string) $registo['dias_teste'];
+        $this->avisarAdmin = (bool) (Configuracao::plataforma('registo', [])['avisar_admin'] ?? true);
 
         $this->testeDestino = auth()->user()->email;
     }
@@ -140,7 +143,7 @@ class Plataforma extends Component
     {
         $this->validate(['diasTeste' => ['required', 'integer', 'min:0', 'max:90']], [], ['diasTeste' => 'dias de teste']);
 
-        Configuracao::guardarPlataforma('registo', ['aberto' => $this->registoAberto, 'dias_teste' => (int) $this->diasTeste]);
+        Configuracao::guardarPlataforma('registo', ['aberto' => $this->registoAberto, 'dias_teste' => (int) $this->diasTeste, 'avisar_admin' => $this->avisarAdmin]);
         ActividadeAdmin::registar('plataforma.registo', null, ($this->registoAberto ? 'aberto' : 'fechado').', '.$this->diasTeste.' dias de teste');
         $this->dispatch('toast', title: 'Registo actualizado', tone: 'success');
     }

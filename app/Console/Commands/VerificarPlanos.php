@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\Faturacao;
+use App\Support\Tarefas;
 use Illuminate\Console\Command;
 
 /** Daily (cron, see DEPLOY.md): warns before a paid plan ends and moves ended plans back to Grátis. */
@@ -17,6 +18,8 @@ class VerificarPlanos extends Command
         $resumo = $faturacao->verificarPlanos();
 
         $this->info(sprintf('Avisos enviados: %d | Planos terminados: %d', $resumo['avisos'], $resumo['expiradas']));
+
+        Tarefas::registar('planos', sprintf('%d avisos, %d planos terminados', $resumo['avisos'], $resumo['expiradas']));
 
         return self::SUCCESS;
     }
