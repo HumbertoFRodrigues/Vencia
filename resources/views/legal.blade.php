@@ -6,6 +6,7 @@
     <title>{{ $titulo }} · Vencia</title>
     @include('partials.estilos')
     @include('partials.tema')
+    @include('partials.site.anuncios')
 </head>
 <body class="site">
     @include('partials.site.topo')

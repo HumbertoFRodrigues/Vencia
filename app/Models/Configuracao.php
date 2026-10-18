@@ -98,7 +98,21 @@ class Configuracao extends Model
     /** False when mail would only be written to laravel.log (no SMTP anywhere and .env still on "log"). */
     public static function envioDisponivel(): bool
     {
-        return trim((string) (self::smtpEfectivo()['servidor'] ?? '')) !== '' || config('mail.default') !== 'log';
+        return self::temEnvio(self::smtpEfectivo()) || config('mail.default') !== 'log';
+    }
+
+    /** A saved mail setting that actually sends: an SMTP server, or PHP's mail() ("modo" => "php"). */
+    public static function temEnvio(array $smtp): bool
+    {
+        return ($smtp['modo'] ?? 'smtp') === 'php' || trim((string) ($smtp['servidor'] ?? '')) !== '';
+    }
+
+    /** Default sender for PHP's mail(): noreply@ the site's own domain. */
+    public static function remetentePorOmissao(): string
+    {
+        $host = parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'localhost';
+
+        return 'noreply@'.preg_replace('/^www\./', '', $host);
     }
 
     /**
@@ -137,7 +151,15 @@ class Configuracao extends Model
 
         $servidor = trim((string) ($smtp['servidor'] ?? ''));
 
-        if ($servidor !== '') {
+        if (($smtp['modo'] ?? 'smtp') === 'php') {
+            // The hosting's own mail server through PHP's mail() (App\Mail\TransportePhpMail): no account needed.
+            config([
+                'mail.default' => 'phpmail',
+                'mail.mailers.phpmail' => ['transport' => 'phpmail'],
+                'mail.from.address' => trim((string) ($smtp['remetente'] ?? '')) ?: self::remetentePorOmissao(),
+            ]);
+            app()->forgetInstance('mail.manager');
+        } elseif ($servidor !== '') {
             $seguranca = strtoupper(trim((string) ($smtp['seguranca'] ?? 'STARTTLS')));
 
             config([

@@ -41,7 +41,7 @@
                                     :size="64"
                                     :src="$novoLogo ? $novoLogo->temporaryUrl() : null"
                                     label="Adicionar logo personalizado"
-                                    hint="PNG, JPG, SVG ou WebP — redimensionado automaticamente"
+                                    hint="PNG, JPG ou WebP até 2 MB — redimensionado automaticamente"
                                 />
                             </label>
                             @if($errors->first('novoLogo'))
@@ -131,7 +131,7 @@
                                         :size="64"
                                         :src="$novoLogo ? $novoLogo->temporaryUrl() : ($editandoItem?->logo_path ? Storage::disk('public')->url($editandoItem->logo_path) : null)"
                                         label="Alterar logo"
-                                        hint="PNG, JPG, SVG ou WebP"
+                                        hint="PNG, JPG ou WebP até 2 MB"
                                     />
                                 </label>
                                 @if($errors->first('novoLogo'))
@@ -168,7 +168,7 @@
                                 :size="56"
                                 :src="$novoMetodoLogo ? $novoMetodoLogo->temporaryUrl() : ($editandoMetodoItem?->logo_path ? Storage::disk('public')->url($editandoMetodoItem->logo_path) : null)"
                                 label="Logo personalizado (opcional)"
-                                hint="PNG, JPG, SVG ou WebP — só para métodos personalizados"
+                                hint="PNG, JPG ou WebP até 2 MB — só para métodos personalizados"
                             />
                         </label>
                         @if($errors->first('novoMetodoLogo'))

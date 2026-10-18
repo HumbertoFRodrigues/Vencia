@@ -44,7 +44,7 @@ class EmailsDeTeste
     public static function soNoRegisto(bool $plataforma = false): bool
     {
         if ($plataforma) {
-            return trim((string) (Configuracao::plataforma('smtp', [])['servidor'] ?? '')) === '' && config('mail.default') === 'log';
+            return ! Configuracao::temEnvio(Configuracao::plataforma('smtp', [])) && config('mail.default') === 'log';
         }
 
         return ! Configuracao::envioDisponivel();
@@ -57,7 +57,7 @@ class EmailsDeTeste
 
         match ($tipo) {
             'simples' => Mail::raw(
-                "Isto é um email de teste do Vencia.\n\nSe o recebeste, o envio de emails (SMTP) está a funcionar.",
+                "Isto é um email de teste do Vencia.\n\nSe o recebeste, o envio de emails está a funcionar.",
                 fn ($m) => $m->to($destino)->subject('Email de teste — Vencia'),
             ),
             'lembrete' => Mail::to($destino)->send(new LembreteVencimentoMail($this->servico(), IntervaloLembrete::D7)),

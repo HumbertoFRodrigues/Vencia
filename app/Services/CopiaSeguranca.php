@@ -125,9 +125,7 @@ class CopiaSeguranca
     public function enviarPorEmail(string $ficheiro, ?string $destino = null): bool
     {
         $destino ??= User::query()->where('super_admin', true)->orderBy('id')->value('email') ?? config('app.admin_email');
-        $smtp = trim((string) (Configuracao::plataforma('smtp', [])['servidor'] ?? ''));
-
-        if (! $destino || ($smtp === '' && config('mail.default') === 'log')) {
+        if (! $destino || (! Configuracao::temEnvio(Configuracao::plataforma('smtp', [])) && config('mail.default') === 'log')) {
             return false;
         }
 

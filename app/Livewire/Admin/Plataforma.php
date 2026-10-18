@@ -9,6 +9,7 @@ use App\Services\CopiaSeguranca;
 use App\Services\EmailsDeTeste;
 use App\Services\Pagamentos\MpesaCliente;
 use App\Services\Pagamentos\MpesaConfig;
+use App\Support\Anuncios;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -29,6 +30,9 @@ use Throwable;
 #[Title('Plataforma')]
 class Plataforma extends Component
 {
+    /** "php" = the hosting's mail() (App\Mail\TransportePhpMail), "smtp" = an email account. */
+    public string $smtpModo = 'smtp';
+
     public string $smtpServidor = '';
 
     public string $smtpPorta = '587';
@@ -69,6 +73,7 @@ class Plataforma extends Component
     public function mount(): void
     {
         $smtp = Configuracao::plataforma('smtp', []);
+        $this->smtpModo = $smtp['modo'] ?? (filled($smtp['servidor'] ?? null) ? 'smtp' : 'php');
         $this->smtpServidor = $smtp['servidor'] ?? '';
         $this->smtpPorta = (string) ($smtp['porta'] ?? '587');
         $this->smtpSeguranca = $smtp['seguranca'] ?? 'STARTTLS';
@@ -94,23 +99,29 @@ class Plataforma extends Component
         $this->mpesaAmbiente = $mpesa['sandbox'] ? 'sandbox' : 'producao';
         $this->mpesaCodigo = (string) ($mpesa['service_provider_code'] ?? '');
 
+        $anuncios = Anuncios::get();
+        $this->anunciosLigado = $anuncios['ligado'];
+        $this->anunciosCliente = $anuncios['cliente'];
+
         $this->testeDestino = auth()->user()->email;
     }
 
     public function guardarSmtp(): void
     {
         $dados = $this->validate([
-            'smtpServidor' => ['nullable', 'string', 'max:255'],
+            'smtpModo' => ['required', Rule::in(['smtp', 'php'])],
+            'smtpServidor' => [$this->smtpModo === 'smtp' ? 'required' : 'nullable', 'string', 'max:255'],
             'smtpPorta' => ['nullable', 'integer', 'between:1,65535'],
             'smtpSeguranca' => ['required', Rule::in(['STARTTLS', 'SSL', 'Nenhuma'])],
             'smtpUtilizador' => ['nullable', 'string', 'max:255'],
             'smtpPassword' => ['nullable', 'string', 'max:255'],
             'smtpRemetente' => ['nullable', 'email', 'max:255'],
-        ], [], ['smtpRemetente' => 'remetente', 'smtpPorta' => 'porta']);
+        ], [], ['smtpRemetente' => 'remetente', 'smtpPorta' => 'porta', 'smtpServidor' => 'servidor']);
 
         $existente = Configuracao::plataforma('smtp', []);
 
         Configuracao::guardarPlataforma('smtp', [
+            'modo' => $dados['smtpModo'],
             'servidor' => $dados['smtpServidor'],
             'porta' => (string) $dados['smtpPorta'],
             'seguranca' => $dados['smtpSeguranca'],
@@ -120,8 +131,8 @@ class Plataforma extends Component
         ]);
 
         $this->smtpPassword = '';
-        ActividadeAdmin::registar('plataforma.smtp', null, $dados['smtpServidor']);
-        $this->dispatch('toast', title: 'SMTP da plataforma guardado', tone: 'success');
+        ActividadeAdmin::registar('plataforma.smtp', null, $dados['smtpModo'] === 'php' ? 'mail() do servidor' : $dados['smtpServidor']);
+        $this->dispatch('toast', title: 'Envio de email guardado', body: 'Envia um email de teste para confirmar.', tone: 'success');
     }
 
     public function guardarFaturacao(): void
@@ -214,6 +225,26 @@ class Plataforma extends Component
         }
 
         $this->dispatch('toast', title: 'Chaves válidas', body: 'Para confirmar com a Vodacom, faz um pagamento de teste'.($config['sandbox'] ? ' com o número de teste do portal.' : ' de um plano.'), tone: 'success');
+    }
+
+    public bool $anunciosLigado = false;
+
+    /** AdSense publisher ID; the whole <script> Google shows can be pasted, only the ID is kept. */
+    public string $anunciosCliente = '';
+
+    public function guardarAnuncios(): void
+    {
+        $this->anunciosCliente = Anuncios::extrairCliente($this->anunciosCliente);
+
+        $this->validate([
+            'anunciosCliente' => [$this->anunciosLigado ? 'required' : 'nullable', 'regex:'.Anuncios::FORMATO],
+        ], [
+            'anunciosCliente.regex' => 'O ID de editor tem o formato ca-pub-1234567890123456.',
+        ], ['anunciosCliente' => 'ID de editor']);
+
+        Configuracao::guardarPlataforma('anuncios', ['ligado' => $this->anunciosLigado, 'cliente' => $this->anunciosCliente]);
+        ActividadeAdmin::registar('plataforma.anuncios', null, ($this->anunciosLigado ? 'ligados' : 'desligados').($this->anunciosCliente ? ', '.$this->anunciosCliente : ''));
+        $this->dispatch('toast', title: $this->anunciosLigado ? 'Anúncios ligados' : 'Anúncios desligados', tone: 'success');
     }
 
     public function guardarRegisto(): void

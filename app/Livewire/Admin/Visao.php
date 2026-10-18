@@ -11,6 +11,7 @@ use App\Services\CopiaSeguranca;
 use App\Services\Faturacao;
 use App\Support\Tarefas;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -68,9 +69,9 @@ class Visao extends Component
 
         $linhas = [
             [
-                'ok' => filled($smtp['servidor'] ?? null),
+                'ok' => Configuracao::temEnvio($smtp),
                 'titulo' => 'Envio de email',
-                'detalhe' => filled($smtp['servidor'] ?? null) ? 'SMTP da plataforma: '.$smtp['servidor'] : 'Sem SMTP: confirmações de conta, convites e lembretes não saem. Admin → Plataforma.',
+                'detalhe' => ($smtp['modo'] ?? 'smtp') === 'php' ? 'Função mail() do servidor, de '.(($smtp['remetente'] ?? '') ?: Configuracao::remetentePorOmissao()).'.' : (filled($smtp['servidor'] ?? null) ? 'SMTP da plataforma: '.$smtp['servidor'] : 'Sem envio: confirmações de conta, convites e lembretes não saem. Admin → Plataforma → Envio de email.'),
             ],
             [
                 'ok' => filled($pagamento['mpesa'] ?? null) || filled($pagamento['emola'] ?? null) || filled($pagamento['banco'] ?? null),
@@ -111,8 +112,85 @@ class Visao extends Component
             'titulo' => 'Pasta storage com escrita',
             'detalhe' => is_writable(storage_path('logs')) ? 'PHP '.PHP_VERSION.' · '.config('pagamentos.gateway').' (pagamento dos planos)' : 'O servidor não consegue escrever em storage/: dá permissão 755.',
         ];
+        $linhas[] = $this->estadoExtensoes();
+        $linhas[] = $this->estadoUploads();
+        $linhas[] = $this->ultimoErro();
 
         return $linhas;
+    }
+
+    /** PHP extensions the hosting must have on (cPanel → Select PHP Version → Extensions). */
+    private function estadoExtensoes(): array
+    {
+        $faltam = array_values(array_filter(
+            ['mbstring', 'fileinfo', 'intl', 'gd', 'pdo_mysql', 'zip', 'openssl', 'curl', 'zlib', 'dom', 'xml', 'ctype', 'tokenizer'],
+            fn (string $e) => ! extension_loaded($e),
+        ));
+        $comSubstituto = array_values(array_intersect($faltam, ['mbstring', 'fileinfo']));
+
+        return [
+            'ok' => $faltam === [],
+            'titulo' => 'Extensões PHP',
+            'detalhe' => $faltam === []
+                ? 'Todas ligadas.'
+                : 'Faltam: '.implode(', ', $faltam).'. Liga-as em cPanel → Select PHP Version → Extensions.'
+                    .($comSubstituto ? ' Até lá a Vencia usa um substituto para '.implode(' e ', $comSubstituto).'.' : ''),
+        ];
+    }
+
+    /** Logos and payment proofs: what PHP needs for an upload to get through. */
+    private function estadoUploads(): array
+    {
+        $falhas = [];
+        if (! class_exists('finfo')) {
+            $falhas[] = 'falta a extensão PHP "fileinfo" (cPanel → Select PHP Version → Extensions)';
+        }
+        if (! ini_get('file_uploads')) {
+            $falhas[] = 'o PHP tem os uploads desligados (file_uploads)';
+        }
+        foreach ([storage_path('app/private') => 'storage/app/private', (string) config('filesystems.disks.public.root') => 'public/storage'] as $pasta => $nome) {
+            if (! is_dir($pasta)) {
+                @mkdir($pasta, 0755, true);
+            }
+            if (! is_writable($pasta)) {
+                $falhas[] = 'a pasta '.$nome.' não tem escrita (permissão 755)';
+            }
+        }
+        $temp = ini_get('upload_tmp_dir') ?: sys_get_temp_dir();
+        if (! is_writable($temp)) {
+            $falhas[] = 'a pasta temporária do PHP ('.$temp.') não tem escrita';
+        }
+
+        return [
+            'ok' => $falhas === [],
+            'titulo' => 'Carregar imagens (logótipos, comprovativos)',
+            'detalhe' => $falhas === [] ? 'Pronto. Limite do PHP: '.ini_get('upload_max_filesize').'.' : 'Não funciona: '.implode('; ', $falhas).'.',
+        ];
+    }
+
+    /** The newest ERROR in storage/logs/laravel.log, so a "500" can be explained without the File Manager. */
+    private function ultimoErro(): array
+    {
+        $ficheiro = storage_path('logs/laravel.log');
+        $erro = null;
+
+        if (is_readable($ficheiro) && ($tamanho = filesize($ficheiro)) > 0) {
+            $h = fopen($ficheiro, 'rb');
+            fseek($h, max(0, $tamanho - 262144));
+            $fim = (string) stream_get_contents($h);
+            fclose($h);
+
+            if (preg_match_all('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] \w+\.(?:ERROR|CRITICAL|ALERT|EMERGENCY): (.*)$/m', $fim, $m, PREG_SET_ORDER)) {
+                $ultimo = end($m);
+                $erro = ['em' => Carbon::parse($ultimo[1]), 'texto' => Str::limit(preg_replace('/\s*\{"(?:userId|exception)".*$/', '', $ultimo[2]), 300)];
+            }
+        }
+
+        return [
+            'ok' => ! $erro || $erro['em']->lt(Carbon::now()->subDay()),
+            'titulo' => 'Último erro registado',
+            'detalhe' => $erro ? $erro['em']->format('d/m/Y H:i').' · '.$erro['texto'] : 'Nenhum.',
+        ];
     }
 
     public function render()
