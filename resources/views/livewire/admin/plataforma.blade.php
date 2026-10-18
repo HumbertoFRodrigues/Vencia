@@ -63,6 +63,22 @@
                 </form>
             </x-ui.card>
 
+            @php
+                $anunciosActivos = filled(\App\Support\Anuncios::cliente());
+            @endphp
+            <x-ui.card title="Anúncios (Google AdSense)" subtitle="Mostra anúncios na página inicial, nos Termos e na Privacidade. Nunca aparecem dentro da app, no login nem no registo.">
+                <x-slot:action>
+                    <x-ui.tag :tone="$anunciosActivos ? 'success' : 'neutral'">{{ $anunciosActivos ? 'Ligados' : 'Desligados' }}</x-ui.tag>
+                </x-slot:action>
+                <form wire:submit="guardarAnuncios" class="pilha pilha--12">
+                    <x-ui.input label="ID de editor" wire:model="anunciosCliente" autocomplete="off" placeholder="ca-pub-1234567890123456" hint="No AdSense: Conta → Informações da conta. Também podes colar o código <script> inteiro que o AdSense mostra." :error="$errors->first('anunciosCliente')" />
+                    <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="anunciosLigado"> Mostrar anúncios (a Google escolhe onde aparecem)</label>
+                    @if($anunciosActivos)
+                        <p class="field__hint" style="margin:0">O ficheiro <a href="{{ route('ads-txt') }}" target="_blank" rel="noopener">ads.txt</a> já é criado sozinho.</p>
+                    @endif
+                    <div class="linha-accoes"><x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button></div>
+                </form>
+            </x-ui.card>
             <x-ui.card title="Registo de novas contas">
                 <form wire:submit="guardarRegisto" class="pilha pilha--12">
                     <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="registoAberto"> Qualquer pessoa pode criar conta (fechado: só por convite)</label>

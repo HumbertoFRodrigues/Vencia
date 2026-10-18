@@ -44,6 +44,7 @@ class Actividade extends Component
         'plataforma.registo' => 'Opções de registo',
         'plataforma.copia' => 'Cópia de segurança',
         'plataforma.mpesa' => 'M-Pesa automático',
+        'plataforma.anuncios' => 'Anúncios (AdSense)',
     ];
 
     public function render()

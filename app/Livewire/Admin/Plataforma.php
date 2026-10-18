@@ -9,6 +9,7 @@ use App\Services\CopiaSeguranca;
 use App\Services\EmailsDeTeste;
 use App\Services\Pagamentos\MpesaCliente;
 use App\Services\Pagamentos\MpesaConfig;
+use App\Support\Anuncios;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -93,6 +94,10 @@ class Plataforma extends Component
         $this->mpesaLigado = $mpesa['ligado'];
         $this->mpesaAmbiente = $mpesa['sandbox'] ? 'sandbox' : 'producao';
         $this->mpesaCodigo = (string) ($mpesa['service_provider_code'] ?? '');
+
+        $anuncios = Anuncios::get();
+        $this->anunciosLigado = $anuncios['ligado'];
+        $this->anunciosCliente = $anuncios['cliente'];
 
         $this->testeDestino = auth()->user()->email;
     }
@@ -214,6 +219,26 @@ class Plataforma extends Component
         }
 
         $this->dispatch('toast', title: 'Chaves válidas', body: 'Para confirmar com a Vodacom, faz um pagamento de teste'.($config['sandbox'] ? ' com o número de teste do portal.' : ' de um plano.'), tone: 'success');
+    }
+
+    public bool $anunciosLigado = false;
+
+    /** AdSense publisher ID; the whole <script> Google shows can be pasted, only the ID is kept. */
+    public string $anunciosCliente = '';
+
+    public function guardarAnuncios(): void
+    {
+        $this->anunciosCliente = Anuncios::extrairCliente($this->anunciosCliente);
+
+        $this->validate([
+            'anunciosCliente' => [$this->anunciosLigado ? 'required' : 'nullable', 'regex:'.Anuncios::FORMATO],
+        ], [
+            'anunciosCliente.regex' => 'O ID de editor tem o formato ca-pub-1234567890123456.',
+        ], ['anunciosCliente' => 'ID de editor']);
+
+        Configuracao::guardarPlataforma('anuncios', ['ligado' => $this->anunciosLigado, 'cliente' => $this->anunciosCliente]);
+        ActividadeAdmin::registar('plataforma.anuncios', null, ($this->anunciosLigado ? 'ligados' : 'desligados').($this->anunciosCliente ? ', '.$this->anunciosCliente : ''));
+        $this->dispatch('toast', title: $this->anunciosLigado ? 'Anúncios ligados' : 'Anúncios desligados', tone: 'success');
     }
 
     public function guardarRegisto(): void
