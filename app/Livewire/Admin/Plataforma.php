@@ -30,6 +30,9 @@ use Throwable;
 #[Title('Plataforma')]
 class Plataforma extends Component
 {
+    /** "php" = the hosting's mail() (App\Mail\TransportePhpMail), "smtp" = an email account. */
+    public string $smtpModo = 'smtp';
+
     public string $smtpServidor = '';
 
     public string $smtpPorta = '587';
@@ -70,6 +73,7 @@ class Plataforma extends Component
     public function mount(): void
     {
         $smtp = Configuracao::plataforma('smtp', []);
+        $this->smtpModo = $smtp['modo'] ?? (filled($smtp['servidor'] ?? null) ? 'smtp' : 'php');
         $this->smtpServidor = $smtp['servidor'] ?? '';
         $this->smtpPorta = (string) ($smtp['porta'] ?? '587');
         $this->smtpSeguranca = $smtp['seguranca'] ?? 'STARTTLS';
@@ -105,17 +109,19 @@ class Plataforma extends Component
     public function guardarSmtp(): void
     {
         $dados = $this->validate([
-            'smtpServidor' => ['nullable', 'string', 'max:255'],
+            'smtpModo' => ['required', Rule::in(['smtp', 'php'])],
+            'smtpServidor' => [$this->smtpModo === 'smtp' ? 'required' : 'nullable', 'string', 'max:255'],
             'smtpPorta' => ['nullable', 'integer', 'between:1,65535'],
             'smtpSeguranca' => ['required', Rule::in(['STARTTLS', 'SSL', 'Nenhuma'])],
             'smtpUtilizador' => ['nullable', 'string', 'max:255'],
             'smtpPassword' => ['nullable', 'string', 'max:255'],
             'smtpRemetente' => ['nullable', 'email', 'max:255'],
-        ], [], ['smtpRemetente' => 'remetente', 'smtpPorta' => 'porta']);
+        ], [], ['smtpRemetente' => 'remetente', 'smtpPorta' => 'porta', 'smtpServidor' => 'servidor']);
 
         $existente = Configuracao::plataforma('smtp', []);
 
         Configuracao::guardarPlataforma('smtp', [
+            'modo' => $dados['smtpModo'],
             'servidor' => $dados['smtpServidor'],
             'porta' => (string) $dados['smtpPorta'],
             'seguranca' => $dados['smtpSeguranca'],
@@ -125,8 +131,8 @@ class Plataforma extends Component
         ]);
 
         $this->smtpPassword = '';
-        ActividadeAdmin::registar('plataforma.smtp', null, $dados['smtpServidor']);
-        $this->dispatch('toast', title: 'SMTP da plataforma guardado', tone: 'success');
+        ActividadeAdmin::registar('plataforma.smtp', null, $dados['smtpModo'] === 'php' ? 'mail() do servidor' : $dados['smtpServidor']);
+        $this->dispatch('toast', title: 'Envio de email guardado', body: 'Envia um email de teste para confirmar.', tone: 'success');
     }
 
     public function guardarFaturacao(): void

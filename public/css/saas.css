@@ -51,6 +51,10 @@ a.auth-card__brand { text-decoration: none; }
 .lista-simples__accoes { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
 
 .grelha-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px; align-items: start; }
+/* Two independent columns of cards (each a .pilha): no row leaves a hole under a short card. */
+.grelha-2--colunas { grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); }
+/* Two fields side by side inside a form, one under the other on a phone. */
+.grelha-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 12px; align-items: start; }
 .stats-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
 .filtros { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pilha { display: flex; flex-direction: column; gap: 16px; }

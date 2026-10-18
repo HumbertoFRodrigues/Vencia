@@ -785,3 +785,20 @@
 .carregamento--erro .carregamento__barra > span { width: 100% !important; background: var(--red-600); }
 .carregamento--erro .carregamento__pct { color: var(--red-600); }
 @keyframes carregamento-vai-e-vem { from { margin-left: 0; } to { margin-left: 60%; } }
+
+/* Balanced tile rows: 6 tiles as 3 + 3 (one row of 6 on wide screens),
+   4 as 2 + 2 (one row of 4), so no row ends with a lonely tile and an empty
+   gap. Phones keep one tile per line (the auto-fit rule above). */
+@media (min-width: 640px) {
+  .tile-grid:has(> :nth-child(6):last-child),
+  .tile-grid:has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tile-grid:has(> :nth-child(4):last-child),
+  .passos-iniciais:has(> :nth-child(4):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1240px) {
+  .tile-grid:has(> :nth-child(4):last-child),
+  .passos-iniciais:has(> :nth-child(4):last-child) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1560px) {
+  .tile-grid:has(> :nth-child(6):last-child) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}

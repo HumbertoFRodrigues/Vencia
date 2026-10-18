@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\GatewayPagamento;
 use App\Enums\Papel;
 use App\Http\Middleware\DefinirConta;
+use App\Mail\TransportePhpMail;
 use App\Models\Fatura;
 use App\Models\User;
 use App\Services\FinancasPessoais;
@@ -18,6 +19,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
@@ -71,6 +73,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->definirPermissoes();
+
+        // "Função mail() do servidor" in Admin → Plataforma: sends with no SMTP account.
+        Mail::extend('phpmail', fn () => new TransportePhpMail);
 
         // Livewire's update requests re-run these from the page's route, so a blocked user or a suspended conta is stopped there too.
         Livewire::addPersistentMiddleware([DefinirConta::class, EnsureEmailIsVerified::class]);

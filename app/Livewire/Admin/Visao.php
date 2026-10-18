@@ -69,9 +69,9 @@ class Visao extends Component
 
         $linhas = [
             [
-                'ok' => filled($smtp['servidor'] ?? null),
+                'ok' => Configuracao::temEnvio($smtp),
                 'titulo' => 'Envio de email',
-                'detalhe' => filled($smtp['servidor'] ?? null) ? 'SMTP da plataforma: '.$smtp['servidor'] : 'Sem SMTP: confirmações de conta, convites e lembretes não saem. Admin → Plataforma.',
+                'detalhe' => ($smtp['modo'] ?? 'smtp') === 'php' ? 'Função mail() do servidor, de '.(($smtp['remetente'] ?? '') ?: Configuracao::remetentePorOmissao()).'.' : (filled($smtp['servidor'] ?? null) ? 'SMTP da plataforma: '.$smtp['servidor'] : 'Sem envio: confirmações de conta, convites e lembretes não saem. Admin → Plataforma → Envio de email.'),
             ],
             [
                 'ok' => filled($pagamento['mpesa'] ?? null) || filled($pagamento['emola'] ?? null) || filled($pagamento['banco'] ?? null),
