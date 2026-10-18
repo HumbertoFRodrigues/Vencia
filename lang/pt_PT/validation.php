@@ -72,7 +72,7 @@ return [
         'string' => 'O campo :attribute não deve ter mais de :max caracteres.',
     ],
     'mimes' => 'O campo :attribute deve ser um ficheiro do tipo: :values.',
-    'uploaded' => 'Não foi possível carregar o :attribute. Usa uma imagem PNG ou JPG (ou PDF no comprovativo) até 2 MB; se continuar, vê Admin → Estado do sistema.',
+    'uploaded' => 'Não foi possível carregar o :attribute. Tenta de novo; se continuar, vê Admin → Estado do sistema.',
     'min' => [
         'array' => 'O campo :attribute deve ter pelo menos :min itens.',
         'file' => 'O campo :attribute deve ter pelo menos :min kilobytes.',
