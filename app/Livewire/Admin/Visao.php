@@ -112,17 +112,37 @@ class Visao extends Component
             'titulo' => 'Pasta storage com escrita',
             'detalhe' => is_writable(storage_path('logs')) ? 'PHP '.PHP_VERSION.' · '.config('pagamentos.gateway').' (pagamento dos planos)' : 'O servidor não consegue escrever em storage/: dá permissão 755.',
         ];
+        $linhas[] = $this->estadoExtensoes();
         $linhas[] = $this->estadoUploads();
         $linhas[] = $this->ultimoErro();
 
         return $linhas;
     }
 
+    /** PHP extensions the hosting must have on (cPanel → Select PHP Version → Extensions). */
+    private function estadoExtensoes(): array
+    {
+        $faltam = array_values(array_filter(
+            ['mbstring', 'fileinfo', 'intl', 'gd', 'pdo_mysql', 'zip', 'openssl', 'curl', 'zlib', 'dom', 'xml', 'ctype', 'tokenizer'],
+            fn (string $e) => ! extension_loaded($e),
+        ));
+        $comSubstituto = array_values(array_intersect($faltam, ['mbstring', 'fileinfo']));
+
+        return [
+            'ok' => $faltam === [],
+            'titulo' => 'Extensões PHP',
+            'detalhe' => $faltam === []
+                ? 'Todas ligadas.'
+                : 'Faltam: '.implode(', ', $faltam).'. Liga-as em cPanel → Select PHP Version → Extensions.'
+                    .($comSubstituto ? ' Até lá a Vencia usa um substituto para '.implode(' e ', $comSubstituto).'.' : ''),
+        ];
+    }
+
     /** Logos and payment proofs: what PHP needs for an upload to get through. */
     private function estadoUploads(): array
     {
         $falhas = [];
-        if (! extension_loaded('fileinfo')) {
+        if (! class_exists('finfo')) {
             $falhas[] = 'falta a extensão PHP "fileinfo" (cPanel → Select PHP Version → Extensions)';
         }
         if (! ini_get('file_uploads')) {

@@ -8,7 +8,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 
-require __DIR__.'/fileinfo.php';
+require __DIR__.'/extensoes.php';
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
