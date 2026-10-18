@@ -98,7 +98,8 @@ class AdminGestaoTest extends TestCase
 
     public function test_the_overview_shows_what_is_missing_on_the_server(): void
     {
-        Livewire::test(Visao::class)->assertSee('Estado do sistema')->assertSee('Sem SMTP')->assertSee('Nunca correu');
+        Livewire::test(Visao::class)->assertSee('Estado do sistema')->assertSee('Sem SMTP')->assertSee('Nunca correu')
+            ->assertSee('Carregar imagens')->assertSee('Último erro registado');
 
         Configuracao::guardarPlataforma('smtp', ['servidor' => 'mail.exemplo.mz']);
         Tarefas::registar('verificar', '3 contas');
