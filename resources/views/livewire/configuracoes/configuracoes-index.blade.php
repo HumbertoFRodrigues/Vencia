@@ -13,7 +13,7 @@
 @endphp
 
 <div style="display:flex;flex-direction:column;gap:16px">
-    <x-ui.page-header eyebrow="Administração" title="Configurações" />
+    <x-ui.page-header :eyebrow="\App\Support\ContaActual::get()?->nome ?? 'Empresa'" title="Configurações" />
 
     <x-ui.tabs
         :active="$tab"
@@ -21,7 +21,6 @@
             ['id' => 'biblioteca', 'label' => 'Biblioteca de Serviços', 'count' => $itens->count()],
             ['id' => 'lembretes', 'label' => 'Lembretes'],
             ['id' => 'empresa', 'label' => 'Empresa'],
-            ['id' => 'seguranca', 'label' => 'Segurança'],
         ]"
     />
 
@@ -194,7 +193,9 @@
                     ]"
                 >
                     @foreach($itensMetodos as $item)
-                        @php($conhecido = $this->metodoEhConhecido($item->nome))
+                        @php
+                            $conhecido = $this->metodoEhConhecido($item->nome);
+                        @endphp
                         <tr style="{{ $item->arquivado ? 'opacity:.55' : '' }}">
                             <td>
                                 <span style="display:flex;align-items:center;gap:9px">
@@ -299,88 +300,75 @@
             </x-ui.card>
         </div>
     @elseif($tab === 'empresa')
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start">
-            <x-ui.card title="Empresa">
-                <div style="display:flex;flex-direction:column;gap:12px">
-                    <x-ui.input label="Nome da empresa" wire:model="empresaNome" :error="$errors->first('empresaNome')" />
-                    <x-ui.input label="Email remetente" type="email" icon="mail" wire:model="empresaEmail" :error="$errors->first('empresaEmail')" />
-                    <x-ui.select
-                        label="Moeda padrão"
-                        wire:model="empresaMoeda"
-                        :options="[['value' => 'MZN', 'label' => 'MZN — Metical'], ['value' => 'USD', 'label' => 'USD — Dólar americano'], ['value' => 'ZAR', 'label' => 'ZAR — Rand sul-africano']]"
-                        hint="Muda só o símbolo mostrado nos valores — não converte nenhum valor já registado."
-                    />
-                    <x-ui.select
-                        label="Fuso horário"
-                        wire:model="empresaFuso"
-                        :options="[['value' => 'Africa/Maputo', 'label' => 'Africa/Maputo (CAT)'], ['value' => 'UTC', 'label' => 'UTC']]"
-                    />
+        @php
+            $remetenteVencia = Configuracao::remetenteDaPlataforma();
+            $nomeEmpresa = $empresaNome ?: 'A tua empresa';
+        @endphp
+        <div class="grelha-2 grelha-2--colunas">
+            <x-ui.card title="Dados da empresa" subtitle="Aparecem nos recibos, nos emails aos clientes e no topo da app.">
+                <div class="pilha pilha--12">
+                    <x-ui.input label="Nome da empresa" wire:model.live.debounce.400ms="empresaNome" :error="$errors->first('empresaNome')" />
+                    <x-ui.input label="Email da empresa" type="email" icon="mail" wire:model.live.debounce.400ms="empresaEmail" :error="$errors->first('empresaEmail')" hint="Mostrado nos recibos. Quando um cliente responde a um email, a resposta chega aqui." />
+                    <div class="grelha-campos">
+                        <x-ui.select
+                            label="Moeda"
+                            wire:model="empresaMoeda"
+                            :options="[['value' => 'MZN', 'label' => 'MZN — Metical'], ['value' => 'USD', 'label' => 'USD — Dólar'], ['value' => 'ZAR', 'label' => 'ZAR — Rand']]"
+                        />
+                        <x-ui.select
+                            label="Fuso horário"
+                            wire:model="empresaFuso"
+                            :options="[['value' => 'Africa/Maputo', 'label' => 'Maputo (CAT)'], ['value' => 'UTC', 'label' => 'UTC']]"
+                        />
+                    </div>
+                    <p class="field__hint" style="margin:-4px 0 0">Mudar a moeda muda só o símbolo mostrado: não converte valores já registados.</p>
                     <div>
                         <label style="cursor:pointer;display:inline-block">
-                            <input type="file" wire:model="novoLogoEmpresa" accept="image/*" style="display:none" />
+                            <input type="file" wire:model="novoLogoEmpresa" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" />
                             <x-ui.logo-slot
                                 :size="56"
                                 :src="$novoLogoEmpresa ? $novoLogoEmpresa->temporaryUrl() : (($empresaConfig['logo_path'] ?? null) ? Storage::disk('public')->url($empresaConfig['logo_path']) : null)"
-                                label="Logo da empresa"
-                                hint="Usado nos emails enviados ao cliente"
+                                label="Logótipo"
+                                hint="PNG, JPG ou WebP até 2 MB. Aparece nos emails e recibos."
                             />
                         </label>
                         @if($errors->first('novoLogoEmpresa'))
-                            <div style="margin-top:4px;font-size:var(--text-xs);color:var(--red-600)">{{ $errors->first('novoLogoEmpresa') }}</div>
+                            <div class="field__hint field__hint--error" style="margin-top:4px">{{ $errors->first('novoLogoEmpresa') }}</div>
                         @endif
                     </div>
-                    <div style="display:flex;justify-content:flex-end">
+                    <div class="linha-accoes">
                         <x-ui.button variant="primary" size="sm" wire:click="guardarEmpresa">Guardar</x-ui.button>
                     </div>
                 </div>
             </x-ui.card>
 
-            <x-ui.card title="Envio de email (SMTP)" :subtitle="$this->smtpProprioPermitido ? 'Opcional: o teu próprio servidor. Em branco, os emails saem pelo servidor da Vencia com o nome da tua empresa.' : 'Os emails aos teus clientes saem pelo servidor da Vencia, com o nome e o email de resposta da tua empresa.'">
-                @unless($this->smtpProprioPermitido)
-                    <p class="pessoal-muted">Usar o teu próprio servidor de email está incluído no plano Pro.@can('gerir-conta') <a href="{{ route('conta.plano') }}" wire:navigate>Ver planos</a>@endcan</p>
-                @else
-                <div style="display:flex;flex-direction:column;gap:12px">
-                    <x-ui.input label="Servidor" wire:model="smtpServidor" placeholder="smtp.exemplo.co.mz" />
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                        <x-ui.input label="Porta" wire:model="smtpPorta" placeholder="587" />
+            <div class="pilha">
+                <x-ui.card title="Emails aos teus clientes" subtitle="A Vencia envia os lembretes e recibos por ti. Não precisas de configurar nenhum servidor de email.">
+                    <div class="previa-email">
+                        <span class="previa-email__titulo">Assim o cliente recebe</span>
+                        <div><span>De</span> <strong>{{ $nomeEmpresa }}</strong> &lt;{{ $remetenteVencia }}&gt;</div>
+                        <div><span>Responder para</span> {{ $empresaEmail ?: 'o email da empresa (preenche ao lado)' }}</div>
+                        <div><span>Com</span> o teu logótipo e o nome da empresa no topo</div>
+                    </div>
+                </x-ui.card>
+
+                <x-ui.card title="Testar emails" subtitle="Recebe um exemplo de cada email com dados fictícios. Nada é gravado e nenhum cliente recebe nada.">
+                    <form wire:submit="enviarTeste" class="pilha pilha--12">
                         <x-ui.select
-                            label="Segurança"
-                            wire:model="smtpSeguranca"
-                            :options="[
-                                ['value' => 'STARTTLS', 'label' => 'STARTTLS'],
-                                ['value' => 'SSL', 'label' => 'SSL'],
-                                ['value' => 'Nenhuma', 'label' => 'Nenhuma'],
-                            ]"
+                            label="Tipo de email"
+                            wire:model="testeTipo"
+                            :options="collect(\App\Services\EmailsDeTeste::TIPOS_CONTA)->map(fn ($t) => ['value' => $t, 'label' => \App\Services\EmailsDeTeste::TIPOS[$t]])->all()"
                         />
-                    </div>
-                    <x-ui.input label="Utilizador" wire:model="smtpUtilizador" placeholder="cobrancas@exemplo.co.mz" />
-                    <x-ui.input label="Password" type="password" wire:model="smtpPassword" placeholder="Deixe em branco para manter a actual" hint="Nunca é reexibida depois de guardada — só substituída se preencher um valor novo." />
-                    <div style="display:flex;justify-content:flex-start;gap:8px">
-                        <x-ui.button size="sm" wire:click="guardarSmtp">Guardar</x-ui.button>
-                    </div>
-                </div>
-                @endunless
-            </x-ui.card>
-
-            <x-ui.card title="Testar emails" subtitle="Envia um exemplo de cada email da Vencia, com dados fictícios, para o endereço que escolheres. Nada é gravado e o cliente não recebe nada.">
-                <form wire:submit="enviarTeste" style="display:flex;flex-direction:column;gap:12px">
-                    <x-ui.select
-                        label="Tipo de email"
-                        wire:model="testeTipo"
-                        :options="collect(\App\Services\EmailsDeTeste::TIPOS_CONTA)->map(fn ($t) => ['value' => $t, 'label' => \App\Services\EmailsDeTeste::TIPOS[$t]])->all()"
-                    />
-                    <x-ui.input label="Enviar para" type="email" wire:model="testeDestino" placeholder="o-teu-email@exemplo.co.mz" :error="$errors->first('testeDestino')" hint="Para o teu email ou o da empresa." />
-                    <div style="display:flex;justify-content:flex-end">
-                        <x-ui.button type="submit" icon="send" wire:loading.attr="disabled" wire:target="enviarTeste">
-                            <span wire:loading.remove wire:target="enviarTeste">Enviar teste</span>
-                            <span wire:loading wire:target="enviarTeste">A enviar…</span>
-                        </x-ui.button>
-                    </div>
-                </form>
-            </x-ui.card>
-
+                        <x-ui.input label="Enviar para" type="email" wire:model="testeDestino" placeholder="o-teu-email@exemplo.co.mz" :error="$errors->first('testeDestino')" hint="O teu email ou o da empresa." />
+                        <div class="linha-accoes">
+                            <x-ui.button type="submit" size="sm" icon="send" wire:loading.attr="disabled" wire:target="enviarTeste">
+                                <span wire:loading.remove wire:target="enviarTeste">Enviar teste</span>
+                                <span wire:loading wire:target="enviarTeste">A enviar…</span>
+                            </x-ui.button>
+                        </div>
+                    </form>
+                </x-ui.card>
+            </div>
         </div>
-    @elseif($tab === 'seguranca')
-        <livewire:configuracoes.seguranca />
     @endif
 </div>

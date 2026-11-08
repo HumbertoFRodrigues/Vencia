@@ -23,7 +23,9 @@
     </div>
 
     @foreach($grupos as $tipo => $g)
-        @php($lista = $this->fixos->get($tipo, collect()))
+        @php
+            $lista = $this->fixos->get($tipo, collect());
+        @endphp
         <x-ui.card :title="$g['titulo']" :subtitle="$g['sub']" :padding="0">
             <x-slot:action>
                 <x-ui.button size="sm" variant="ghost" icon="plus" wire:click="$dispatch('fixo:abrir', { tipo: '{{ $tipo }}' })">{{ $g['botao'] }}</x-ui.button>

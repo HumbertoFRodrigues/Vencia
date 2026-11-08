@@ -7,8 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A plan the super-admin edits in /admin. `limites` holds the counts (null =
- * no limit) and the switches: clientes, servicos, membros, exportar,
- * smtp_proprio.
+ * no limit) and the switches: clientes, servicos, membros, exportar.
  */
 class Plano extends Model
 {
@@ -20,7 +19,6 @@ class Plano extends Model
 
     public const FUNCOES = [
         'exportar' => 'Exportar CSV e PDF',
-        'smtp_proprio' => 'Servidor de email próprio',
     ];
 
     protected $fillable = ['slug', 'nome', 'descricao', 'preco_mensal', 'preco_anual', 'limites', 'activo', 'ordem'];
@@ -45,7 +43,7 @@ class Plano extends Model
     {
         return once(fn () => static::query()->firstOrCreate(['slug' => 'gratis'], [
             'nome' => 'Grátis',
-            'limites' => ['clientes' => 10, 'servicos' => 15, 'membros' => 1, 'exportar' => false, 'smtp_proprio' => false],
+            'limites' => ['clientes' => 10, 'servicos' => 15, 'membros' => 1, 'exportar' => false],
             'ordem' => 1,
         ]));
     }

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Livewire\Configuracoes\ConfiguracoesIndex;
+use App\Livewire\Admin\Plataforma;
 use App\Livewire\Servicos\RenovarDialog;
 use App\Models\Configuracao;
 use App\Models\User;
@@ -48,9 +48,10 @@ class SegurancaTest extends TestCase
 
     public function test_smtp_password_is_stored_encrypted(): void
     {
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->create(['super_admin' => true]));
 
-        Livewire::test(ConfiguracoesIndex::class)
+        Livewire::test(Plataforma::class)
+            ->set('smtpModo', 'smtp')
             ->set('smtpServidor', 'smtp.teste.mz')
             ->set('smtpPorta', '587')
             ->set('smtpSeguranca', 'STARTTLS')
@@ -58,7 +59,7 @@ class SegurancaTest extends TestCase
             ->call('guardarSmtp')
             ->assertHasNoErrors();
 
-        $guardada = Configuracao::obter('smtp')['password'];
+        $guardada = Configuracao::plataforma('smtp')['password'];
         $this->assertNotSame('segredo-123', $guardada);
         $this->assertSame('segredo-123', Crypt::decryptString($guardada));
 

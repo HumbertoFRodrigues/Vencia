@@ -83,7 +83,9 @@
                     ['key' => 'vs', 'header' => 'vs '.$comparacao, 'align' => 'right'],
                 ]" :empty="empty($this->categoriasSaida)">
                     @foreach($this->categoriasSaida as $c)
-                        @php($delta = $c['anterior'] > 0 ? (($c['total'] - $c['anterior']) / $c['anterior']) * 100 : null)
+                        @php
+                            $delta = $c['anterior'] > 0 ? (($c['total'] - $c['anterior']) / $c['anterior']) * 100 : null;
+                        @endphp
                         <tr wire:key="as-{{ $c['categoria']->id }}">
                             <td><x-ui.cat-chip :categoria="$c['categoria']" label size="sm" /></td>
                             <td class="u-text-right"><x-ui.money-value :amount="$c['total']" size="sm" tone="out" /></td>

@@ -200,7 +200,9 @@
                 @else
                     <ul class="share-list">
                         @foreach($gastos as $g)
-                            @php($fg = $g['categoria']->tinta()[1])
+                            @php
+                                $fg = $g['categoria']->tinta()[1];
+                            @endphp
                             <li class="share">
                                 <x-ui.cat-chip :categoria="$g['categoria']" label size="sm" class="share__label" />
                                 <span class="share__bar"><span style="width:{{ max(2, round($g['pct'])) }}%;background:{{ $fg }}"></span></span>

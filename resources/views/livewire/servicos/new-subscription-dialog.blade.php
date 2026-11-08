@@ -28,7 +28,9 @@
                 </div>
 
                 @if($this->bibliotecaSelecionada)
-                    @php($svc = $this->bibliotecaSelecionada)
+                    @php
+                        $svc = $this->bibliotecaSelecionada;
+                    @endphp
                     <div style="display:flex;align-items:center;gap:14px;padding:12px;background:var(--surface-sunken);border-radius:var(--radius-md)">
                         <x-ui.service-logo :name="$svc->nome" :category="$svc->categoria" size="44" />
                         <div style="flex:1;display:flex;flex-direction:column;gap:3px">

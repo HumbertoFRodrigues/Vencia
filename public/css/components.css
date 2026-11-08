@@ -802,3 +802,8 @@
 @media (min-width: 1560px) {
   .tile-grid:has(> :nth-child(6):last-child) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
+
+/* Section titles in the sidebar ("Dia a dia", "Análise", "A tua empresa"…): the menu reads as groups, not one long list. */
+.sidebar-nav__grupo { display: block; padding: 14px 10px 4px; font-size: 11px; font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); }
+.sidebar-nav__list > .sidebar-nav__grupo:first-child { padding-top: 4px; }
+[data-sidebar-collapsed] .sidebar-nav__grupo { height: 1px; padding: 0; margin: 8px 10px; overflow: hidden; color: transparent; background: var(--border-subtle); }

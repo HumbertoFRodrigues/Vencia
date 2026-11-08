@@ -11,7 +11,6 @@ use App\Services\EmailsDeTeste;
 use App\Services\ServicoStatusService;
 use App\Support\ContaActual;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -109,24 +108,6 @@ class ConfiguracoesIndex extends Component
     /** @var TemporaryUploadedFile|null */
     public $novoLogoEmpresa = null;
 
-    public string $smtpServidor = '';
-
-    public string $smtpPorta = '587';
-
-    public string $smtpSeguranca = 'STARTTLS';
-
-    public string $smtpUtilizador = '';
-
-    /**
-     * Deliberately never pre-filled from the saved value in mount() (unlike
-     * every other SMTP field) — round-tripping an already-saved secret back
-     * into the browser on every page load is worse practice than asking the
-     * admin to re-type it when they want to change it. Left blank,
-     * guardarSmtp() below keeps whatever password is already saved; typing
-     * a new value replaces it.
-     */
-    public string $smtpPassword = '';
-
     /** "Testar emails" card: which sample to send and where. */
     public string $testeTipo = 'simples';
 
@@ -150,18 +131,19 @@ class ConfiguracoesIndex extends Component
         $this->empresaMoeda = $empresa['moeda'] ?? 'MZN';
         $this->empresaFuso = $empresa['fuso_horario'] ?? 'Africa/Maputo';
 
-        $smtp = Configuracao::obter('smtp', []);
-        $this->smtpServidor = $smtp['servidor'] ?? '';
-        $this->smtpPorta = $smtp['porta'] ?? '587';
-        $this->smtpSeguranca = $smtp['seguranca'] ?? 'STARTTLS';
-        $this->smtpUtilizador = $smtp['utilizador'] ?? '';
-
         $this->recarregarTemplates();
     }
 
     public function setTab(string $tab): void
     {
-        $this->tab = in_array($tab, ['biblioteca', 'lembretes', 'empresa', 'seguranca'], true) ? $tab : 'biblioteca';
+        // Two-step login is personal, so it moved to O meu perfil (old links still land there).
+        if ($tab === 'seguranca') {
+            $this->redirectRoute('conta.perfil', navigate: true);
+
+            return;
+        }
+
+        $this->tab = in_array($tab, ['biblioteca', 'lembretes', 'empresa'], true) ? $tab : 'biblioteca';
     }
 
     // ================= Biblioteca de Serviços =================
@@ -565,52 +547,10 @@ class ConfiguracoesIndex extends Component
         $this->dispatch('toast', title: 'Dados da empresa actualizados', tone: 'success');
     }
 
-    public function guardarSmtp(): void
-    {
-        if (! $this->smtpProprioPermitido) {
-            $this->dispatch('toast', title: 'Servidor de email próprio é do plano Pro', body: 'No teu plano os emails saem pelo servidor da Vencia, com o nome da tua empresa.', tone: 'info');
-
-            return;
-        }
-
-        $data = $this->validate([
-            'smtpServidor' => ['nullable', 'string', 'max:255'],
-            'smtpPorta' => ['nullable', 'integer', 'between:1,65535'],
-            'smtpSeguranca' => ['required', Rule::in(['STARTTLS', 'SSL', 'Nenhuma'])],
-            'smtpUtilizador' => ['nullable', 'string', 'max:255'],
-            'smtpPassword' => ['nullable', 'string', 'max:255'],
-        ], [
-            'smtpPorta.integer' => 'A porta tem de ser um número (normalmente 587 ou 465).',
-            'smtpPorta.between' => 'A porta tem de estar entre 1 e 65535.',
-        ]);
-
-        $existente = Configuracao::obter('smtp', []);
-
-        Configuracao::query()->updateOrCreate(['chave' => 'smtp'], [
-            'valor' => [
-                'servidor' => $data['smtpServidor'],
-                'porta' => (string) $data['smtpPorta'],
-                'seguranca' => $data['smtpSeguranca'],
-                'utilizador' => $data['smtpUtilizador'],
-                // Blank password field means "keep the one already saved" —
-                // the field is never pre-filled (see its property docblock),
-                // so an empty submit is not the admin asking to clear it.
-                // Stored encrypted with APP_KEY: a database dump or backup
-                // never exposes the mailbox password.
-                'password' => $data['smtpPassword'] !== ''
-                    ? Crypt::encryptString($data['smtpPassword'])
-                    : ($existente['password'] ?? null),
-            ],
-        ]);
-
-        $this->smtpPassword = '';
-        $this->dispatch('toast', title: 'Configuração de SMTP guardada', tone: 'success');
-    }
-
     /**
      * Sends one sample of the chosen email (EmailsDeTeste) to any address,
      * through the same runtime mailer the real sends use, so it proves both
-     * that SMTP works and how each message looks to the client.
+     * that sending works and how each message looks to the client.
      */
     public function enviarTeste(): void
     {
@@ -619,10 +559,10 @@ class ConfiguracoesIndex extends Component
             'testeDestino' => ['required', 'email'],
         ], [], ['testeTipo' => 'tipo de email', 'testeDestino' => 'email de destino']);
 
-        // Through the platform's server a test only goes to the business's own addresses, a few an hour:
+        // A test only goes to the business's own addresses, a few an hour:
         // otherwise a free account could send its own text to anyone (and harm the platform's reputation).
         $permitidos = array_filter([mb_strtolower(auth()->user()->email), mb_strtolower((string) (Configuracao::obter('empresa', [])['email'] ?? ''))]);
-        if (! (Configuracao::smtpEfectivo()['proprio'] ?? false) && ! in_array(mb_strtolower($this->testeDestino), $permitidos, true)) {
+        if (! in_array(mb_strtolower($this->testeDestino), $permitidos, true)) {
             $this->addError('testeDestino', 'Os testes só podem ir para o teu email ou para o email da empresa ('.implode(' ou ', $permitidos).').');
 
             return;
@@ -648,19 +588,12 @@ class ConfiguracoesIndex extends Component
         }
 
         if (EmailsDeTeste::soNoRegisto()) {
-            $this->dispatch('toast', title: 'SMTP por configurar', body: 'O email foi gravado só no registo (storage/logs), não saiu para '.$this->testeDestino.'.', tone: 'info');
+            $this->dispatch('toast', title: 'Envio de email por configurar', body: 'O email não saiu para '.$this->testeDestino.': falta escolher como enviar em Admin → Plataforma → Envio de email.', tone: 'warning');
 
             return;
         }
 
-        $this->dispatch('toast', title: 'Email de teste enviado', body: $tipo.' → '.$this->testeDestino, tone: 'success');
-    }
-
-    /** Own SMTP is a paid feature; without it emails leave through the platform's server. */
-    #[Computed]
-    public function smtpProprioPermitido(): bool
-    {
-        return (bool) ContaActual::get()?->planoEfectivo()->permite('smtp_proprio');
+        $this->dispatch('toast', title: 'Email de teste enviado', body: 'Para '.$this->testeDestino.'. Se não aparecer em 2 minutos, vê a pasta de Spam ou Lixo.', tone: 'success');
     }
 
     public function render()

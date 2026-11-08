@@ -103,7 +103,7 @@ class AdminGestaoTest extends TestCase
 
         Configuracao::guardarPlataforma('smtp', ['servidor' => 'mail.exemplo.mz']);
         Tarefas::registar('verificar', '3 contas');
-        Livewire::test(Visao::class)->assertSee('SMTP da plataforma: mail.exemplo.mz')->assertSee('3 contas');
+        Livewire::test(Visao::class)->assertSee('SMTP mail.exemplo.mz')->assertSee('3 contas');
     }
 
     public function test_the_daily_commands_record_when_they_ran(): void

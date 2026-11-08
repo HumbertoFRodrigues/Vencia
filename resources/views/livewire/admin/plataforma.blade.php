@@ -3,24 +3,66 @@
 
     <div class="grelha-2 grelha-2--colunas">
         <div class="pilha">
-            <x-ui.card title="Envio de email" subtitle="Envia os emails da plataforma (confirmação de conta, password, convites, faturas) e os das empresas que não têm servidor próprio.">
+            @php
+                $envio = \App\Models\Configuracao::plataforma('smtp', []);
+                $envioActivo = \App\Models\Configuracao::temEnvio($envio);
+                $remetente = \App\Models\Configuracao::remetenteDaPlataforma();
+            @endphp
+            <x-ui.card title="Envio de email" subtitle="Um só envio para tudo: confirmações de conta, convites e faturas da plataforma, e os lembretes e recibos que as empresas mandam aos clientes.">
+                <x-slot:action>
+                    <x-ui.tag :tone="$envioActivo ? 'success' : 'warning'">{{ $envioActivo ? match ($envio['modo'] ?? 'smtp') { 'brevo' => 'Brevo', 'php' => 'mail()', default => 'SMTP' } : 'Por configurar' }}</x-ui.tag>
+                </x-slot:action>
                 <form wire:submit="guardarSmtp" class="pilha pilha--12">
-                    <x-ui.select label="Como enviar" wire:model.live="smtpModo" :options="[['value' => 'php', 'label' => 'Função mail() do servidor (sem configurar nada)'], ['value' => 'smtp', 'label' => 'Servidor SMTP (conta de email)']]" />
-                    @if($smtpModo === 'php')
-                        <p class="field__hint" style="margin:0">Usa o servidor de email do próprio alojamento (cPanel). Para não cair no spam, o endereço de envio deve ser do teu domínio, por exemplo <code>{{ \App\Models\Configuracao::remetentePorOmissao() }}</code>.</p>
+                    <x-ui.select label="Como enviar" wire:model.live="smtpModo" :options="[
+                        ['value' => 'brevo', 'label' => 'Brevo — recomendado (chega à caixa de entrada)'],
+                        ['value' => 'php', 'label' => 'Servidor do alojamento — simples (pode ir para o spam)'],
+                        ['value' => 'smtp', 'label' => 'Conta de email SMTP — avançado'],
+                    ]" />
+
+                    @if($smtpModo === 'brevo')
+                        <div class="aviso-caixa">
+                            <strong>Como activar (5 minutos, grátis até 300 emails por dia)</strong>
+                            <ol>
+                                <li>Cria conta em <a href="https://www.brevo.com" target="_blank" rel="noopener">brevo.com</a>.</li>
+                                <li>Em <em>Senders, Domains &amp; Dedicated IPs → Domains</em>, adiciona o teu domínio e copia os registos DNS que o Brevo mostra para o cPanel → Zone Editor.</li>
+                                <li>Em <em>SMTP &amp; API → API Keys</em>, gera uma chave e cola-a aqui.</li>
+                            </ol>
+                        </div>
+                        <x-ui.input label="Chave API do Brevo" type="password" wire:model="brevoChave" autocomplete="off" :placeholder="filled($envio['brevo_chave'] ?? null) ? 'Guardada (cola outra para substituir)' : 'xkeysib-…'" :error="$errors->first('brevoChave')" />
+                    @elseif($smtpModo === 'php')
+                        <div class="aviso-caixa aviso-caixa--atencao">
+                            Usa o servidor de email do alojamento. Não precisa de configuração, mas a reputação é partilhada com outros sites: Outlook e Hotmail costumam mandar para o spam. Para melhorar, o SPF do domínio deve incluir este servidor (cPanel → Email Deliverability).
+                        </div>
                     @else
-                        <x-ui.input label="Servidor" wire:model="smtpServidor" placeholder="mail.vencia.co.mz" :error="$errors->first('smtpServidor')" />
+                        <div class="aviso-caixa aviso-caixa--atencao">Muitos alojamentos bloqueiam ligações SMTP para fora (Gmail, Outlook): se o teste der "Connection refused", usa o Brevo.</div>
+                        <x-ui.input label="Servidor" wire:model="smtpServidor" placeholder="mail.exemplo.co.mz" :error="$errors->first('smtpServidor')" />
                         <div class="grelha-campos">
-                            <x-ui.input label="Porta" wire:model="smtpPorta" placeholder="587" :error="$errors->first('smtpPorta')" />
+                            <x-ui.input label="Porta" wire:model="smtpPorta" placeholder="465" :error="$errors->first('smtpPorta')" />
                             <x-ui.select label="Segurança" wire:model="smtpSeguranca" :options="[['value' => 'STARTTLS', 'label' => 'STARTTLS'], ['value' => 'SSL', 'label' => 'SSL'], ['value' => 'Nenhuma', 'label' => 'Nenhuma']]" />
                         </div>
                         <div class="grelha-campos">
-                            <x-ui.input label="Utilizador" wire:model="smtpUtilizador" placeholder="nao-responder@vencia.co.mz" />
+                            <x-ui.input label="Utilizador" wire:model="smtpUtilizador" placeholder="nao-responder@exemplo.co.mz" />
                             <x-ui.input label="Password" type="password" wire:model="smtpPassword" placeholder="Em branco = manter" />
                         </div>
                     @endif
-                    <x-ui.input label="Endereço de envio (From)" wire:model="smtpRemetente" :placeholder="$smtpModo === 'php' ? \App\Models\Configuracao::remetentePorOmissao() : 'Em branco = o utilizador acima'" :error="$errors->first('smtpRemetente')" hint="Os emails das empresas saem deste endereço com o nome da empresa, e as respostas vão para o email da empresa." />
-                    <div class="linha-accoes"><x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button></div>
+
+                    <div class="grelha-campos">
+                        <x-ui.input label="Endereço de envio" type="email" wire:model="smtpRemetente" :placeholder="$smtpModo === 'smtp' ? 'Em branco = o utilizador' : \App\Models\Configuracao::remetentePorOmissao()" :error="$errors->first('smtpRemetente')" />
+                        <x-ui.input label="Nome nos emails da plataforma" wire:model="remetenteNome" placeholder="Vencia" :error="$errors->first('remetenteNome')" />
+                    </div>
+
+                    <div class="previa-email">
+                        <span class="previa-email__titulo">Assim chegam os emails</span>
+                        <div><span>Da plataforma</span> <strong>{{ $remetenteNome ?: config('app.name') }}</strong> &lt;{{ $remetente }}&gt;</div>
+                        <div><span>Das empresas</span> <strong>Nome da empresa</strong> &lt;{{ $remetente }}&gt; · as respostas vão para o email da empresa</div>
+                    </div>
+
+                    <div class="linha-accoes">
+                        @if($smtpModo === 'brevo')
+                            <x-ui.button size="sm" variant="ghost" icon="shield-check" wire:click="verificarBrevo">Verificar chave</x-ui.button>
+                        @endif
+                        <x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button>
+                    </div>
                 </form>
             </x-ui.card>
 
@@ -34,19 +76,14 @@
                 </form>
             </x-ui.card>
 
-            <x-ui.card title="Registo de novas contas">
-                <form wire:submit="guardarRegisto" class="pilha pilha--12">
-                    <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="registoAberto"> Qualquer pessoa pode criar conta (fechado: só por convite)</label>
-                    <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="avisarAdmin"> Avisar-me por email quando alguém cria conta</label>
-                    <x-ui.input label="Dias de teste do plano Pro para contas novas" wire:model="diasTeste" inputmode="numeric" hint="0 = começam logo no Grátis." :error="$errors->first('diasTeste')" />
-                    <div class="linha-accoes"><x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button></div>
-                </form>
-            </x-ui.card>
-
-            <x-ui.card title="Cópias de segurança" subtitle="Toda a base de dados (todas as contas) num ficheiro. Criadas todos os dias pela tarefa agendada e enviadas ao super-admin; o servidor guarda as últimas 14.">
+            <x-ui.card title="Cópias de segurança" subtitle="Toda a base de dados (todas as contas) num ficheiro, criado todos os dias pela tarefa agendada. O servidor guarda as últimas 14 e só tu as podes descarregar.">
                 <x-slot:action>
                     <x-ui.button size="sm" icon="download" wire:click="criarCopia">Criar e descarregar</x-ui.button>
                 </x-slot:action>
+                <label class="opcao-linha">
+                    <input type="checkbox" wire:model.live="copiaAnexar">
+                    <span><strong>Anexar a cópia ao email diário</strong> Fica uma cópia fora do servidor, mas quem tiver acesso à tua caixa de email vê os dados de todas as contas. Desligado, o email só avisa que a cópia foi criada.</span>
+                </label>
                 @php
                     $copias = $this->copias;
                 @endphp
@@ -127,6 +164,15 @@
                     @if($anunciosActivos)
                         <p class="field__hint" style="margin:0">O ficheiro <a href="{{ route('ads-txt') }}" target="_blank" rel="noopener">ads.txt</a> já é criado sozinho.</p>
                     @endif
+                    <div class="linha-accoes"><x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button></div>
+                </form>
+            </x-ui.card>
+
+            <x-ui.card title="Registo de novas contas">
+                <form wire:submit="guardarRegisto" class="pilha pilha--12">
+                    <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="registoAberto"> Qualquer pessoa pode criar conta (fechado: só por convite)</label>
+                    <label style="display:flex;gap:8px;align-items:center;font-size:var(--text-sm)"><input type="checkbox" wire:model="avisarAdmin"> Avisar-me por email quando alguém cria conta</label>
+                    <x-ui.input label="Dias de teste do plano Pro para contas novas" wire:model="diasTeste" inputmode="numeric" hint="0 = começam logo no Grátis." :error="$errors->first('diasTeste')" />
                     <div class="linha-accoes"><x-ui.button type="submit" size="sm" variant="primary">Guardar</x-ui.button></div>
                 </form>
             </x-ui.card>

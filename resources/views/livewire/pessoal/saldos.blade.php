@@ -29,7 +29,9 @@
                 @else
                     <ul class="metas-list">
                         @foreach($metas as $l)
-                            @php($m = $l['meta'])
+                            @php
+                                $m = $l['meta'];
+                            @endphp
                             <li class="meta" wire:key="meta-{{ $m->id }}">
                                 <div class="meta__head">
                                     <div>

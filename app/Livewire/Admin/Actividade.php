@@ -39,7 +39,7 @@ class Actividade extends Component
         'user.apagou_conta' => 'Utilizador apagou a conta',
         'plano.criado' => 'Plano criado',
         'plano.editado' => 'Plano editado',
-        'plataforma.smtp' => 'SMTP da plataforma',
+        'plataforma.smtp' => 'Envio de email',
         'plataforma.faturacao' => 'Dados de pagamento',
         'plataforma.registo' => 'Opções de registo',
         'plataforma.copia' => 'Cópia de segurança',

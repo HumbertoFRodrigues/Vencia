@@ -32,8 +32,12 @@
             ['key' => 'progresso', 'header' => 'Progresso'],
         ]">
             @foreach($this->saidas as $l)
-                @php($c = $l['categoria'])
-                @php($o = $l['orcamento'])
+                @php
+                    $c = $l['categoria'];
+                @endphp
+                @php
+                    $o = $l['orcamento'];
+                @endphp
                 <tr data-clickable wire:key="cs-{{ $c->id }}" wire:click="$dispatch('categoria:abrir', { categoriaId: {{ $c->id }} })" tabindex="0" onkeydown="if (event.key === 'Enter') this.click()" @class(['row--muted' => $c->arquivado])>
                     <td>
                         <span style="display:flex;align-items:center;gap:8px">
@@ -77,7 +81,9 @@
             ['key' => 'total', 'header' => 'Recebido em '.$this->rotuloMes(), 'align' => 'right'],
         ]">
             @foreach($this->entradas as $l)
-                @php($c = $l['categoria'])
+                @php
+                    $c = $l['categoria'];
+                @endphp
                 <tr data-clickable wire:key="ce-{{ $c->id }}" wire:click="$dispatch('categoria:abrir', { categoriaId: {{ $c->id }} })" tabindex="0" onkeydown="if (event.key === 'Enter') this.click()" @class(['row--muted' => $c->arquivado])>
                     <td>
                         <span style="display:flex;align-items:center;gap:8px">

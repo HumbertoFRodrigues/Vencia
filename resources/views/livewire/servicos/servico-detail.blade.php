@@ -69,12 +69,16 @@
             Este serviço foi cancelado e não pode ser reactivado nesta aplicação.
         </x-ui.alert-banner>
     @elseif($s->status === ServicoStatus::Suspenso)
-        @php($susp = $this->ultimaSuspensao)
+        @php
+            $susp = $this->ultimaSuspensao;
+        @endphp
         <x-ui.alert-banner tone="warning" title="Serviço suspenso em {{ $susp?->data?->format('d/m/Y') ?? '—' }}">
             Motivo: {{ $susp?->motivo?->label() ?? '—' }}. Os lembretes estão parados.
         </x-ui.alert-banner>
     @elseif($s->status === ServicoStatus::AVencer)
-        @php($proximoAviso = $this->proximoAvisoDias)
+        @php
+            $proximoAviso = $this->proximoAvisoDias;
+        @endphp
         <x-ui.alert-banner tone="warning" title="Vence em {{ $dias }} {{ $dias === 1 ? 'dia' : 'dias' }}">
             @if($proximoAviso !== null)
                 Próximo aviso automático: {{ $proximoAviso }} {{ $proximoAviso === 1 ? 'dia' : 'dias' }} antes do vencimento.
@@ -131,7 +135,9 @@
                 </div>
             </x-ui.card>
 
-            @php($antecedencia = app(\App\Services\ServicoStatusService::class)->antecedencia($s))
+            @php
+                $antecedencia = app(\App\Services\ServicoStatusService::class)->antecedencia($s);
+            @endphp
             <x-ui.card title="Lembretes" :subtitle="$antecedencia ? 'Intervalos activos para este serviço — por omissão, o primeiro aviso é '.$antecedencia.' '.($antecedencia === 1 ? 'dia' : 'dias').' antes (Configurações → Lembretes)' : 'Serviço único: não há lembretes de vencimento'">
                 <div style="display:flex;gap:16px;flex-wrap:wrap">
                     @foreach($labels as $key => $label)

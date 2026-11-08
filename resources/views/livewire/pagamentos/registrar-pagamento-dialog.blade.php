@@ -1,6 +1,8 @@
 <div>
     @if($show)
-        @php($s = $this->servico)
+        @php
+            $s = $this->servico;
+        @endphp
         <x-ui.dialog
             :title="$this->editando ? 'Editar pagamento' : 'Registrar pagamento'"
             :description="$s ? $s->nome.' — '.($s->cliente?->nome ?? '') : 'Registo avulso de um pagamento recebido'"

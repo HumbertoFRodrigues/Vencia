@@ -117,3 +117,45 @@ a.auth-card__brand { text-decoration: none; }
 .faixa-plano span { flex: 1; min-width: 200px; }
 .faixa-plano--info { background: var(--accent-soft); color: var(--text-accent); border: 1px solid var(--accent-soft-border); }
 .faixa-plano--warning { background: var(--status-due-bg); color: var(--status-due-fg); border: 1px solid var(--status-due-dot); }
+
+/* A short explanation inside a settings card (steps, a caveat). */
+.aviso-caixa { padding: 12px 14px; border-radius: var(--radius-md); background: var(--accent-soft); border: 1px solid var(--accent-soft-border); font-size: var(--text-sm); color: var(--text-default, var(--text-strong)); line-height: 1.5; }
+.aviso-caixa strong { display: block; margin-bottom: 4px; color: var(--text-strong); }
+.aviso-caixa ol { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }
+.aviso-caixa a { color: var(--text-accent); }
+.aviso-caixa--atencao { background: var(--status-due-bg); border-color: color-mix(in srgb, var(--status-due-fg) 25%, transparent); }
+
+/* "This is how the email arrives": sender lines under the mail settings. */
+.previa-email { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px dashed var(--border-subtle); border-radius: var(--radius-md); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.previa-email__titulo { font-size: var(--text-xs); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+.previa-email span:not(.previa-email__titulo) { display: inline-block; min-width: 108px; color: var(--text-muted); }
+
+/* ---------- Area switcher (components/ui/panel-switch): Empresa / Pessoal / Administração ---------- */
+.area-switch { display: block; width: 100%; }
+.area-switch__botao { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--surface-card); color: var(--text-strong); font: inherit; text-align: left; cursor: pointer; transition: var(--transition-control); }
+.area-switch__botao:hover { border-color: var(--border-strong, var(--border-subtle)); background: var(--surface-hover); }
+.area-switch__botao:focus-visible { outline: none; box-shadow: var(--ring); }
+.area-switch__icone { display: inline-grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--text-accent); }
+.area-switch__icone .icon { background: currentColor !important; }
+.area-switch__icone--pessoal { background: var(--status-active-bg); color: var(--status-active-fg); }
+.area-switch__icone--admin { background: var(--status-due-bg); color: var(--status-due-fg); }
+.area-switch__texto { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.area-switch__nome { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--text-strong); }
+.area-switch__sub { font-size: var(--text-xs); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.area-switch__seta { flex-shrink: 0; color: var(--text-muted); }
+.area-switch__painel { left: 0; right: 0; width: auto; padding: 6px; }
+.area-switch__grupo { display: block; padding: 6px 8px 4px; font-size: var(--text-xs); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); }
+.area-switch__opcao { display: flex; align-items: flex-start; gap: 10px; padding: 8px; border-radius: var(--radius-sm); color: var(--text-body); text-decoration: none; }
+.area-switch__opcao:hover { background: var(--surface-hover); }
+.area-switch__opcao--actual { background: var(--surface-sunken); }
+.area-switch__descricao { font-size: var(--text-xs); color: var(--text-muted); line-height: 1.4; margin-top: 2px; }
+.area-switch__visto { margin-top: 8px; color: var(--text-accent); }
+.area-switch__divisor { height: 1px; margin: 6px 4px; background: var(--border-subtle); }
+[data-sidebar-collapsed] .area-switch__texto,
+[data-sidebar-collapsed] .area-switch__seta { display: none; }
+[data-sidebar-collapsed] .area-switch__botao { justify-content: center; padding: 6px; }
+
+/* A checkbox with a bold title and an explanation underneath. */
+.opcao-linha { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; font-size: var(--text-sm); color: var(--text-muted); line-height: 1.45; cursor: pointer; }
+.opcao-linha input { margin-top: 3px; flex-shrink: 0; }
+.opcao-linha strong { display: block; color: var(--text-strong); font-weight: var(--weight-medium); }

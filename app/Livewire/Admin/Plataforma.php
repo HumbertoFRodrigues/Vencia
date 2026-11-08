@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Http\Controllers\Auth\RegistoController;
+use App\Mail\TransporteBrevo;
 use App\Models\ActividadeAdmin;
 use App\Models\Configuracao;
 use App\Services\CopiaSeguranca;
@@ -30,8 +31,13 @@ use Throwable;
 #[Title('Plataforma')]
 class Plataforma extends Component
 {
-    /** "php" = the hosting's mail() (App\Mail\TransportePhpMail), "smtp" = an email account. */
+    /** "brevo" = Brevo's API (App\Mail\TransporteBrevo), "php" = the hosting's mail() (App\Mail\TransportePhpMail), "smtp" = an email account. */
     public string $smtpModo = 'smtp';
+
+    /** Never shown back: blank keeps the saved key. */
+    public string $brevoChave = '';
+
+    public string $remetenteNome = '';
 
     public string $smtpServidor = '';
 
@@ -74,6 +80,7 @@ class Plataforma extends Component
     {
         $smtp = Configuracao::plataforma('smtp', []);
         $this->smtpModo = $smtp['modo'] ?? (filled($smtp['servidor'] ?? null) ? 'smtp' : 'php');
+        $this->remetenteNome = $smtp['remetente_nome'] ?? '';
         $this->smtpServidor = $smtp['servidor'] ?? '';
         $this->smtpPorta = (string) ($smtp['porta'] ?? '587');
         $this->smtpSeguranca = $smtp['seguranca'] ?? 'STARTTLS';
@@ -103,25 +110,30 @@ class Plataforma extends Component
         $this->anunciosLigado = $anuncios['ligado'];
         $this->anunciosCliente = $anuncios['cliente'];
 
+        $this->copiaAnexar = CopiaSeguranca::anexarAoEmail();
         $this->testeDestino = auth()->user()->email;
     }
 
     public function guardarSmtp(): void
     {
         $dados = $this->validate([
-            'smtpModo' => ['required', Rule::in(['smtp', 'php'])],
+            'smtpModo' => ['required', Rule::in(['brevo', 'php', 'smtp'])],
+            'brevoChave' => [$this->smtpModo === 'brevo' && ! filled(Configuracao::plataforma('smtp', [])['brevo_chave'] ?? null) ? 'required' : 'nullable', 'string', 'max:255'],
+            'remetenteNome' => ['nullable', 'string', 'max:80'],
             'smtpServidor' => [$this->smtpModo === 'smtp' ? 'required' : 'nullable', 'string', 'max:255'],
             'smtpPorta' => ['nullable', 'integer', 'between:1,65535'],
             'smtpSeguranca' => ['required', Rule::in(['STARTTLS', 'SSL', 'Nenhuma'])],
             'smtpUtilizador' => ['nullable', 'string', 'max:255'],
             'smtpPassword' => ['nullable', 'string', 'max:255'],
-            'smtpRemetente' => ['nullable', 'email', 'max:255'],
-        ], [], ['smtpRemetente' => 'remetente', 'smtpPorta' => 'porta', 'smtpServidor' => 'servidor']);
+            'smtpRemetente' => [$this->smtpModo === 'smtp' ? 'nullable' : 'required', 'email', 'max:255'],
+        ], [], ['smtpRemetente' => 'endereço de envio', 'smtpPorta' => 'porta', 'smtpServidor' => 'servidor', 'brevoChave' => 'chave API do Brevo', 'remetenteNome' => 'nome do remetente']);
 
         $existente = Configuracao::plataforma('smtp', []);
 
         Configuracao::guardarPlataforma('smtp', [
             'modo' => $dados['smtpModo'],
+            'brevo_chave' => filled($dados['brevoChave']) ? Crypt::encryptString(trim($dados['brevoChave'])) : ($existente['brevo_chave'] ?? null),
+            'remetente_nome' => trim((string) $dados['remetenteNome']) ?: null,
             'servidor' => $dados['smtpServidor'],
             'porta' => (string) $dados['smtpPorta'],
             'seguranca' => $dados['smtpSeguranca'],
@@ -131,7 +143,10 @@ class Plataforma extends Component
         ]);
 
         $this->smtpPassword = '';
-        ActividadeAdmin::registar('plataforma.smtp', null, $dados['smtpModo'] === 'php' ? 'mail() do servidor' : $dados['smtpServidor']);
+        $this->brevoChave = '';
+        ActividadeAdmin::registar('plataforma.smtp', null, match ($dados['smtpModo']) {
+            'brevo' => 'Brevo', 'php' => 'mail() do servidor', default => $dados['smtpServidor']
+        });
         $this->dispatch('toast', title: 'Envio de email guardado', body: 'Envia um email de teste para confirmar.', tone: 'success');
     }
 
@@ -206,6 +221,20 @@ class Plataforma extends Component
     }
 
     /** Checks the saved keys fit together (the API Key encrypts with the Public Key). No money moves. */
+    /** Checks the Brevo key (typed or saved) without sending anything. */
+    public function verificarBrevo(): void
+    {
+        $chave = trim($this->brevoChave) ?: (string) Crypt::decryptString((string) (Configuracao::plataforma('smtp', [])['brevo_chave'] ?? '') ?: Crypt::encryptString(''));
+        if ($chave === '') {
+            $this->addError('brevoChave', 'Cola a chave API do Brevo.');
+
+            return;
+        }
+
+        $r = TransporteBrevo::verificarChave($chave);
+        $this->dispatch('toast', title: $r['ok'] ? 'Chave do Brevo válida' : 'Chave do Brevo inválida', body: $r['mensagem'], tone: $r['ok'] ? 'success' : 'danger');
+    }
+
     public function verificarMpesa(): void
     {
         $config = MpesaConfig::get();
@@ -273,19 +302,29 @@ class Plataforma extends Component
         }
 
         if (EmailsDeTeste::soNoRegisto(plataforma: true)) {
-            $this->dispatch('toast', title: 'SMTP por configurar', body: 'O email foi gravado só no registo (storage/logs), não saiu para '.$this->testeDestino.'.', tone: 'info');
+            $this->dispatch('toast', title: 'Envio de email por configurar', body: 'O email não saiu para '.$this->testeDestino.': falta escolher como enviar em Admin → Plataforma → Envio de email.', tone: 'warning');
 
             return;
         }
 
         unset($this->copias);
-        $this->dispatch('toast', title: 'Email de teste enviado', body: EmailsDeTeste::TIPOS[$this->testeTipo].' → '.$this->testeDestino, tone: 'success');
+        $this->dispatch('toast', title: 'Email de teste enviado', body: 'Para '.$this->testeDestino.'. Se não aparecer em 2 minutos, vê a pasta de Spam ou Lixo.', tone: 'success');
     }
 
     #[Computed]
     public function copias(): array
     {
         return app(CopiaSeguranca::class)->existentes();
+    }
+
+    public bool $copiaAnexar = false;
+
+    /** Saved as soon as the box is ticked or unticked. */
+    public function updatedCopiaAnexar(): void
+    {
+        Configuracao::guardarPlataforma('copia', ['anexar' => $this->copiaAnexar]);
+        ActividadeAdmin::registar('plataforma.copia', null, $this->copiaAnexar ? 'email com anexo' : 'email só com aviso');
+        $this->dispatch('toast', title: $this->copiaAnexar ? 'A cópia vai em anexo no email diário' : 'O email diário só avisa', tone: 'success');
     }
 
     public function criarCopia(): BinaryFileResponse

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\GatewayPagamento;
 use App\Enums\Papel;
 use App\Http\Middleware\DefinirConta;
+use App\Mail\TransporteBrevo;
 use App\Mail\TransportePhpMail;
 use App\Models\Fatura;
 use App\Models\User;
@@ -76,6 +77,7 @@ class AppServiceProvider extends ServiceProvider
 
         // "Função mail() do servidor" in Admin → Plataforma: sends with no SMTP account.
         Mail::extend('phpmail', fn () => new TransportePhpMail);
+        Mail::extend('brevo', fn (array $config) => new TransporteBrevo((string) ($config['key'] ?? '')));
 
         // Livewire's update requests re-run these from the page's route, so a blocked user or a suspended conta is stopped there too.
         Livewire::addPersistentMiddleware([DefinirConta::class, EnsureEmailIsVerified::class]);
@@ -94,36 +96,36 @@ class AppServiceProvider extends ServiceProvider
             if ($painel === 'admin') {
                 $definitions = [
                     ['id' => 'visao', 'label' => 'Visão geral', 'icon' => 'layout-dashboard', 'route' => 'admin.visao'],
-                    ['id' => 'contas', 'label' => 'Contas', 'icon' => 'briefcase', 'route' => 'admin.contas'],
-                    ['id' => 'utilizadores', 'label' => 'Utilizadores', 'icon' => 'users', 'route' => 'admin.utilizadores'],
-                    ['id' => 'faturas', 'label' => 'Faturação', 'icon' => 'banknote', 'route' => 'admin.faturas', 'badge' => Fatura::query()->where('estado', Fatura::EM_ANALISE)->count()],
-                    ['id' => 'planos', 'label' => 'Planos', 'icon' => 'package', 'route' => 'admin.planos'],
-                    ['id' => 'plataforma', 'label' => 'Plataforma', 'icon' => 'settings', 'route' => 'admin.plataforma'],
-                    ['id' => 'actividade', 'label' => 'Actividade', 'icon' => 'history', 'route' => 'admin.actividade'],
+                    ['grupo' => 'Clientes da plataforma', 'id' => 'contas', 'label' => 'Contas', 'icon' => 'briefcase', 'route' => 'admin.contas'],
+                    ['grupo' => 'Clientes da plataforma', 'id' => 'utilizadores', 'label' => 'Utilizadores', 'icon' => 'users', 'route' => 'admin.utilizadores'],
+                    ['grupo' => 'Negócio', 'id' => 'faturas', 'label' => 'Faturação', 'icon' => 'banknote', 'route' => 'admin.faturas', 'badge' => Fatura::query()->where('estado', Fatura::EM_ANALISE)->count()],
+                    ['grupo' => 'Negócio', 'id' => 'planos', 'label' => 'Planos', 'icon' => 'package', 'route' => 'admin.planos'],
+                    ['grupo' => 'Sistema', 'id' => 'plataforma', 'label' => 'Plataforma', 'icon' => 'settings', 'route' => 'admin.plataforma'],
+                    ['grupo' => 'Sistema', 'id' => 'actividade', 'label' => 'Actividade', 'icon' => 'history', 'route' => 'admin.actividade'],
                 ];
             } elseif ($painel === 'pessoal') {
                 $definitions = [
-                    ['id' => 'resumo', 'label' => 'Resumo', 'icon' => 'layout-dashboard', 'route' => 'pessoal.resumo', 'badge' => app(FinancasPessoais::class)->nAtrasoHoje()],
-                    ['id' => 'movimentos', 'label' => 'Movimentos', 'icon' => 'list', 'route' => 'pessoal.movimentos'],
-                    ['id' => 'fixos', 'label' => 'Fixos mensais', 'icon' => 'repeat', 'route' => 'pessoal.fixos'],
-                    ['id' => 'orcamentos', 'label' => 'Orçamentos', 'icon' => 'target', 'route' => 'pessoal.orcamentos'],
-                    ['id' => 'saldos', 'label' => 'Saldos e metas', 'icon' => 'piggy-bank', 'route' => 'pessoal.saldos'],
-                    ['id' => 'analise', 'label' => 'Análise', 'icon' => 'chart-line', 'route' => 'pessoal.analise'],
+                    ['grupo' => 'O teu dinheiro', 'id' => 'resumo', 'label' => 'Resumo', 'icon' => 'layout-dashboard', 'route' => 'pessoal.resumo', 'badge' => app(FinancasPessoais::class)->nAtrasoHoje()],
+                    ['grupo' => 'O teu dinheiro', 'id' => 'movimentos', 'label' => 'Movimentos', 'icon' => 'list', 'route' => 'pessoal.movimentos'],
+                    ['grupo' => 'O teu dinheiro', 'id' => 'fixos', 'label' => 'Fixos mensais', 'icon' => 'repeat', 'route' => 'pessoal.fixos'],
+                    ['grupo' => 'Planear', 'id' => 'orcamentos', 'label' => 'Orçamentos', 'icon' => 'target', 'route' => 'pessoal.orcamentos'],
+                    ['grupo' => 'Planear', 'id' => 'saldos', 'label' => 'Saldos e metas', 'icon' => 'piggy-bank', 'route' => 'pessoal.saldos'],
+                    ['grupo' => 'Planear', 'id' => 'analise', 'label' => 'Análise', 'icon' => 'chart-line', 'route' => 'pessoal.analise'],
                 ];
             } else {
                 $totais = app(Totais::class)->calcular();
 
                 $definitions = [
-                    ['id' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard'],
-                    ['id' => 'clientes', 'label' => 'Clientes', 'icon' => 'users', 'route' => 'clientes.index'],
-                    ['id' => 'servicos', 'label' => 'Serviços', 'icon' => 'package', 'route' => 'servicos.index'],
-                    ['id' => 'vencimentos', 'label' => 'Vencimentos', 'icon' => 'calendar-clock', 'route' => 'vencimentos.index', 'badge' => $totais['aVencer']],
-                    ['id' => 'pagamentos', 'label' => 'Pagamentos', 'icon' => 'banknote', 'route' => 'pagamentos.index', 'badge' => $totais['nAReceber']],
-                    ['id' => 'financas', 'label' => 'Finanças', 'icon' => 'chart-line', 'route' => 'financas.index', 'can' => 'gerir-negocio'],
-                    ['id' => 'historico', 'label' => 'Histórico', 'icon' => 'history', 'route' => 'historico.index', 'can' => 'gerir-negocio'],
-                    ['id' => 'equipa', 'label' => 'Equipa', 'icon' => 'user-plus', 'route' => 'conta.equipa', 'can' => 'gerir-conta'],
-                    ['id' => 'plano', 'label' => 'Plano', 'icon' => 'credit-card', 'route' => 'conta.plano', 'can' => 'gerir-conta'],
-                    ['id' => 'configuracoes', 'label' => 'Configurações', 'icon' => 'settings', 'route' => 'configuracoes.index', 'can' => 'gerir-negocio'],
+                    ['grupo' => 'Dia a dia', 'id' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard'],
+                    ['grupo' => 'Dia a dia', 'id' => 'clientes', 'label' => 'Clientes', 'icon' => 'users', 'route' => 'clientes.index'],
+                    ['grupo' => 'Dia a dia', 'id' => 'servicos', 'label' => 'Serviços', 'icon' => 'package', 'route' => 'servicos.index'],
+                    ['grupo' => 'Dia a dia', 'id' => 'vencimentos', 'label' => 'Vencimentos', 'icon' => 'calendar-clock', 'route' => 'vencimentos.index', 'badge' => $totais['aVencer']],
+                    ['grupo' => 'Dia a dia', 'id' => 'pagamentos', 'label' => 'Pagamentos', 'icon' => 'banknote', 'route' => 'pagamentos.index', 'badge' => $totais['nAReceber']],
+                    ['grupo' => 'Análise', 'id' => 'financas', 'label' => 'Finanças', 'icon' => 'chart-line', 'route' => 'financas.index', 'can' => 'gerir-negocio'],
+                    ['grupo' => 'Análise', 'id' => 'historico', 'label' => 'Histórico', 'icon' => 'history', 'route' => 'historico.index', 'can' => 'gerir-negocio'],
+                    ['grupo' => 'A tua empresa', 'id' => 'equipa', 'label' => 'Equipa', 'icon' => 'user-plus', 'route' => 'conta.equipa', 'can' => 'gerir-conta'],
+                    ['grupo' => 'A tua empresa', 'id' => 'plano', 'label' => 'Plano', 'icon' => 'credit-card', 'route' => 'conta.plano', 'can' => 'gerir-conta'],
+                    ['grupo' => 'A tua empresa', 'id' => 'configuracoes', 'label' => 'Configurações', 'icon' => 'settings', 'route' => 'configuracoes.index', 'can' => 'gerir-negocio'],
                 ];
                 $definitions = array_values(array_filter($definitions, fn (array $item) => ! isset($item['can']) || Gate::allows($item['can'])));
             }

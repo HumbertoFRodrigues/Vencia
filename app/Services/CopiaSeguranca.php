@@ -121,7 +121,13 @@ class CopiaSeguranca
             ->all();
     }
 
-    /** Sends the copy to the platform's super-admin. Returns false (and logs why) when it couldn't. */
+    /** Whether the daily email carries the file itself (off by default, see enviarPorEmail). */
+    public static function anexarAoEmail(): bool
+    {
+        return (bool) (Configuracao::plataforma('copia', [])['anexar'] ?? false);
+    }
+
+    /** Tells the platform's super-admin a copy was made (attached only if chosen). Returns false (and logs why) when it couldn't. */
     public function enviarPorEmail(string $ficheiro, ?string $destino = null): bool
     {
         $destino ??= User::query()->where('super_admin', true)->orderBy('id')->value('email') ?? config('app.admin_email');
@@ -129,19 +135,33 @@ class CopiaSeguranca
             return false;
         }
 
-        if (filesize($ficheiro) > self::MAX_EMAIL_BYTES) {
+        if (self::anexarAoEmail() && filesize($ficheiro) > self::MAX_EMAIL_BYTES) {
             Log::warning('Cópia de segurança demasiado grande para email: '.basename($ficheiro));
 
             return false;
         }
 
+        // By default the email only says the copy exists: the file holds every account's data, and an
+        // email sits in a mailbox for years. Attaching it is an explicit choice in Admin → Plataforma.
+        $anexar = self::anexarAoEmail();
+        $tamanho = number_format(filesize($ficheiro) / 1024, 0, ',', '.').' KB';
+
         try {
             Configuracao::aplicarSmtpDaPlataforma();
             Mail::raw(
-                'Cópia de segurança diária da Vencia em anexo ('.basename($ficheiro).").\n\n"
-                ."Guarda este email: para restaurar, importa o ficheiro numa base de dados vazia pelo phpMyAdmin.\n"
-                .'O servidor guarda também as últimas '.self::MANTER.' cópias.',
-                fn ($m) => $m->to($destino)->subject('Cópia de segurança da Vencia — '.Carbon::now()->format('d/m/Y'))->attach($ficheiro),
+                $anexar
+                    ? 'Cópia de segurança diária da Vencia em anexo ('.basename($ficheiro).', '.$tamanho.").\n\n"
+                        ."Guarda-a num sítio seguro e apaga este email depois: o ficheiro tem os dados de todas as contas.\n"
+                        .'Para restaurar, importa o ficheiro numa base de dados vazia pelo phpMyAdmin. O servidor guarda também as últimas '.self::MANTER.' cópias.'
+                    : 'A cópia de segurança diária da Vencia foi criada ('.basename($ficheiro).', '.$tamanho.").\n\n"
+                        ."Por segurança não vai em anexo. Para a descarregar, entra na Vencia → Administração → Plataforma → Cópias de segurança.\n"
+                        .'O servidor guarda as últimas '.self::MANTER.' cópias.',
+                function ($m) use ($destino, $anexar, $ficheiro) {
+                    $m->to($destino)->subject('Cópia de segurança da Vencia — '.Carbon::now()->format('d/m/Y'));
+                    if ($anexar) {
+                        $m->attach($ficheiro);
+                    }
+                },
             );
 
             return true;

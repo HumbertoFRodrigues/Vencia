@@ -25,7 +25,7 @@ use RuntimeException;
 class EmailsDeTeste
 {
     public const TIPOS = [
-        'simples' => 'Teste simples (só confirma o SMTP)',
+        'simples' => 'Teste simples (confirma que o envio funciona)',
         'lembrete' => 'Lembrete de vencimento ao cliente',
         'terminado' => 'Serviço suspenso ao cliente',
         'recibo' => 'Recibo de pagamento com PDF',
@@ -116,7 +116,7 @@ class EmailsDeTeste
         }
 
         if (! $copias->enviarPorEmail($ficheiro, $destino)) {
-            throw new RuntimeException('A cópia foi criada mas não foi enviada (demasiado grande para email ou falha no SMTP — ver o registo).');
+            throw new RuntimeException('A cópia foi criada mas não foi enviada (demasiado grande para email ou falha no envio — ver o registo).');
         }
     }
 

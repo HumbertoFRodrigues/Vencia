@@ -71,7 +71,13 @@ class Visao extends Component
             [
                 'ok' => Configuracao::temEnvio($smtp),
                 'titulo' => 'Envio de email',
-                'detalhe' => ($smtp['modo'] ?? 'smtp') === 'php' ? 'Função mail() do servidor, de '.(($smtp['remetente'] ?? '') ?: Configuracao::remetentePorOmissao()).'.' : (filled($smtp['servidor'] ?? null) ? 'SMTP da plataforma: '.$smtp['servidor'] : 'Sem envio: confirmações de conta, convites e lembretes não saem. Admin → Plataforma → Envio de email.'),
+                'detalhe' => ! Configuracao::temEnvio($smtp)
+                    ? 'Sem envio: confirmações de conta, convites e lembretes não saem. Admin → Plataforma → Envio de email.'
+                    : match ($smtp['modo'] ?? 'smtp') {
+                        'brevo' => 'Brevo, de '.Configuracao::remetenteDaPlataforma().'.',
+                        'php' => 'Servidor do alojamento, de '.Configuracao::remetenteDaPlataforma().' (pode ir para o spam; o Brevo é mais fiável).',
+                        default => 'SMTP '.$smtp['servidor'].', de '.Configuracao::remetenteDaPlataforma().'.',
+                    },
             ],
             [
                 'ok' => filled($pagamento['mpesa'] ?? null) || filled($pagamento['emola'] ?? null) || filled($pagamento['banco'] ?? null),

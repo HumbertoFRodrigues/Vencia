@@ -95,6 +95,6 @@ class EmailsDeTesteTest extends TestCase
 
         Livewire::test(ConfiguracoesIndex::class, ['tab' => 'empresa'])
             ->set('testeTipo', 'simples')->call('enviarTeste')
-            ->assertDispatched('toast', fn ($nome, $p) => $p['title'] === 'SMTP por configurar');
+            ->assertDispatched('toast', fn ($nome, $p) => $p['title'] === 'Envio de email por configurar');
     }
 }
