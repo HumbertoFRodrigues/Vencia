@@ -46,8 +46,11 @@ use App\Support\Anuncios;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 
+// Local E2E shortcut. Also tied to the machine itself: a server left on APP_ENV=local by mistake
+// must never let anyone in as the first user (the super-admin).
 if (app()->environment('local')) {
     Route::get('/__test-login', function () {
+        abort_unless(in_array(request()->ip(), ['127.0.0.1', '::1'], true), 404);
         auth()->login(User::first());
 
         return redirect('/painel');
