@@ -2,6 +2,9 @@
 
 Última actualização: 9 de Novembro de 2026. O projecto fica em pausa, a funcionar.
 
+> O repositório é público: caminhos, IPs, IDs e palavras-passe reais ficam em `C:
+mpp\htdocsencia-deploy\NOTAS-PRIVADAS.md` (no PC) e no `.env` do servidor, nunca aqui.
+
 ## O que é
 SaaS para pequenas empresas: cada conta tem a **Empresa** (clientes, serviços com renovação, lembretes automáticos por email, pagamentos com recibo PDF, finanças, equipa) e cada pessoa tem o seu painel **Pessoal** privado. O super-admin tem a área **Administração** (contas, utilizadores, planos Grátis/Pro, faturação manual, envio de email, anúncios, cópias de segurança).
 
@@ -11,7 +14,7 @@ Stack: Laravel 13, Livewire 4, MySQL/MariaDB, PHP 8.4+. Sem Node no servidor (CS
 | | |
 |---|---|
 | Produção | https://vencia.mundotutors.com |
-| Pasta no servidor | `/home/portald1/public_html/Outros/vencia.mundotutors.com` |
+| Pasta no servidor | ver `NOTAS-PRIVADAS.md` em `vencia-deploy` (fora do repositório, que é público) |
 | Repositório | https://github.com/HumbertoFRodrigues/Vencia |
 | Local (XAMPP) | http://localhost/vencia, pasta `C:\xampp\htdocs\Vencia` |
 | Pacotes de publicação | `C:\xampp\htdocs\vencia-deploy\` |
@@ -28,16 +31,16 @@ Detalhe completo da instalação: `DEPLOY.md`.
 
 ## Configuração em produção
 - **Envio de email:** Administração → Plataforma → *Servidor do alojamento* (função `mail()`), de `no_replay@mundotutors.com`. O alojamento bloqueia SMTP para fora (Gmail dá "Connection refused"). A opção Brevo (API por HTTPS) está pronta se um dia o spam voltar a ser problema.
-- **DNS de `mundotutors.com`** (email no Google Workspace): SPF `v=spf1 ip4:162.55.65.66 include:_spf.google.com ~all`, DKIM do cPanel (`default._domainkey`), DMARC `p=none` com relatórios, MX só `SMTP.GOOGLE.com`. cPanel → Email Routing = *Remote Mail Exchanger*.
+- **DNS de `mundotutors.com`** (email no Google Workspace): SPF com o IP do servidor + `include:_spf.google.com`, DKIM do cPanel (`default._domainkey`), DMARC `p=none` com relatórios, MX só `SMTP.GOOGLE.com`. cPanel → Email Routing = *Remote Mail Exchanger*.
 - **Extensões PHP** `fileinfo` e `mbstring`: se faltarem, a Vencia usa substitutos (`bootstrap/extensoes.php`).
 - **Tarefas diárias** (lembretes 07:00, planos 06:30, cópia 03:00): se não houver Cron Job, correm depois da primeira visita ao site a seguir à hora (`CorrerTarefasEmFalta`). Com cron correm à hora certa:
   ```
-  0 3 * * *   cd /home/portald1/public_html/Outros/vencia.mundotutors.com && /usr/local/bin/php artisan vencia:copia-seguranca
-  30 6 * * *  cd /home/portald1/public_html/Outros/vencia.mundotutors.com && /usr/local/bin/php artisan vencia:planos
-  0 7 * * *   cd /home/portald1/public_html/Outros/vencia.mundotutors.com && /usr/local/bin/php artisan vencia:verificar-vencimentos
+  0 3 * * *   cd <pasta-da-app> && /usr/local/bin/php artisan vencia:copia-seguranca
+  30 6 * * *  cd <pasta-da-app> && /usr/local/bin/php artisan vencia:planos
+  0 7 * * *   cd <pasta-da-app> && /usr/local/bin/php artisan vencia:verificar-vencimentos
   ```
 - **Cópias de segurança:** o servidor guarda 14; o email diário só avisa (anexar é opcional, em Plataforma).
-- **AdSense:** ID `ca-pub-9666351884551817` em Plataforma → Anúncios; `/ads.txt` é gerado.
+- **AdSense:** ID de editor em Plataforma → Anúncios; `/ads.txt` é gerado.
 - **Sessão:** termina após 15 min sem actividade, com aviso 2 min antes (`SESSAO_INACTIVIDADE` no `.env`; 0 desliga).
 - **Estado de tudo isto:** Administração → Visão geral → *Estado do sistema*.
 
