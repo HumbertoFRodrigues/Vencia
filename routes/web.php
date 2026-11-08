@@ -95,6 +95,8 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+    // Keeps the session alive while someone reads a page without clicking (see TerminarSessaoInactiva).
+    Route::post('/sessao/manter', fn () => response()->noContent())->middleware('throttle:30,1')->name('sessao.manter');
 
     Route::get('/confirmar-email', [VerificacaoEmailController::class, 'aviso'])->name('verification.notice');
     Route::get('/confirmar-email/{id}/{hash}', [VerificacaoEmailController::class, 'verificar'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');

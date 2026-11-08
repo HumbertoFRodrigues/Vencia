@@ -73,6 +73,12 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        // Sent by the inactivity countdown (layouts/app.blade.php).
+        if ($request->input('motivo') === 'inactividade') {
+            $minutos = (int) config('session.inactividade', 15);
+            $request->session()->flash('aviso', 'A tua sessão terminou depois de '.$minutos.' minutos sem actividade. Entra de novo para continuar.');
+        }
+
         return redirect()->route('login');
     }
 

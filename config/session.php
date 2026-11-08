@@ -36,6 +36,9 @@ return [
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 
+    // Minutes without activity before a logged-in person is signed out (App\Http\Middleware\TerminarSessaoInactiva). 0 = never.
+    'inactividade' => (int) env('SESSAO_INACTIVIDADE', 15),
+
     /*
     |--------------------------------------------------------------------------
     | Session Encryption
