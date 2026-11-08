@@ -93,6 +93,106 @@
 
     <livewire:shared.toast-host />
 
+    {{-- Inactivity: after config('session.inactividade') minutes without
+         using the app the session ends (TerminarSessaoInactiva on the
+         server). Two minutes before, a countdown asks whether to stay. The
+         last activity is shared through localStorage, so working in one tab
+         keeps every tab alive, and logging out in one sends all to the login. --}}
+    @php
+        $inactividade = (int) config('session.inactividade', 15);
+    @endphp
+    @if($inactividade > 0)
+        <form id="sessao-sair" method="POST" action="{{ route('logout') }}" hidden>
+            @csrf
+            <input type="hidden" name="motivo" value="inactividade">
+        </form>
+        <script data-navigate-once>
+            (function () {
+                var LIMITE = {{ $inactividade * 60 }} * 1000;
+                var AVISO = Math.min(120000, LIMITE / 2);
+                var PING = 120000;
+                var CHAVE = 'vencia:ultima-actividade';
+                var local = Date.now(), ultimoPing = Date.now(), aSair = false;
+
+                function ler() { try { return Math.max(local, +localStorage.getItem(CHAVE) || 0); } catch (e) { return local; } }
+                function marcar() {
+                    local = Date.now();
+                    try { localStorage.setItem(CHAVE, String(local)); } catch (e) {}
+                    if (local - ultimoPing > PING) manter();
+                }
+                function manter() {
+                    ultimoPing = Date.now();
+                    var token = document.querySelector('#sessao-sair input[name=_token]');
+                    fetch('{{ route('sessao.manter') }}', { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': token ? token.value : '', 'Accept': 'application/json' } })
+                        .then(function (r) { if (r.status === 401 || r.status === 419) irParaLogin(); }).catch(function () {});
+                }
+                function irParaLogin() { if (aSair) return; aSair = true; window.location.href = '{{ route('login') }}'; }
+                function sair() {
+                    if (aSair) return; aSair = true;
+                    try { localStorage.setItem('vencia:sessao-terminada', String(Date.now())); } catch (e) {}
+                    var f = document.getElementById('sessao-sair');
+                    if (f) f.submit(); else window.location.href = '{{ route('login') }}';
+                }
+
+                function caixa() {
+                    var c = document.getElementById('sessao-aviso');
+                    if (c) return c;
+                    c = document.createElement('div');
+                    c.id = 'sessao-aviso';
+                    c.className = 'sessao-aviso';
+                    c.hidden = true;
+                    c.innerHTML = '<div class="sessao-aviso__caixa" role="alertdialog" aria-modal="true" aria-labelledby="sessao-aviso-titulo" aria-describedby="sessao-aviso-texto">'
+                        + '<div class="sessao-aviso__relogio" aria-hidden="true"></div>'
+                        + '<h2 id="sessao-aviso-titulo">Ainda estás aí?</h2>'
+                        + '<p id="sessao-aviso-texto">Por segurança, a sessão termina por inactividade daqui a <strong class="sessao-aviso__tempo">2:00</strong>.</p>'
+                        + '<div class="sessao-aviso__accoes"><button type="button" class="btn btn--secondary btn--md" data-sessao-sair>Sair agora</button>'
+                        + '<button type="button" class="btn btn--primary btn--md" data-sessao-continuar>Continuar ligado</button></div></div>';
+                    document.body.appendChild(c);
+                    c.querySelector('[data-sessao-continuar]').addEventListener('click', function () { marcar(); manter(); c.hidden = true; });
+                    c.querySelector('[data-sessao-sair]').addEventListener('click', sair);
+                    return c;
+                }
+
+                // Real use of the page counts; the countdown itself only goes away with "Continuar ligado".
+                ['mousedown', 'keydown', 'scroll', 'touchstart', 'wheel'].forEach(function (ev) {
+                    document.addEventListener(ev, function () {
+                        var c = document.getElementById('sessao-aviso');
+                        if (c && !c.hidden) return;
+                        if (Date.now() - local > 5000) marcar();
+                    }, { passive: true, capture: true });
+                });
+                document.addEventListener('livewire:navigated', function () { local = Date.now(); ultimoPing = Date.now(); });
+                window.addEventListener('storage', function (e) {
+                    if (e.key === 'vencia:sessao-terminada') irParaLogin();
+                    if (e.key === CHAVE) { var c = document.getElementById('sessao-aviso'); if (c) c.hidden = true; }
+                });
+
+                // A Livewire request after the server already ended the session: straight to the login.
+                function ligarLivewire() {
+                    Livewire.hook('request', function (ctx) {
+                        ctx.fail(function (r) { if (r.status === 401) { r.preventDefault(); irParaLogin(); } });
+                    });
+                }
+                if (window.Livewire) ligarLivewire(); else document.addEventListener('livewire:init', ligarLivewire);
+
+                setInterval(function () {
+                    if (aSair) return;
+                    var resta = LIMITE - (Date.now() - ler());
+                    var c = caixa();
+                    if (resta <= 0) { sair(); return; }
+                    if (resta <= AVISO) {
+                        var s = Math.ceil(resta / 1000);
+                        c.querySelector('.sessao-aviso__tempo').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+                        c.querySelector('.sessao-aviso__relogio').style.setProperty('--resta', (resta / AVISO).toFixed(3));
+                        if (c.hidden) { c.hidden = false; c.querySelector('[data-sessao-continuar]').focus(); }
+                    } else if (!c.hidden) {
+                        c.hidden = true;
+                    }
+                }, 1000);
+            })();
+        </script>
+    @endif
+
     <script data-navigate-once>
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('[data-theme-toggle]');

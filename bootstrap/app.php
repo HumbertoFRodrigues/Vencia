@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CabecalhosDeSeguranca;
 use App\Http\Middleware\CorrerTarefasEmFalta;
+use App\Http\Middleware\TerminarSessaoInactiva;
 use App\Support\AlertaErro;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(CabecalhosDeSeguranca::class);
         // Runs the daily tasks after a visit when the server has no cron jobs (see the class).
-        $middleware->web(append: [CorrerTarefasEmFalta::class]);
+        $middleware->web(append: [TerminarSessaoInactiva::class, CorrerTarefasEmFalta::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Unexpected errors (not 404s, validation, etc. — those are never "reported") are emailed to the empresa.

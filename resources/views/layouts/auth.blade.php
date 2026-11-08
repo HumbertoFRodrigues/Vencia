@@ -60,6 +60,9 @@
                     @endif
                 </div>
 
+                @if (session('aviso'))
+                    <x-ui.alert-banner tone="warning">{{ session('aviso') }}</x-ui.alert-banner>
+                @endif
                 @if (session('status'))
                     <x-ui.alert-banner tone="success">{{ session('status') }}</x-ui.alert-banner>
                 @endif

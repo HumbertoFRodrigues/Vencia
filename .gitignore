@@ -27,3 +27,6 @@ Homestead.yaml
 Thumbs.db
 /.claude/
 /database/*.sql
+
+# Release stamp written into each update ZIP (config/view.php)
+/VERSAO
