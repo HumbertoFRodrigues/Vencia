@@ -8,7 +8,6 @@ use App\Models\FixoPessoal;
 use App\Models\MovimentoPessoal;
 use App\Models\User;
 use App\Services\FinancasPessoais;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
@@ -74,7 +73,10 @@ class PessoalPaginasTest extends TestCase
 
         $this->actingAs(User::factory()->create());
 
-        $this->expectException(ModelNotFoundException::class);
-        Livewire::test(MovimentoDialog::class)->call('abrir', null, null, $fixo->id, now()->format('Y-m'));
+        // Livewire answers "not found" instead of throwing; what matters is that nothing of the other person's leaks.
+        Livewire::test(MovimentoDialog::class)->call('abrir', null, null, $fixo->id, now()->format('Y-m'))
+            ->assertSet('fixoId', null)
+            ->assertNotSet('descricao', 'Renda')
+            ->assertDontSee('Renda');
     }
 }

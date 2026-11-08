@@ -1,6 +1,8 @@
 <div>
     @if($show)
-        @php($disponivel = $this->disponivel)
+        @php
+            $disponivel = $this->disponivel;
+        @endphp
         <x-ui.dialog title="Retirar para pessoal" description="Passa dinheiro da empresa para as tuas finanças pessoais. Entra automaticamente como entrada no painel Pessoal." width="460" wire:click="fechar">
             <x-slot:close>
                 <x-ui.icon-button icon="x" label="Fechar" wire:click="fechar" />

@@ -51,7 +51,7 @@ class CopiaSegurancaEAlertasTest extends TestCase
         $this->assertCount(CopiaSeguranca::MANTER, $copias->existentes());
     }
 
-    public function test_backup_is_emailed_when_smtp_is_configured(): void
+    public function test_the_daily_email_only_announces_the_copy_by_default(): void
     {
         Configuracao::create(['chave' => 'empresa', 'valor' => ['email' => 'empresa@teste.mz']]);
 
@@ -60,7 +60,18 @@ class CopiaSegurancaEAlertasTest extends TestCase
         $this->assertCount(1, app(CopiaSeguranca::class)->existentes());
         $enviados = $this->enviados();
         $this->assertCount(1, $enviados);
-        $this->assertCount(1, $enviados[0]->getOriginalMessage()->getAttachments());
+        $this->assertCount(0, $enviados[0]->getOriginalMessage()->getAttachments(), 'every account\'s data must not sit in a mailbox unless chosen');
+        $this->assertStringContainsString('não vai em anexo', $enviados[0]->getOriginalMessage()->getTextBody());
+    }
+
+    public function test_the_copy_is_attached_when_the_admin_chose_it(): void
+    {
+        Configuracao::create(['chave' => 'empresa', 'valor' => ['email' => 'empresa@teste.mz']]);
+        Configuracao::guardarPlataforma('copia', ['anexar' => true]);
+
+        $this->artisan('vencia:copia-seguranca')->assertSuccessful();
+
+        $this->assertCount(1, $this->enviados()[0]->getOriginalMessage()->getAttachments());
     }
 
     public function test_errors_are_emailed_once_an_hour_in_production(): void

@@ -53,19 +53,27 @@ class AlertaErro
     public static function mensagem(Throwable $e): array
     {
         $pedido = app()->runningInConsole() ? 'Linha de comandos: '.implode(' ', $_SERVER['argv'] ?? []) : request()->method().' '.request()->fullUrl();
-        $trace = implode("\n", array_slice(explode("\n", $e->getTraceAsString()), 0, 15));
+        $relativo = fn (?string $caminho) => ltrim(str_replace([base_path(), DIRECTORY_SEPARATOR], ['', '/'], (string) $caminho), '/');
+
+        // Only Vencia's own code (app/), a few lines: enough to find the spot, short enough to read on a phone.
+        $passos = collect($e->getTrace())
+            ->filter(fn (array $p) => isset($p['file']) && str_starts_with($relativo($p['file']), 'app/'))
+            ->take(5)
+            ->map(fn (array $p) => '  · '.$relativo($p['file']).':'.$p['line'].(isset($p['function']) ? ' ('.class_basename($p['class'] ?? '').($p['class'] ?? false ? '::' : '').$p['function'].')' : ''))
+            ->implode("\n");
 
         return [
             '⚠ Erro na Vencia: '.mb_strimwidth($e->getMessage() ?: $e::class, 0, 80, '…'),
-            'Ocorreu um erro na Vencia ('.config('app.url').").\n\n"
-            .'Quando: '.Carbon::now()->format('d/m/Y H:i:s')."\n"
-            ."Pedido: {$pedido}\n"
-            .'Utilizador: '.(auth()->user()?->email ?? '—')."\n"
-            .'Conta: '.(ContaActual::get()?->nome ?? '—')."\n\n"
-            .'Erro: '.$e::class."\n".$e->getMessage()."\n"
-            .'Em: '.$e->getFile().':'.$e->getLine()."\n\n"
-            ."{$trace}\n\n"
-            .'O mesmo erro não volta a ser enviado durante 1 hora. Detalhe completo em storage/logs/laravel.log.',
+            "Aconteceu um erro na Vencia.\n\n"
+            .'O quê:      '.($e->getMessage() ?: class_basename($e))."\n"
+            .'Quando:     '.Carbon::now()->format('d/m/Y H:i:s')."\n"
+            .'Quem:       '.(auth()->user()?->email ?? '—').(ContaActual::get() ? ' (conta '.ContaActual::get()->nome.')' : '')."\n"
+            .'Onde:       '.$pedido."\n\n"
+            ."Para quem vai corrigir:\n"
+            .'  '.class_basename($e).' em '.$relativo($e->getFile()).':'.$e->getLine()."\n"
+            .($passos !== '' ? $passos."\n" : '')
+            ."\nO mesmo erro não volta a ser enviado durante 1 hora. O detalhe completo está em storage/logs/laravel.log"
+            .' e o último erro aparece em Administração → Visão geral → Estado do sistema.',
         ];
     }
 }

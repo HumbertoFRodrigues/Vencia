@@ -76,7 +76,7 @@ class Equipa extends Component
             return;
         } catch (Throwable $e) {
             Log::error('Falha ao enviar convite: '.$e->getMessage());
-            $this->dispatch('toast', title: 'Convite criado, mas o email falhou', body: 'Verifica o SMTP da plataforma. Podes reenviar daqui a pouco.', tone: 'warning');
+            $this->dispatch('toast', title: 'Convite criado, mas o email falhou', body: 'O convite ficou em "Convites por aceitar": usa Reenviar daqui a pouco.', tone: 'warning');
             $this->reset('email');
             unset($this->convites, $this->restantes);
 

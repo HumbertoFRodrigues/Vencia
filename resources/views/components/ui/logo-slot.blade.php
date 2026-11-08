@@ -2,7 +2,7 @@
     'src' => null,
     'size' => 64,
     'label' => 'Adicionar logo personalizado',
-    'hint' => 'PNG, JPG, SVG ou WebP',
+    'hint' => 'PNG, JPG ou WebP até 2 MB',
 ])
 <div {{ $attributes->class(['logo-slot']) }}>
     <button

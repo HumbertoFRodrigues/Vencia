@@ -281,5 +281,49 @@
             document.addEventListener('livewire:navigated', hide);
         })();
     </script>
+
+    {{-- Upload progress for every wire:model file input (logos, payment
+         proofs): percentage while it travels, "A processar…" while the
+         server checks it, then done or failed. See .carregamento in components.css. --}}
+    <script data-navigate-once>
+        (function () {
+            var caixa = null, saida = null;
+
+            function mostrar(input, estado, texto, pct) {
+                if (!caixa || !document.body.contains(caixa)) {
+                    caixa = document.createElement('div');
+                    caixa.className = 'carregamento';
+                    caixa.setAttribute('role', 'status');
+                    caixa.setAttribute('aria-live', 'polite');
+                    caixa.innerHTML = '<div class="carregamento__linha"><span class="carregamento__nome"></span><span class="carregamento__pct"></span></div><div class="carregamento__barra"><span></span></div>';
+                    document.body.appendChild(caixa);
+                }
+                window.clearTimeout(saida);
+                var ficheiro = input && input.files && input.files[0] ? input.files[0].name : 'Ficheiro';
+                caixa.className = 'carregamento' + (estado ? ' carregamento--' + estado : '');
+                caixa.querySelector('.carregamento__nome').textContent = ficheiro;
+                caixa.querySelector('.carregamento__pct').textContent = texto;
+                caixa.querySelector('.carregamento__barra > span').style.width = (pct || 0) + '%';
+            }
+
+            function fechar(depois) {
+                saida = window.setTimeout(function () {
+                    if (!caixa) return;
+                    caixa.classList.add('carregamento--a-sair');
+                    window.setTimeout(function () { if (caixa) { caixa.remove(); caixa = null; } }, 200);
+                }, depois);
+            }
+
+            document.addEventListener('livewire-upload-start', function (e) { mostrar(e.target, '', 'A carregar 0%', 0); });
+            document.addEventListener('livewire-upload-progress', function (e) {
+                var p = Math.round((e.detail && e.detail.progress) || 0);
+                if (p >= 100) mostrar(e.target, 'a-processar', 'A processar…', 100);
+                else mostrar(e.target, '', 'A carregar ' + p + '%', p);
+            });
+            document.addEventListener('livewire-upload-finish', function (e) { mostrar(e.target, 'feito', 'Carregado ✓', 100); fechar(1800); });
+            document.addEventListener('livewire-upload-error', function (e) { mostrar(e.target, 'erro', 'Falhou', 100); fechar(4000); });
+            document.addEventListener('livewire-upload-cancel', function () { fechar(0); });
+        })();
+    </script>
 </body>
 </html>

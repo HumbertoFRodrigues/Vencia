@@ -82,23 +82,50 @@ class Configuracao extends Model
         return [$admin];
     }
 
-    /** The conta's own SMTP when its plan allows one and it is filled in; otherwise the platform's. */
+    /**
+     * How mail leaves. One setting for the whole platform (Admin → Plataforma
+     * → Envio de email): businesses send through it under their own name and
+     * reply-to address, so nobody has to set up a mail server.
+     */
     public static function smtpEfectivo(): array
     {
-        $proprio = self::obter('smtp', []);
-        $conta = ContaActual::get();
-
-        if (trim((string) ($proprio['servidor'] ?? '')) !== '' && $conta?->planoEfectivo()->permite('smtp_proprio')) {
-            return $proprio + ['proprio' => true];
-        }
-
-        return self::plataforma('smtp', []) + ['proprio' => false];
+        return self::plataforma('smtp', []);
     }
 
     /** False when mail would only be written to laravel.log (no SMTP anywhere and .env still on "log"). */
     public static function envioDisponivel(): bool
     {
-        return trim((string) (self::smtpEfectivo()['servidor'] ?? '')) !== '' || config('mail.default') !== 'log';
+        return self::temEnvio(self::smtpEfectivo()) || config('mail.default') !== 'log';
+    }
+
+    /** A saved mail setting that actually sends: Brevo with a key, PHP's mail(), or an SMTP server. */
+    public static function temEnvio(array $smtp): bool
+    {
+        return match ($smtp['modo'] ?? 'smtp') {
+            'brevo' => filled($smtp['brevo_chave'] ?? null),
+            'php' => true,
+            default => trim((string) ($smtp['servidor'] ?? '')) !== '',
+        };
+    }
+
+    /** The address emails come from (the sender name is the business's, or "Vencia"). */
+    public static function remetenteDaPlataforma(): string
+    {
+        $smtp = self::plataforma('smtp', []);
+        $remetente = trim((string) ($smtp['remetente'] ?? ''));
+        if ($remetente === '' && ($smtp['modo'] ?? 'smtp') === 'smtp' && filter_var($smtp['utilizador'] ?? '', FILTER_VALIDATE_EMAIL)) {
+            $remetente = $smtp['utilizador'];
+        }
+
+        return $remetente ?: self::remetentePorOmissao();
+    }
+
+    /** Default sender for PHP's mail(): noreply@ the site's own domain. */
+    public static function remetentePorOmissao(): string
+    {
+        $host = parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'localhost';
+
+        return 'noreply@'.preg_replace('/^www\./', '', $host);
     }
 
     /**
@@ -123,7 +150,9 @@ class Configuracao extends Model
     /** For the platform's own emails (sign-up, password reset, plan invoices, alerts). */
     public static function aplicarSmtpDaPlataforma(): void
     {
-        self::aplicarSmtp(self::plataforma('smtp', []), config('app.name'), null);
+        $smtp = self::plataforma('smtp', []);
+
+        self::aplicarSmtp($smtp, ($smtp['remetente_nome'] ?? null) ?: config('app.name'), null);
     }
 
     private static function aplicarSmtp(array $smtp, ?string $nome, ?string $responderPara): void
@@ -137,7 +166,23 @@ class Configuracao extends Model
 
         $servidor = trim((string) ($smtp['servidor'] ?? ''));
 
-        if ($servidor !== '') {
+        if (($smtp['modo'] ?? 'smtp') === 'brevo' && filled($smtp['brevo_chave'] ?? null)) {
+            // Brevo's HTTP API (App\Mail\TransporteBrevo): reliable delivery, over HTTPS.
+            config([
+                'mail.default' => 'brevo',
+                'mail.mailers.brevo' => ['transport' => 'brevo', 'key' => self::passwordSmtp($smtp['brevo_chave'])],
+                'mail.from.address' => trim((string) ($smtp['remetente'] ?? '')) ?: self::remetentePorOmissao(),
+            ]);
+            app()->forgetInstance('mail.manager');
+        } elseif (($smtp['modo'] ?? 'smtp') === 'php') {
+            // The hosting's own mail server through PHP's mail() (App\Mail\TransportePhpMail): no account needed.
+            config([
+                'mail.default' => 'phpmail',
+                'mail.mailers.phpmail' => ['transport' => 'phpmail'],
+                'mail.from.address' => trim((string) ($smtp['remetente'] ?? '')) ?: self::remetentePorOmissao(),
+            ]);
+            app()->forgetInstance('mail.manager');
+        } elseif ($servidor !== '') {
             $seguranca = strtoupper(trim((string) ($smtp['seguranca'] ?? 'STARTTLS')));
 
             config([

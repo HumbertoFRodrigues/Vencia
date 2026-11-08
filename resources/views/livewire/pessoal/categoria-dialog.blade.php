@@ -12,7 +12,9 @@
 
             <div style="display:flex;flex-direction:column;gap:14px">
                 <div style="display:flex;align-items:flex-end;gap:12px">
-                    @php($tinta = $cores[$cor] ?? $cores['cinza'])
+                    @php
+                        $tinta = $cores[$cor] ?? $cores['cinza'];
+                    @endphp
                     <span class="cat-chip cat-chip--lg" style="background:{{ $tinta[0] }};color:{{ $tinta[1] }}" aria-hidden="true">
                         <x-ui.icon :name="$icone" size="20" />
                     </span>

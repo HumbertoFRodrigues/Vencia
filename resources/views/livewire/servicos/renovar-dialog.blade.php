@@ -1,6 +1,8 @@
 <div>
     @if($show)
-        @php($s = $this->servico)
+        @php
+            $s = $this->servico;
+        @endphp
         <x-ui.dialog
             title="Renovar serviço"
             :description="$s ? $s->nome.' — período '.mb_strtolower($s->periodicidade->label()) : null"

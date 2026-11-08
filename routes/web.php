@@ -42,6 +42,7 @@ use App\Livewire\Servicos\ServicoDetail;
 use App\Livewire\Servicos\ServicosIndex;
 use App\Livewire\Vencimentos\VencimentosIndex;
 use App\Models\User;
+use App\Support\Anuncios;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 
@@ -63,6 +64,14 @@ Route::post('/implantacao/concluir', [ImplantacaoController::class, 'concluir'])
 Route::get('/', [ContaController::class, 'inicio'])->name('inicio');
 Route::get('/termos', [ContaController::class, 'termos'])->name('termos');
 Route::get('/privacidade', [ContaController::class, 'privacidade'])->name('privacidade');
+
+// Google checks this before showing AdSense ads (publisher ID set in Admin → Plataforma).
+Route::get('/ads.txt', function () {
+    $txt = Anuncios::adsTxt();
+    abort_unless($txt, 404);
+
+    return response($txt, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+})->name('ads-txt');
 
 // Team invites: anyone with the link can see it; accepting needs the invited account.
 Route::get('/convite/{token}', [ConviteController::class, 'mostrar'])->name('convite.mostrar');

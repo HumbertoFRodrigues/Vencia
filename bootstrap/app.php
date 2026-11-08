@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Middleware\CabecalhosDeSeguranca;
+use App\Http\Middleware\CorrerTarefasEmFalta;
 use App\Support\AlertaErro;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+
+require __DIR__.'/extensoes.php';
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(CabecalhosDeSeguranca::class);
+        // Runs the daily tasks after a visit when the server has no cron jobs (see the class).
+        $middleware->web(append: [CorrerTarefasEmFalta::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Unexpected errors (not 404s, validation, etc. — those are never "reported") are emailed to the empresa.

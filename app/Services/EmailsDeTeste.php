@@ -25,7 +25,7 @@ use RuntimeException;
 class EmailsDeTeste
 {
     public const TIPOS = [
-        'simples' => 'Teste simples (só confirma o SMTP)',
+        'simples' => 'Teste simples (confirma que o envio funciona)',
         'lembrete' => 'Lembrete de vencimento ao cliente',
         'terminado' => 'Serviço suspenso ao cliente',
         'recibo' => 'Recibo de pagamento com PDF',
@@ -44,7 +44,7 @@ class EmailsDeTeste
     public static function soNoRegisto(bool $plataforma = false): bool
     {
         if ($plataforma) {
-            return trim((string) (Configuracao::plataforma('smtp', [])['servidor'] ?? '')) === '' && config('mail.default') === 'log';
+            return ! Configuracao::temEnvio(Configuracao::plataforma('smtp', [])) && config('mail.default') === 'log';
         }
 
         return ! Configuracao::envioDisponivel();
@@ -57,7 +57,7 @@ class EmailsDeTeste
 
         match ($tipo) {
             'simples' => Mail::raw(
-                "Isto é um email de teste do Vencia.\n\nSe o recebeste, o envio de emails (SMTP) está a funcionar.",
+                "Isto é um email de teste do Vencia.\n\nSe o recebeste, o envio de emails está a funcionar.",
                 fn ($m) => $m->to($destino)->subject('Email de teste — Vencia'),
             ),
             'lembrete' => Mail::to($destino)->send(new LembreteVencimentoMail($this->servico(), IntervaloLembrete::D7)),
@@ -116,7 +116,7 @@ class EmailsDeTeste
         }
 
         if (! $copias->enviarPorEmail($ficheiro, $destino)) {
-            throw new RuntimeException('A cópia foi criada mas não foi enviada (demasiado grande para email ou falha no SMTP — ver o registo).');
+            throw new RuntimeException('A cópia foi criada mas não foi enviada (demasiado grande para email ou falha no envio — ver o registo).');
         }
     }
 

@@ -56,7 +56,9 @@
                 </div>
             </x-ui.card>
 
-            <livewire:configuracoes.seguranca />
+            <div id="seguranca">
+                <livewire:configuracoes.seguranca />
+            </div>
 
             <x-ui.card title="Exportar os teus dados" subtitle="Uma cópia de tudo, em ficheiros que abrem no Excel.">
                 <div class="pilha pilha--12">

@@ -72,6 +72,7 @@ return [
         'string' => 'O campo :attribute não deve ter mais de :max caracteres.',
     ],
     'mimes' => 'O campo :attribute deve ser um ficheiro do tipo: :values.',
+    'uploaded' => 'Não foi possível carregar o :attribute. Tenta de novo; se continuar, vê Admin → Estado do sistema.',
     'min' => [
         'array' => 'O campo :attribute deve ter pelo menos :min itens.',
         'file' => 'O campo :attribute deve ter pelo menos :min kilobytes.',
@@ -130,5 +131,9 @@ return [
         'observacoes' => 'observações',
         'motivo' => 'motivo',
         'categoria' => 'categoria',
+        'novoLogoEmpresa' => 'logótipo',
+        'novoLogo' => 'logótipo',
+        'novoMetodoLogo' => 'logótipo',
+        'comprovativo' => 'comprovativo',
     ],
 ];

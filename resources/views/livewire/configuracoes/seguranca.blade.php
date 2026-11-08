@@ -1,4 +1,4 @@
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;align-items:start">
+<div class="pilha">
     <x-ui.card title="Verificação em dois passos" subtitle="Além da password, o login pede um código de 6 dígitos que muda a cada 30 segundos na app do teu telemóvel (Google Authenticator, Microsoft Authenticator, Authy…).">
         @if($this->estado === 'desligado')
             <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">

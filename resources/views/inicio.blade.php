@@ -17,6 +17,7 @@
 
     @include('partials.estilos')
     @include('partials.tema')
+    @include('partials.site.anuncios')
 </head>
 <body class="site">
     <a href="#conteudo" class="site__saltar">Saltar para o conteúdo</a>

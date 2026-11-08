@@ -43,7 +43,9 @@
             :empty="$this->movimentos->isEmpty()"
         >
             @foreach($this->movimentos as $m)
-                @php($entrada = $m->tipo === \App\Enums\TipoMovimento::Entrada)
+                @php
+                    $entrada = $m->tipo === \App\Enums\TipoMovimento::Entrada;
+                @endphp
                 <tr data-clickable wire:key="m-{{ $m->id }}" wire:click="$dispatch('movimento:abrir', { movimentoId: {{ $m->id }} })" tabindex="0" onkeydown="if (event.key === 'Enter') this.click()">
                     <td><span class="num" style="font-size:var(--text-xs)">{{ $m->data->format('d/m/Y') }}</span></td>
                     <td>
