@@ -21,7 +21,8 @@ Stack: Laravel 13, Livewire 4, MySQL/MariaDB, PHP 8.4+. Sem Node no servidor (CS
    `git diff --name-only <commit-publicado> HEAD`, e no ZIP usar `ZipArchive::setMtimeName($f, time())`.
 2. cPanel → File Manager → pasta da app → Upload → Extract (substituir) → apagar o ZIP.
 3. Se houver migrações novas: importar o SQL equivalente no phpMyAdmin (não há terminal).
-4. Se uma página continuar antiga: apagar o conteúdo de `storage/framework/views/`.
+4. Pôr no ZIP um ficheiro `VERSAO` com o commit (ex.: `26f8841`): as páginas compiladas ficam em `storage/framework/views/<VERSAO>`, por isso cada versão começa com a cache limpa. Sem ele, apagar o conteúdo de `storage/framework/views/`.
+5. Depois de mudar pacotes (`vendor/`): apagar `bootstrap/cache/packages.php` e `services.php`.
 
 Detalhe completo da instalação: `DEPLOY.md`.
 
@@ -37,6 +38,7 @@ Detalhe completo da instalação: `DEPLOY.md`.
   ```
 - **Cópias de segurança:** o servidor guarda 14; o email diário só avisa (anexar é opcional, em Plataforma).
 - **AdSense:** ID `ca-pub-9666351884551817` em Plataforma → Anúncios; `/ads.txt` é gerado.
+- **Sessão:** termina após 15 min sem actividade, com aviso 2 min antes (`SESSAO_INACTIVIDADE` no `.env`; 0 desliga).
 - **Estado de tudo isto:** Administração → Visão geral → *Estado do sistema*.
 
 ## Por fazer quando voltar
