@@ -81,6 +81,10 @@ return [
     // Email the empresa when an unexpected error happens (App\Support\AlertaErro). On by default in production only.
     'alertas_erro' => (bool) env('ALERTAS_ERRO', env('APP_ENV') === 'production'),
 
+    // Run the daily tasks after a visit when the server has no cron jobs (App\Http\Middleware\CorrerTarefasEmFalta).
+    // Production only by default: a local copy must never email real clients.
+    'tarefas_sem_cron' => (bool) env('TAREFAS_SEM_CRON', env('APP_ENV') === 'production'),
+
     'admin_password' => env('ADMIN_PASSWORD'),
 
     /*

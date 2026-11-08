@@ -94,7 +94,7 @@ class Visao extends Component
                 'titulo' => 'Tarefa: '.$t['nome'],
                 'detalhe' => $t['em']
                     ? 'Última vez '.$t['em']->diffForHumans().($t['resumo'] ? ' · '.$t['resumo'] : '').($t['atrasada'] ? '. Confirma o Cron Job.' : '')
-                    : 'Nunca correu. Falta o Cron Job "'.$t['comando'].'" (DEPLOY.md, passo 7).',
+                    : 'Nunca correu. Todos os dias às '.$t['hora'].(config('app.tarefas_sem_cron') ? ': sem Cron Job, corre na primeira visita ao site a seguir a essa hora' : '').'. Para correr sempre à hora certa, cria o Cron Job "'.$t['comando'].'" (DEPLOY.md, passo 7).',
             ];
         }
 
